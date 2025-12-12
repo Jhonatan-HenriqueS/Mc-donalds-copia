@@ -10,7 +10,7 @@ CREATE TABLE "Restaurant" (
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "description" TEXT NOT NULL,
-    "avatarImgaeUrl" TEXT NOT NULL,
+    "avatarImageUrl" TEXT NOT NULL,
     "coverImageUrl" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updateAt" TIMESTAMP(3) NOT NULL,
