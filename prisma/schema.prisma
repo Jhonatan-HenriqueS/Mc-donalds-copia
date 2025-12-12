@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+//Aqui está minha tabela criada com postgreSQL no prisma na v@6.2.1
+//Arquivo formatado com npw prima format
+//Banco criado no neonDB
+//Banco transferido com npx prisma migrate dev, com este nome add_initial_tables
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Restaurant {
+  id             String         @id @default(uuid())
+  name           String
+  slug           String
+  description    String
+  avatarImgaeUrl String
+  coverImageUrl  String
+  menuCategorias MenuCategory[] //Não salva no bd, mas referencia
+  products       Product[]
+  orders         Order[]
+  createdAt      DateTime       @default(now())
+  updateAt       DateTime       @updatedAt
+}
+
+model MenuCategory {
+  id           String     @id @default(uuid())
+  name         String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  //Não salva no BD mas diz que está referenciando a model Reastaurant 
+  //Pega o nome do model, relaciona com restaurantId daqui e pega com referecences o id de Restaurant
+  restaurantId String
+  products     Product[]
+  createdAt    DateTime   @default(now())
+  updateAt     DateTime   @updatedAt
+}
+
+model Product {
+  id             String         @id @default(uuid())
+  name           String
+  description    String
+  price          Float //Para não atrapalhar o next, usa-se float ao invés de decimal
+  imageUrl       String
+  ingredients    String[]
+  orderProducts  OrderProduct[]
+  restaurant     Restaurant     @relation(fields: [restaurantId], references: [id])
+  restaurantId   String
+  menuCategory   MenuCategory   @relation(fields: [menuCategoryId], references: [id])
+  menuCategoryId String
+  createdAt      DateTime       @default(now())
+  updateAt       DateTime       @updatedAt
+}
+
+model Order {
+  id                Int               @id @default(autoincrement())
+  //Cada pedido vai ter uma ordem, caso o primeiro esteja com id 1, o segundo recebe 2, e assim por diante, vai se complementando  
+  total             Float
+  status            OrderStatus
+  consumptionMethod ConsumptionMethod
+  orderProducts     OrderProduct[]
+  restaurant        Restaurant        @relation(fields: [restaurantId], references: [id])
+  restaurantId      String
+  createdAt         DateTime          @default(now())
+  updateAt          DateTime          @updatedAt
+}
+
+model OrderProduct {
+  id        String   @id @default(uuid())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   Int
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PREPARATION
+  FINISHED
+}
+
+enum ConsumptionMethod {
+  TAKEANAY
+  DINE_IN
+}
