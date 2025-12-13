@@ -1,0 +1,18 @@
+{
+  "_comentario": "Trouxe todo esse código do curso",
+  "_Explicação": "Quando eu salvar o meu código, ele vai detectar erros e corrigir automaticamente",
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  }
+}

@@ -1,5 +1,8 @@
 //Usando npx shadcn@2.3.0 init
 //Para usar o botão dessa biblioteca instalamos com npx shadcn@2.3.0 add button
+//Para usar o input dessa biblioteca instalamos com npx shadcn@2.3.0 add input
+
+//Usando o prettier pligin do tailwind vindo de  npm install -D prettier-plugin-tailwindcss@0.6.5
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
