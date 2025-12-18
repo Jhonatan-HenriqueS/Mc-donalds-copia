@@ -1,4 +1,5 @@
 //Este layout faz com que tudo que estiver aqui sirva para todas as páginas
+//Fiz alterações adicionadno o poppins e adicionadno no body meus desejos
 
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
@@ -20,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="pt">
       <body className={`${poppins.className} antialiased`}>{children}</body>
     </html>
   );

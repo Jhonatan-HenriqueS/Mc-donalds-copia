@@ -41,6 +41,12 @@ body {
     border-color: hsl(var(--border));
   }
   body {
-    @apply bg-background text-foreground;
+    @apply h-full bg-background text-foreground;
+    /* h full adicionado para ajustar o botão de adicionar ao carrinho */
+  }
+
+  html {
+    @apply h-full;
+    /* html e @apply h full adicionado para ajustar o botão de adicionar ao carrinho */
   }
 }
