@@ -32,8 +32,27 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addProducts = (product: CartProduct) => {
-    setProducts((prev) => [...prev, product]);
-    //...prev retorna tudo que estava na lista anterior
+    const productsIsAreadyOnTheCart = products.some(
+      (prevProducts) => prevProducts.id === product.id
+    );
+    if (!productsIsAreadyOnTheCart) {
+      //Se não tiver o produto no meu carrinho, retorna a lista e o produto
+      return setProducts((prev) => [...prev, product]);
+      //...prevProducts retorna tudo que estava na lista anterior
+    }
+
+    setProducts((prevProducts) => {
+      //Se esse produto existe e eu to salvando novamente, eu adiciono a quantidade que estava com a nova quantidade que o usuário quer
+      return prevProducts.map((prevProduct) => {
+        if (prevProduct.id === product.id) {
+          return {
+            ...prevProduct,
+            quantity: prevProduct.quantity + product.quantity,
+          };
+        }
+        return prevProduct;
+      });
+    });
   };
 
   return (
