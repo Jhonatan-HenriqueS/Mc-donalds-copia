@@ -12,6 +12,7 @@ export interface CartProduct
 export interface IcartContext {
   isOpen: boolean;
   products: CartProduct[];
+  total: number;
   taggleCart: () => void;
   addProducts: (product: CartProduct) => void;
   descreaseProductQuantity: (productId: string) => void;
@@ -22,6 +23,7 @@ export interface IcartContext {
 export const CartContext = createContext<IcartContext>({
   isOpen: false,
   products: [],
+  total: 0,
   taggleCart: () => {},
   addProducts: () => {},
   descreaseProductQuantity: () => {},
@@ -32,6 +34,13 @@ export const CartContext = createContext<IcartContext>({
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [products, setProducts] = useState<CartProduct[]>([]);
   const [isOpen, setIsOPen] = useState<boolean>(false);
+
+  const total = products.reduce((acc, product) => {
+    //reduce percorre o array (a lista de produtos), recebe como parametro o produto
+    //E acumula neste, neste caso soma, o valor ,0 faz com que acc comece com 0
+
+    return acc + product.price * product.quantity;
+  }, 0);
 
   const taggleCart = () => {
     setIsOPen((prev) => !prev);
@@ -92,8 +101,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const removeProduct = (productId: string) => {
-    setProducts((prevProducts) =>
-      prevProducts.filter((prevProduct) => prevProduct.id != productId)
+    setProducts(
+      (prevProducts) =>
+        prevProducts.filter((prevProduct) => prevProduct.id != productId)
+      //Caso o id != do id do produto selecionado ele permanece, mas se === ele é removido com filter
     );
   };
 
@@ -107,6 +118,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         descreaseProductQuantity,
         inCreaseProductQuantity,
         removeProduct,
+        total,
       }}
     >
       {children}
