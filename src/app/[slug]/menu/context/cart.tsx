@@ -15,6 +15,7 @@ export interface IcartContext {
   taggleCart: () => void;
   addProducts: (product: CartProduct) => void;
   descreaseProductQuantity: (productId: string) => void;
+  inCreaseProductQuantity: (productId: string) => void;
 }
 
 export const CartContext = createContext<IcartContext>({
@@ -23,6 +24,7 @@ export const CartContext = createContext<IcartContext>({
   taggleCart: () => {},
   addProducts: () => {},
   descreaseProductQuantity: () => {},
+  inCreaseProductQuantity: () => {},
 });
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
@@ -56,7 +58,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       });
     });
   };
-
+  //Nesse dois caso, os dois verifica se o id do produto for diferente do produto selecionado, não faz nada com esse produto
+  //Se for os mesmo id some ou subtrai 1
   const descreaseProductQuantity = (productId: string) => {
     setProducts((prevProducts) => {
       return prevProducts.map((prevProduct) => {
@@ -72,6 +75,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const inCreaseProductQuantity = (productId: string) => {
+    setProducts((prevProducts) => {
+      return prevProducts.map((prevProduct) => {
+        if (prevProduct.id != productId) {
+          return prevProduct;
+        }
+
+        return { ...prevProduct, quantity: prevProduct.quantity + 1 };
+      });
+    });
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -80,6 +95,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         taggleCart,
         addProducts,
         descreaseProductQuantity,
+        inCreaseProductQuantity,
       }}
     >
       {children}
