@@ -15,7 +15,7 @@ const CartSheet = () => {
 
   return (
     <Sheet open={isOpen} onOpenChange={taggleCart}>
-      <SheetContent className="w-[85%]">
+      <SheetContent className="min-w-[88%]">
         <SheetHeader>
           <SheetTitle className="text-start">Carrinho</SheetTitle>
           <SheetDescription></SheetDescription>
