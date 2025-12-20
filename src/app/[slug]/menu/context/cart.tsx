@@ -16,6 +16,7 @@ export interface IcartContext {
   addProducts: (product: CartProduct) => void;
   descreaseProductQuantity: (productId: string) => void;
   inCreaseProductQuantity: (productId: string) => void;
+  removeProduct: (productId: string) => void;
 }
 
 export const CartContext = createContext<IcartContext>({
@@ -25,6 +26,7 @@ export const CartContext = createContext<IcartContext>({
   addProducts: () => {},
   descreaseProductQuantity: () => {},
   inCreaseProductQuantity: () => {},
+  removeProduct: () => {},
 });
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
@@ -38,6 +40,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const addProducts = (product: CartProduct) => {
     const productsIsAreadyOnTheCart = products.some(
       (prevProducts) => prevProducts.id === product.id
+      //some() pega como parametro prevProduct e ve se ele é === a product.id
+      //Se for ele retorna true, se não false, ele percorre mas só retorna boolean, igual um map
     );
     if (!productsIsAreadyOnTheCart) {
       //Se não tiver o produto no meu carrinho, retorna a lista e o produto
@@ -87,6 +91,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const removeProduct = (productId: string) => {
+    setProducts((prevProducts) =>
+      prevProducts.filter((prevProduct) => prevProduct.id != productId)
+    );
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -96,6 +106,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         addProducts,
         descreaseProductQuantity,
         inCreaseProductQuantity,
+        removeProduct,
       }}
     >
       {children}
