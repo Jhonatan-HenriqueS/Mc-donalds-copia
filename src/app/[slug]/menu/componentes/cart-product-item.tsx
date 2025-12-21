@@ -53,7 +53,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
         </div>
       </div>
       <Button
-        className="h-7 w-7 rounded-lg"
+        className="h-7 w-7 rounded-lg border-none"
         variant="outline"
         onClick={() => removeProduct(product.id)}
       >
