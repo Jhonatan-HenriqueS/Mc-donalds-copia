@@ -69,6 +69,8 @@ model Order {
   orderProducts     OrderProduct[]
   restaurant        Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId      String
+  customerName      String
+  customerCpf       String
   createdAt         DateTime          @default(now())
   updateAt          DateTime          @updatedAt
 }

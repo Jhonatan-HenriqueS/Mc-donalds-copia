@@ -25,6 +25,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { create } from "domain";
+import { createOrder } from "../actions/create-order";
+import { useParams, useSearchParams } from "next/navigation";
+import { ConsumptionMethod } from "@prisma/client";
+import { useContext, useTransition } from "react";
+import { CartContext } from "../context/cart";
+import { toast } from "sonner";
+import { Loader2Icon } from "lucide-react";
 
 const formSchema = z.object({
   //z é um formulário já pronto e seguro
@@ -55,6 +63,16 @@ interface FinishOrderDialogProps {
 
 const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   //Pega o schema e usa como interface para eu usar na validação
+
+  const { slug } = useParams<{ slug: string }>();
+
+  const { products } = useContext(CartContext);
+  //Vai no meu contexto e pega os produtos já salvos
+
+  const searchParams = useSearchParams();
+
+  const [isPeding, startTransition] = useTransition();
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -66,9 +84,30 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     //shouldUnregister diz que quando parar de renderizar os campos para de funcionar
   });
 
-  const onSubmit = (data: FormSchema) => {
+  const onSubmit = async (data: FormSchema) => {
     //Só executa caso o formulário seja valido
-    console.log({ data });
+
+    try {
+      const consumptionMethod = searchParams.get(
+        "consumptionMethod"
+      ) as ConsumptionMethod;
+      //Pega meu consumptionMethod da URL e trás para const
+
+      startTransition(async () => {
+        //Pega a const que possui useTransition e faz que enquanto esses dados é enviado ao servidor ela descreve como "está em transição"
+        await createOrder({
+          consumptionMethod,
+          customerCpf: data.cpf,
+          customerName: data.name,
+          products,
+          slug,
+        });
+        onOpenChange(false);
+        toast.success("Pedido finalizado com sucesso!");
+      });
+    } catch (error) {
+      console.log(`Error: ${error}`);
+    }
   };
 
   return (
@@ -79,7 +118,11 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Finalizar pedido</DrawerTitle>
+            <DrawerTitle>
+              {isPeding && <Loader2Icon className="animate-spin " />}
+              {/* && neste caso se diz o seguinte "se isPeding for verdadeiro faça isto" "se não for simplismente ele não executa" */}
+              Finalizar pedido
+            </DrawerTitle>
             <DrawerDescription>
               Insira suas informações abaixo para finalizar seu pedido
             </DrawerDescription>
@@ -123,7 +166,11 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                   )}
                 />
                 <DrawerFooter>
-                  <Button type="submit" className="rounded-full">
+                  <Button
+                    type="submit"
+                    className="rounded-full"
+                    disabled={isPeding}
+                  >
                     Finalizar
                   </Button>
 
