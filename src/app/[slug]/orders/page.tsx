@@ -19,6 +19,10 @@ const OrdersPage = async ({ searchParams }: OrdersPageProps) => {
   }
 
   const orders = await db.order.findMany({
+    orderBy: {
+      createdAt: "desc",
+      //Mostra o mais recente do banco primeiro
+    },
     //Preocura no banco por ordem do cpf informado
     where: {
       customerCpf: removeCpfPunctuation(cpf),
