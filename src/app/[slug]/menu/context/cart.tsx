@@ -13,6 +13,7 @@ export interface IcartContext {
   isOpen: boolean;
   products: CartProduct[];
   total: number;
+  totalQuantity: number;
   taggleCart: () => void;
   addProducts: (product: CartProduct) => void;
   descreaseProductQuantity: (productId: string) => void;
@@ -24,6 +25,7 @@ export const CartContext = createContext<IcartContext>({
   isOpen: false,
   products: [],
   total: 0,
+  totalQuantity: 0,
   taggleCart: () => {},
   addProducts: () => {},
   descreaseProductQuantity: () => {},
@@ -40,6 +42,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     //E acumula neste, neste caso soma, o valor ,0 faz com que acc comece com 0
 
     return acc + product.price * product.quantity;
+  }, 0);
+
+  const totalQuantity = products.reduce((acc, product) => {
+    return acc + product.quantity;
   }, 0);
 
   const taggleCart = () => {
@@ -113,6 +119,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       value={{
         isOpen,
         products,
+        totalQuantity,
         taggleCart,
         addProducts,
         descreaseProductQuantity,

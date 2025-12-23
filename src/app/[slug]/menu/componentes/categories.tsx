@@ -5,8 +5,11 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Prisma } from "@prisma/client";
 import { ClockIcon, ScrollTextIcon } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import Products from "./products";
+import { CartContext } from "../context/cart";
+import { formatCurrency } from "@/helpers/format-currency";
+import CartSheet from "./cart-sheet";
 
 interface RestaurantsCategoriesProps {
   restaurant: Prisma.RestaurantGetPayload<{
@@ -29,6 +32,9 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
   const [selectedCategory, setSelectedCategory] =
     useState<MenuCategoriesMithProducts>(restaurant.menuCategorias[0]);
   //Assim que entra no site o primeiro a aparecer é a primeira categoria
+
+  const { products, total, taggleCart, totalQuantity } =
+    useContext(CartContext);
 
   const handlesCategoryClick = (category: MenuCategoriesMithProducts) => {
     setSelectedCategory(category);
@@ -87,6 +93,22 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
       </ScrollArea>
       <h2 className="py-2.5 pl-8 font-semibold ">{selectedCategory.name}</h2>
       <Products products={selectedCategory.products} />
+      {products.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 flex w-full items-center justify-between border-t bg-white px-5 py-3">
+          <div className="">
+            <p className="text-ms text-muted-foreground">Total do pedido</p>
+            <p className="text-sm font-semibold">
+              {formatCurrency(total)}
+              <span className="text-xs font-normal text-muted-foreground ">
+                /{totalQuantity}
+                {totalQuantity > 1 ? "itens" : "item"}
+              </span>
+            </p>
+          </div>
+          <Button onClick={taggleCart}>Ver Pedidos</Button>
+          <CartSheet />
+        </div>
+      )}
     </div>
   );
 };
