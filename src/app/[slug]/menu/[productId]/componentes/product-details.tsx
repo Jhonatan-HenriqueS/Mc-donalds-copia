@@ -46,7 +46,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
   const handleAddToCart = () => {
     addProducts({
-      ...product,
+      ...product, //Pega o produto e suas informações e a quantity
       quantity,
     });
     taggleCart();

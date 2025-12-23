@@ -1,9 +1,10 @@
-//Vai usar server e client (back e end)
+//Vai usar server e client (back e front)
 "use server";
 
 import { db } from "@/lib/prisma";
 import { ConsumptionMethod, Order } from "@prisma/client";
 import { removeCpfPunctuation } from "../helpers/cpf";
+import { redirect } from "next/navigation";
 
 interface createOrderInput {
   customerName: string;
@@ -60,4 +61,5 @@ export const createOrder = async (input: createOrderInput) => {
       restaurantId: restaurant.id,
     },
   });
+  redirect(`/${input.slug}/orders`);
 };

@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Prisma } from "@prisma/client";
-import { ClockIcon } from "lucide-react";
+import { ClockIcon, ScrollTextIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import Products from "./products";
@@ -53,6 +53,14 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
             <h2 className="font-semibold text-lg">{restaurant.name}</h2>
             <p className="text-xs opacity-55">{restaurant.description}</p>
           </div>
+
+          <div className="absolute right-4">
+            <Button variant="secondary" className="bg-slate-100 rounded-full">
+              <ScrollTextIcon />
+            </Button>
+          </div>
+
+          <div></div>
         </div>
 
         <div className="flex items-center mt-3 gap-1 text-xs text-green-500">
