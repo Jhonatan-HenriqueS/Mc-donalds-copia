@@ -3,7 +3,7 @@
 import { Product } from "@prisma/client";
 import { ChevronLeftIcon, ShoppingCart } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
@@ -12,10 +12,13 @@ interface ProductHeaderProps {
 }
 
 const ProductHeader = ({ product }: ProductHeaderProps) => {
+  const { slug } = useParams();
+
   const router = useRouter();
   const handleBackClick = () => router.back();
   //Diz pra bibliotecas de rotas do react para voltar a página anterior
 
+  const handleOrdersClick = () => router.push(`/${slug}/orders`);
   return (
     <div>
       <div className="relative w-full min-h-[300px]">
@@ -37,6 +40,7 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
           variant="secondary"
           size="icon"
           className="absolute top-4 right-4 rounded-full z-50"
+          onClick={handleOrdersClick}
         >
           <ShoppingCart />
         </Button>

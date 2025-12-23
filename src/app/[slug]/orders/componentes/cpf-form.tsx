@@ -57,7 +57,7 @@ const CpfForm = () => {
   const pathname = usePathname();
 
   const onSubmit = (data: FormSchema) => {
-    router.push(`${pathname}?cpf=${removeCpfPunctuation(data.cpf)}`);
+    router.replace(`${pathname}?cpf=${removeCpfPunctuation(data.cpf)}`);
     //transforma a rota para o nome do restaurant junto com o cpf informado
   };
 
@@ -100,7 +100,7 @@ const CpfForm = () => {
             />
             <DrawerFooter>
               <Button className="w-full rounded-full">Confirmar</Button>
-              <DrawerClose>
+              <DrawerClose asChild>
                 <Button
                   variant="outline"
                   className="w-full rounded-full"
