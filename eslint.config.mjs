@@ -1,9 +1,9 @@
 //Usando es-lint de npm install -D eslint-plugin-simple-import-sort@12.1.1
 
+import { FlatCompat } from "@eslint/eslintrc";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import { simpleImportSort } from "eslint-plugin-simple-import-sort";
-import { FlatCompat } from "@eslint/eslintrc";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
