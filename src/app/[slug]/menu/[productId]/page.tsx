@@ -1,5 +1,7 @@
-import { db } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+
+import { db } from "@/lib/prisma";
+
 import ProductHeader from "./componentes/header";
 import ProductDetails from "./componentes/product-details";
 

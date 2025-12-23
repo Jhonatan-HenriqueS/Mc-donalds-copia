@@ -1,6 +1,8 @@
-import { db } from "@/lib/prisma";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+
+import { db } from "@/lib/prisma";
+
 import ConsumptionMethodOPtion from "./Components/consumption-method-option";
 
 interface RestaurantPageProps {

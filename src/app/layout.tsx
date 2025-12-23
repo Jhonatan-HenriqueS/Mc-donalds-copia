@@ -1,11 +1,14 @@
 //Este layout faz com que tudo que estiver aqui sirva para todas as páginas
 //Fiz alterações adicionadno o poppins e adicionadno no body meus desejos
 
+import "./globals.css";
+
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
-import "./globals.css";
-import { CartProvider } from "./[slug]/menu/context/cart";
+
 import { Toaster } from "@/components/ui/sonner";
+
+import { CartProvider } from "./[slug]/menu/context/cart";
 
 const poppins = Poppins({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
