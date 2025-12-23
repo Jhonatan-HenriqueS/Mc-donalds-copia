@@ -6,13 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "_comentario": "Usado para gerar o prisma no deploy",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "_comentario": "Usado para mostrar ao prisma o que ele deve executar",
-    "_comentario1": "Usado para mostrar ao prisma o que ele deve executar",
-    "_comentario2": "Usado para mostrar ao prisma o que ele deve executar",
-    "_comentario3": "Usado para mostrar ao prisma o que ele deve executar",
     "seed": "ts-node ./prisma/seed.ts"
   },
   "dependencies": {
