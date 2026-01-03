@@ -2,12 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ConsumptionMethod } from "@prisma/client";
+import { loadStripe } from "@stripe/stripe-js";
 import { Loader2Icon } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useContext, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { PatternFormat } from "react-number-format";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
+import { createStripeCheckout } from "../actions/create-checkout-stripe";
 import { createOrder } from "../actions/create-order";
 import { CartContext } from "../context/cart";
 import { isValidCpf } from "../helpers/cpf";
@@ -72,7 +73,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
 
   const searchParams = useSearchParams();
 
-  const [isPeding, startTransition] = useTransition();
+  const [isPeding] = useTransition();
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -94,17 +95,26 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       ) as ConsumptionMethod;
       //Pega meu consumptionMethod da URL e trás para const
 
-      startTransition(async () => {
-        //Pega a const que possui useTransition e faz que enquanto esses dados é enviado ao servidor ela descreve como "está em transição"
-        await createOrder({
-          consumptionMethod,
-          customerCpf: data.cpf,
-          customerName: data.name,
-          products,
-          slug,
-        });
-        onOpenChange(false);
-        toast.success("Pedido finalizado com sucesso!");
+      //Pega a const que possui useTransition e faz que enquanto esses dados é enviado ao servidor ela descreve como "está em transição"
+      const order = await createOrder({
+        consumptionMethod,
+        customerCpf: data.cpf,
+        customerName: data.name,
+        products,
+        slug,
+      });
+
+      const { sessionId } = await createStripeCheckout({
+        products,
+        orderId: order.id,
+      });
+
+      if (!process.env.NEXT_PUBLIC_PUBLIC_KEY) return;
+
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_PUBLIC_KEY);
+
+      stripe?.redirectToCheckout({
+        sessionId: sessionId,
       });
     } catch (error) {
       console.log(`Error: ${error}`);
