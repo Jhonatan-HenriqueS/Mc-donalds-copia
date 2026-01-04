@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { Prisma } from "@prisma/client";
-import { ScrollArea } from "@radix-ui/react-scroll-area";
-import { ChefHatIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import Image from "next/image";
-import { useContext, useState } from "react";
+import { Prisma } from '@prisma/client';
+import { ScrollArea } from '@radix-ui/react-scroll-area';
+import { ChefHatIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import Image from 'next/image';
+import { useContext, useState } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/helpers/format-currency";
+import { Button } from '@/components/ui/button';
+import { formatCurrency } from '@/helpers/format-currency';
 
-import CartSheet from "../../componentes/cart-sheet";
-import { CartContext } from "../../context/cart";
+import CartSheet from '../../componentes/cart-sheet';
+import { CartContext } from '../../context/cart';
 
 interface ProductDetailsProps {
   product: Prisma.ProductGetPayload<{
@@ -56,7 +56,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
   return (
     <>
-      <div className="relative z-50 rounded-t-3xl p-5 mt-[-1.5rem] flex flex-auto flex-col overflow-hidden">
+      <div className="relative z-50 rounded-t-3xl p-5 mt-[-2rem] flex flex-auto flex-col h-full bg-white ">
         <div className="flex-auto overflow-hidden">
           <div className="flex items-center gap-1.5">
             <Image
@@ -107,7 +107,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
               </p>
             </div>
 
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 space-y-3 mb-4">
               <div className="flex items-center gap-1.5 ">
                 <ChefHatIcon size={18} />
                 <h4 className="font-semibold">Ingredientes</h4>
@@ -121,7 +121,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
             </div>
           </ScrollArea>
         </div>
-        <Button className="rounded-full w-full z-50" onClick={handleAddToCart}>
+        <Button className="rounded-full w-full z-50 " onClick={handleAddToCart}>
           Adicionar ao carrinho
         </Button>
       </div>

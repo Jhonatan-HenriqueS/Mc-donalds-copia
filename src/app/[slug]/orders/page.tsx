@@ -1,14 +1,16 @@
-import { db } from "@/lib/prisma";
+import { db } from '@/lib/prisma';
 
-import { isValidCpf, removeCpfPunctuation } from "../menu/helpers/cpf";
-import CpfForm from "./componentes/cpf-form";
-import OrderList from "./componentes/orders";
+import { isValidCpf, removeCpfPunctuation } from '../menu/helpers/cpf';
+import CpfForm from './componentes/cpf-form';
+import OrderList from './componentes/orders';
 
 interface OrdersPageProps {
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ cpf: string }>;
 }
 
-const OrdersPage = async ({ searchParams }: OrdersPageProps) => {
+const OrdersPage = async ({ params, searchParams }: OrdersPageProps) => {
+  const { slug } = await params;
   const { cpf } = await searchParams;
 
   if (!cpf) {
@@ -19,14 +21,29 @@ const OrdersPage = async ({ searchParams }: OrdersPageProps) => {
     return <CpfForm />;
   }
 
+  // Buscar o restaurante pelo slug para garantir que estamos no restaurante correto
+  const restaurant = await db.restaurant.findUnique({
+    where: {
+      slug,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!restaurant) {
+    return <CpfForm />;
+  }
+
   const orders = await db.order.findMany({
     orderBy: {
-      createdAt: "desc",
+      createdAt: 'desc',
       //Mostra o mais recente do banco primeiro
     },
-    //Preocura no banco por ordem do cpf informado
+    //Busca no banco por ordem do cpf informado E do restaurante atual
     where: {
       customerCpf: removeCpfPunctuation(cpf),
+      restaurantId: restaurant.id, // Filtra apenas pedidos deste restaurante
     },
     include: {
       restaurant: {

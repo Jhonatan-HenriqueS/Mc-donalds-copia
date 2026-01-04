@@ -1,17 +1,18 @@
-"use client";
+'use client';
 
-import { Prisma } from "@prisma/client";
-import { ClockIcon, ScrollTextIcon } from "lucide-react";
-import Image from "next/image";
-import { useContext, useState } from "react";
+import { Prisma } from '@prisma/client';
+import { ClockIcon, Settings } from 'lucide-react';
+import Image from 'next/image';
+import { useContext, useState } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { formatCurrency } from "@/helpers/format-currency";
+import { Button } from '@/components/ui/button';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { formatCurrency } from '@/helpers/format-currency';
 
-import { CartContext } from "../context/cart";
-import CartSheet from "./cart-sheet";
-import Products from "./products";
+import { CartContext } from '../context/cart';
+import AdminSheet from './admin-sheet';
+import CartSheet from './cart-sheet';
+import Products from './products';
 
 interface RestaurantsCategoriesProps {
   restaurant: Prisma.RestaurantGetPayload<{
@@ -34,6 +35,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
   const [selectedCategory, setSelectedCategory] =
     useState<MenuCategoriesMithProducts>(restaurant.menuCategorias[0]);
   //Assim que entra no site o primeiro a aparecer é a primeira categoria
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
 
   const { products, total, taggleCart, totalQuantity } =
     useContext(CartContext);
@@ -43,7 +45,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
   };
 
   const getCategoryButtonVariant = (category: MenuCategoriesMithProducts) => {
-    return selectedCategory.id === category.id ? "default" : "secondary";
+    return selectedCategory?.id === category.id ? 'default' : 'secondary';
     // Navariant caso o botão específico estiver selecionado ele se tranforma ao inverso do que era
   };
 
@@ -63,8 +65,13 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
           </div>
 
           <div className="absolute right-4">
-            <Button variant="secondary" className="bg-slate-100 rounded-full">
-              <ScrollTextIcon />
+            <Button
+              variant="secondary"
+              size="icon"
+              className="rounded-full"
+              onClick={() => setIsAdminOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
             </Button>
           </div>
 
@@ -93,8 +100,19 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
         </div>
         <ScrollBar orientation="horizontal" className="hidden"></ScrollBar>
       </ScrollArea>
-      <h2 className="py-2.5 pl-8 font-semibold ">{selectedCategory.name}</h2>
-      <Products products={selectedCategory.products} />
+      <h2 className="py-2.5 pl-8 font-semibold ">{selectedCategory?.name}</h2>
+
+      {selectedCategory?.products.length === 0 && (
+        <div className="flex items-center justify-center py-10">
+          <p className="text-sm text-muted-foreground">
+            Nenhum produto encontrado
+          </p>
+        </div>
+      )}
+      <div className={`${products.length > 0 ? 'pb-14' : ''}`}>
+        <Products products={selectedCategory?.products || []} />
+      </div>
+
       {products.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 flex w-full items-center justify-between border-t bg-white px-5 py-3">
           <div className="">
@@ -103,7 +121,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
               {formatCurrency(total)}
               <span className="text-xs font-normal text-muted-foreground ">
                 /{totalQuantity}
-                {totalQuantity > 1 ? "itens" : "item"}
+                {totalQuantity > 1 ? ' itens' : ' item'}
               </span>
             </p>
           </div>
@@ -111,6 +129,11 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
           <CartSheet />
         </div>
       )}
+      <AdminSheet
+        isOpen={isAdminOpen}
+        onOpenChange={setIsAdminOpen}
+        restaurant={restaurant}
+      />
     </div>
   );
 };

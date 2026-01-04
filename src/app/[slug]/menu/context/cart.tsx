@@ -1,10 +1,12 @@
-"use client";
+'use client';
 
-import { Product } from "@prisma/client";
-import { createContext, ReactNode, useState } from "react";
+import { Product } from '@prisma/client';
+import { createContext, ReactNode, useState } from 'react';
 
-export interface CartProduct
-  extends Pick<Product, "id" | "name" | "price" | "imageUrl"> {
+export interface CartProduct extends Pick<
+  Product,
+  'id' | 'name' | 'price' | 'imageUrl'
+> {
   //Pega os dados salvos de fato
   quantity: number;
 }
@@ -19,6 +21,7 @@ export interface IcartContext {
   descreaseProductQuantity: (productId: string) => void;
   inCreaseProductQuantity: (productId: string) => void;
   removeProduct: (productId: string) => void;
+  clearCart: () => void;
 }
 
 export const CartContext = createContext<IcartContext>({
@@ -31,6 +34,7 @@ export const CartContext = createContext<IcartContext>({
   descreaseProductQuantity: () => {},
   inCreaseProductQuantity: () => {},
   removeProduct: () => {},
+  clearCart: () => {},
 });
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
@@ -114,6 +118,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const clearCart = () => {
+    setProducts([]);
+    setIsOPen(false);
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -125,6 +134,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         descreaseProductQuantity,
         inCreaseProductQuantity,
         removeProduct,
+        clearCart,
         total,
       }}
     >

@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { Product } from "@prisma/client";
-import { ChevronLeftIcon, ShoppingCart } from "lucide-react";
-import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
+import { Product } from '@prisma/client';
+import { ChevronLeftIcon, ScrollTextIcon } from 'lucide-react';
+import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 interface ProductHeaderProps {
-  product: Pick<Product, "name" | "imageUrl">;
+  product: Pick<Product, 'name' | 'imageUrl'>;
 }
 
 const ProductHeader = ({ product }: ProductHeaderProps) => {
@@ -21,7 +21,7 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
   const handleOrdersClick = () => router.push(`/${slug}/orders`);
   return (
     <div>
-      <div className="relative w-full min-h-[300px]">
+      <div className="relative w-full min-h-[280px]">
         <Button
           variant="secondary"
           size="icon"
@@ -34,7 +34,7 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
           src={product.imageUrl}
           alt={product.name}
           fill
-          className="object-contain"
+          className="object-cover"
         />
         <Button
           variant="secondary"
@@ -42,7 +42,7 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
           className="absolute top-4 right-4 rounded-full z-50"
           onClick={handleOrdersClick}
         >
-          <ShoppingCart />
+          <ScrollTextIcon />
         </Button>
       </div>
     </div>

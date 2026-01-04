@@ -1,11 +1,11 @@
-import { ChevronLeftIcon, ChevronRightIcon, Trash2Icon } from "lucide-react";
-import Image from "next/image";
-import { useContext } from "react";
+import { ChevronLeftIcon, ChevronRightIcon, Trash2Icon } from 'lucide-react';
+import Image from 'next/image';
+import { useContext } from 'react';
 
-import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/helpers/format-currency";
+import { Button } from '@/components/ui/button';
+import { formatCurrency } from '@/helpers/format-currency';
 
-import { CartContext, CartProduct } from "../context/cart";
+import { CartContext, CartProduct } from '../context/cart';
 
 interface CartItemProps {
   product: CartProduct;
@@ -23,12 +23,12 @@ const CartProductItem = ({ product }: CartItemProps) => {
               src={product.imageUrl}
               alt={product.name}
               fill
-              className="object-cover"
+              className="object-cover rounded-xl"
             />
           </div>
         </div>
         <div className="space-y-1 ">
-          <p className="text-sm font-semibold max-w-[90%] truncate text-ellipsis">
+          <p className="text-sm font-semibold max-w-[80%] truncate text-ellipsis">
             {/* Essa combinação faz com que o nome do produto não quebre linha, e se quebrar adiciona ... no final */}
             {product.name}
           </p>
@@ -55,7 +55,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
         </div>
       </div>
       <Button
-        className="h-7 w-7 rounded-lg border-none"
+        className="h-7 w-7 fixed right-4 rounded-lg border-none"
         variant="outline"
         onClick={() => removeProduct(product.id)}
       >

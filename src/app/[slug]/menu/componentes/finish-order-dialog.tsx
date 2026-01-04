@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ConsumptionMethod } from "@prisma/client";
-import { loadStripe } from "@stripe/stripe-js";
-import { Loader2Icon } from "lucide-react";
-import { useParams, useSearchParams } from "next/navigation";
-import { useContext, useTransition } from "react";
-import { useForm } from "react-hook-form";
-import { PatternFormat } from "react-number-format";
-import { z } from "zod";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ConsumptionMethod } from '@prisma/client';
+import { Loader2Icon } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useContext, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { PatternFormat } from 'react-number-format';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Drawer,
   DrawerClose,
@@ -20,7 +20,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer"; //Vindo de shadcn@2.3.0 add drawer
+} from '@/components/ui/drawer'; //Vindo de shadcn@2.3.0 add drawer
 import {
   Form,
   FormControl,
@@ -28,18 +28,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 
-import { createStripeCheckout } from "../actions/create-checkout-stripe";
-import { createOrder } from "../actions/create-order";
-import { CartContext } from "../context/cart";
-import { isValidCpf } from "../helpers/cpf";
+import { createOrder } from '../actions/create-order';
+import { CartContext } from '../context/cart';
+import { isValidCpf } from '../helpers/cpf';
 
 const formSchema = z.object({
   //z é um formulário já pronto e seguro
   name: z.string().trim().min(1, {
-    message: "O nome é obrigatório!",
+    message: 'O nome é obrigatório!',
   }),
   //trim tira os espaços se houve e min determina qual o minimo de caractere necessário para ser aceito
   //Message é o erro que será exibido caso estiver inválido
@@ -47,11 +46,11 @@ const formSchema = z.object({
     .string()
     .trim()
     .min(11, {
-      message: "O CPF é obrigatório!",
+      message: 'O CPF é obrigatório!',
     })
     .refine((value) => isValidCpf(value), {
       //refine eu uso para adicionar mais regrass
-      message: "CPF inválido!",
+      message: 'CPF inválido!',
     }),
 });
 
@@ -67,20 +66,21 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   //Pega o schema e usa como interface para eu usar na validação
 
   const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
 
-  const { products } = useContext(CartContext);
+  const { products, clearCart } = useContext(CartContext);
   //Vai no meu contexto e pega os produtos já salvos
 
   const searchParams = useSearchParams();
 
-  const [isPeding] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       //defaultValues diz com o que os campos irão começar
-      name: "",
-      cpf: "",
+      name: '',
+      cpf: '',
     },
     shouldUnregister: true,
     //shouldUnregister diz que quando parar de renderizar os campos para de funcionar
@@ -89,14 +89,20 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   const onSubmit = async (data: FormSchema) => {
     //Só executa caso o formulário seja valido
 
+    if (products.length === 0) {
+      toast.error('O carrinho está vazio');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
       const consumptionMethod = searchParams.get(
-        "consumptionMethod"
+        'consumptionMethod'
       ) as ConsumptionMethod;
       //Pega meu consumptionMethod da URL e trás para const
 
-      //Pega a const que possui useTransition e faz que enquanto esses dados é enviado ao servidor ela descreve como "está em transição"
-      const order = await createOrder({
+      await createOrder({
         consumptionMethod,
         customerCpf: data.cpf,
         customerName: data.name,
@@ -104,20 +110,22 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         slug,
       });
 
-      const { sessionId } = await createStripeCheckout({
-        products,
-        orderId: order.id,
-      });
+      toast.success('Pedido criado com sucesso!');
+      clearCart();
+      form.reset();
+      onOpenChange(false);
 
-      if (!process.env.NEXT_PUBLIC_PUBLIC_KEY) return;
-
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_PUBLIC_KEY);
-
-      stripe?.redirectToCheckout({
-        sessionId: sessionId,
-      });
+      // Redirecionar para a página de pedidos
+      router.push(`/${slug}/orders?cpf=${data.cpf.replace(/\D/g, '')}`);
     } catch (error) {
-      console.log(`Error: ${error}`);
+      console.error('Error creating order:', error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao criar pedido. Tente novamente.'
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -129,9 +137,9 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>
-              {isPeding && <Loader2Icon className="animate-spin " />}
-              {/* && neste caso se diz o seguinte "se isPeding for verdadeiro faça isto" "se não for simplismente ele não executa" */}
+            <DrawerTitle className="flex items-center justify-center gap-2">
+              {isLoading && <Loader2Icon className="animate-spin h-4 w-4" />}
+              {/* && neste caso se diz o seguinte "se isLoading for verdadeiro faça isto" "se não for simplismente ele não executa" */}
               Finalizar pedido
             </DrawerTitle>
             <DrawerDescription>
@@ -180,9 +188,9 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                   <Button
                     type="submit"
                     className="rounded-full"
-                    disabled={isPeding}
+                    disabled={isLoading}
                   >
-                    Finalizar
+                    {isLoading ? 'Criando pedido...' : 'Finalizar'}
                   </Button>
 
                   <DrawerClose asChild>

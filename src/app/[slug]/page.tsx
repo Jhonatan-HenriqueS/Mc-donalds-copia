@@ -1,9 +1,9 @@
-import Image from "next/image";
-import { notFound } from "next/navigation";
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
 
-import { db } from "@/lib/prisma";
+import { db } from '@/lib/prisma';
 
-import ConsumptionMethodOPtion from "./Components/consumption-method-option";
+import ConsumptionMethodOPtion from './Components/consumption-method-option';
 
 interface RestaurantPageProps {
   params: Promise<{ slug: string }>;
@@ -29,14 +29,14 @@ const RestaurantPage = async ({ params }: RestaurantPageProps) => {
         {/* Obrigatório largura e altura */}
         <h2 className="font-semibold">{restaurant?.name}</h2>
       </div>
-      <div className="pt-24 text-center space-y-2">
+      <div className="pt-12 text-center space-y-2">
         <h3 className="text-2x1 font-semibold">Seja Bem-vindo</h3>
         <p className="opacity-55">
           Escolha como prefere aproveitar sua refeição <br />
           Estamos aqui para oferecer praticidade e fechar cada detalhe
         </p>
       </div>
-      <div className="pt-14 grid grid-cols-2">
+      <div className="pt-14 grid grid-cols-2 gap-4">
         <ConsumptionMethodOPtion
           option="DINE_IN"
           slug={slug}

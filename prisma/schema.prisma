@@ -18,18 +18,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id          String       @id @default(uuid())
+  name        String
+  email       String       @unique
+  password    String
+  restaurants Restaurant[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model PaymentRestaurant {
+  id           String                  @id @default(uuid())
+  restaurant   Restaurant              @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId String
+  status       PaymentRestaurantStatus
+  createdAt    DateTime                @default(now())
+  updateAt     DateTime                @updatedAt
+}
+
 model Restaurant {
-  id             String         @id @default(uuid())
-  name           String
-  slug           String         @unique
-  description    String
-  avatarImageUrl String
-  coverImageUrl  String
-  menuCategorias MenuCategory[] //Não salva no bd, mas referencia
-  products       Product[]
-  orders         Order[]
-  createdAt      DateTime       @default(now())
-  updateAt       DateTime       @updatedAt
+  id                 String              @id @default(uuid())
+  name               String
+  slug               String              @unique
+  description        String
+  avatarImageUrl     String
+  coverImageUrl      String
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menuCategorias     MenuCategory[] //Não salva no bd, mas referencia
+  products           Product[]
+  orders             Order[]
+  createdAt          DateTime            @default(now())
+  updateAt           DateTime            @updatedAt
+  paymentRestaurants PaymentRestaurant[]
 }
 
 model MenuCategory {
@@ -98,4 +120,20 @@ enum OrderStatus {
 enum ConsumptionMethod {
   TAKEANAY
   DINE_IN
+}
+
+enum PaymentRestaurantStatus {
+  CONFIRMED
+  FAILED
+  PENDING
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  WARNING_3_DAYS
+  WARNING_2_DAYS
+  WARNING_1_DAY
+  EXPIRED
+  GRACE_PERIOD
+  INACTIVE
 }
