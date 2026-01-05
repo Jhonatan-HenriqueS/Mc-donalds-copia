@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 
 import { db } from '@/lib/prisma';
 
+import { createSession } from './session';
+
 interface LoginInput {
   email: string;
   password: string;
@@ -38,6 +40,12 @@ export const login = async (input: LoginInput) => {
         createdAt: 'desc',
       },
     });
+
+    // Criar sessão
+    const sessionResult = await createSession(user.id);
+    if (!sessionResult.success) {
+      return { success: false, error: 'Erro ao criar sessão' };
+    }
 
     // Se não houver restaurante, redirecionar para criar
     if (restaurants.length === 0) {

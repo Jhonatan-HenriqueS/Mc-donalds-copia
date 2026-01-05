@@ -2,6 +2,8 @@
 
 import { db } from '@/lib/prisma';
 
+import { createSession } from './session';
+
 interface CreateRestaurantInput {
   name: string;
   slug: string;
@@ -50,6 +52,9 @@ export const createRestaurant = async (input: CreateRestaurantInput) => {
         userId: input.userId,
       },
     });
+
+    // Criar sessão após criar restaurante
+    await createSession(input.userId);
 
     return { success: true, restaurant };
   } catch (error) {

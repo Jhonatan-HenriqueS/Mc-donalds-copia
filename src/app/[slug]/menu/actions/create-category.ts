@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { verifyRestaurantOwner } from '@/app/actions/session';
 import { db } from '@/lib/prisma';
 
 interface CreateCategoryInput {
@@ -11,6 +12,15 @@ interface CreateCategoryInput {
 
 export const createCategory = async (input: CreateCategoryInput) => {
   try {
+    // Verificar se o usuário está autenticado e é dono do restaurante
+    const isOwner = await verifyRestaurantOwner(input.restaurantId);
+    if (!isOwner) {
+      return {
+        success: false,
+        error: 'Acesso negado. Você não tem permissão para criar categorias.',
+      };
+    }
+
     // Verificar se o restaurante existe
     const restaurant = await db.restaurant.findUnique({
       where: {

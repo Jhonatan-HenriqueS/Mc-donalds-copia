@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { verifyRestaurantOwner } from '@/app/actions/session';
 import { db } from '@/lib/prisma';
 
 interface CreateProductInput {
@@ -16,6 +17,15 @@ interface CreateProductInput {
 
 export const createProduct = async (input: CreateProductInput) => {
   try {
+    // Verificar se o usuário está autenticado e é dono do restaurante
+    const isOwner = await verifyRestaurantOwner(input.restaurantId);
+    if (!isOwner) {
+      return {
+        success: false,
+        error: 'Acesso negado. Você não tem permissão para criar produtos.',
+      };
+    }
+
     // Verificar se a categoria existe
     const category = await db.menuCategory.findUnique({
       where: {

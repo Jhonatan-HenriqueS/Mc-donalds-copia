@@ -1,7 +1,7 @@
 'use client';
 
 import { Prisma } from '@prisma/client';
-import { ClockIcon, Settings } from 'lucide-react';
+import { ClockIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useContext, useState } from 'react';
 
@@ -10,7 +10,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { formatCurrency } from '@/helpers/format-currency';
 
 import { CartContext } from '../context/cart';
-import AdminSheet from './admin-sheet';
+import AdminButton from './admin-button';
 import CartSheet from './cart-sheet';
 import Products from './products';
 
@@ -35,7 +35,6 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
   const [selectedCategory, setSelectedCategory] =
     useState<MenuCategoriesMithProducts>(restaurant.menuCategorias[0]);
   //Assim que entra no site o primeiro a aparecer é a primeira categoria
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
 
   const { products, total, taggleCart, totalQuantity } =
     useContext(CartContext);
@@ -64,16 +63,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
             <p className="text-xs opacity-55">{restaurant.description}</p>
           </div>
 
-          <div className="absolute right-4">
-            <Button
-              variant="secondary"
-              size="icon"
-              className="rounded-full"
-              onClick={() => setIsAdminOpen(true)}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
+          <AdminButton restaurant={restaurant} />
 
           <div></div>
         </div>
@@ -129,11 +119,6 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
           <CartSheet />
         </div>
       )}
-      <AdminSheet
-        isOpen={isAdminOpen}
-        onOpenChange={setIsAdminOpen}
-        restaurant={restaurant}
-      />
     </div>
   );
 };

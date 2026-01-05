@@ -1,12 +1,17 @@
 'use client';
 
 import { Prisma } from '@prisma/client';
-import { ImageIcon, Plus } from 'lucide-react';
+import { ImageIcon, LogOut, Plus, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { logout } from '@/app/actions/logout';
 import { createCategory } from '@/app/[slug]/menu/actions/create-category';
 import { createProduct } from '@/app/[slug]/menu/actions/create-product';
+import { getCustomers } from '@/app/[slug]/menu/actions/get-customers';
+import { formatCpf } from '@/app/[slug]/menu/helpers/format-cpf';
+import { formatCurrency } from '@/helpers/format-currency';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,9 +41,23 @@ interface AdminSheetProps {
   }>;
 }
 
+interface Customer {
+  name: string;
+  cpf: string;
+  lastOrderDate: Date;
+  totalSpent: number;
+  totalSpentThisMonth: number;
+}
+
 const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
+  const router = useRouter();
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [showCustomers, setShowCustomers] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
+  const [totalMonthRevenue, setTotalMonthRevenue] = useState(0);
+  const [viewMode, setViewMode] = useState<'total' | 'month'>('total');
   const [categories, setCategories] = useState(restaurant.menuCategorias);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
@@ -190,6 +209,26 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     }
   };
 
+  const handleShowCustomers = async () => {
+    setShowCustomers(true);
+    setIsLoadingCustomers(true);
+
+    try {
+      const result = await getCustomers(restaurant.id);
+      if (result.success) {
+        setCustomers(result.customers);
+        setTotalMonthRevenue(result.totalMonthRevenue || 0);
+      } else {
+        toast.error(result.error || 'Erro ao carregar clientes');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      toast.error('Erro ao buscar clientes');
+    } finally {
+      setIsLoadingCustomers(false);
+    }
+  };
+
   const handleCategorySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCategoryError(undefined);
@@ -225,13 +264,13 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[60%] sm:max-w-[60%]">
+      <SheetContent className="w-[90%] sm:max-w-[90%]">
         <SheetHeader>
           <SheetTitle className="text-start">Painel Admin</SheetTitle>
           <SheetDescription></SheetDescription>
         </SheetHeader>
         <div className="py-5 flex flex-col h-full">
-          {!showAddProduct && !showAddCategory ? (
+          {!showAddProduct && !showAddCategory && !showCustomers ? (
             <div className="flex-auto flex flex-col gap-4">
               <Button
                 onClick={() => setShowAddCategory(true)}
@@ -247,6 +286,31 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar Produto
               </Button>
+              <Button
+                onClick={handleShowCustomers}
+                className="w-full"
+                variant="outline"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Ver Clientes
+              </Button>
+              <div className="mt-auto pt-4 border-t">
+                <Button
+                  onClick={async () => {
+                    const result = await logout();
+                    if (result.success) {
+                      router.push('/');
+                    } else {
+                      toast.error('Erro ao fazer logout');
+                    }
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </Button>
+              </div>
             </div>
           ) : showAddCategory ? (
             <div className="flex-auto overflow-y-auto">
@@ -302,6 +366,107 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       </Button>
                     </div>
                   </form>
+                </CardContent>
+              </Card>
+            </div>
+          ) : showCustomers ? (
+            <div className="flex-auto overflow-y-auto">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Clientes</CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowCustomers(false);
+                        setCustomers([]);
+                        setTotalMonthRevenue(0);
+                        setViewMode('total');
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingCustomers ? (
+                    <div className="flex items-center justify-center py-10">
+                      <p className="text-sm text-muted-foreground">
+                        Carregando clientes...
+                      </p>
+                    </div>
+                  ) : customers.length === 0 ? (
+                    <div className="flex items-center justify-center py-10">
+                      <p className="text-sm text-muted-foreground">
+                        Nenhum cliente encontrado
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Seletor de visualização e total do mês */}
+                      <div className="flex items-center justify-between gap-4 p-3 bg-muted rounded-lg">
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={viewMode === 'total' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setViewMode('total')}
+                          >
+                            Total Gasto
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={viewMode === 'month' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setViewMode('month')}
+                          >
+                            Total do Mês
+                          </Button>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">
+                            Total ganho no mês
+                          </p>
+                          <p className="font-semibold text-lg">
+                            {formatCurrency(totalMonthRevenue)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Lista de clientes */}
+                      <div className="space-y-3">
+                        {customers.map((customer, index) => (
+                          <div
+                            key={`${customer.cpf}-${index}`}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium">{customer.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatCpf(customer.cpf)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold">
+                                {formatCurrency(
+                                  viewMode === 'total'
+                                    ? customer.totalSpent
+                                    : customer.totalSpentThisMonth
+                                )}
+                              </p>
+                              {viewMode === 'month' && customer.totalSpentThisMonth === 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  Sem pedidos este mês
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
