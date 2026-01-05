@@ -6,12 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { logout } from '@/app/actions/logout';
 import { createCategory } from '@/app/[slug]/menu/actions/create-category';
 import { createProduct } from '@/app/[slug]/menu/actions/create-product';
 import { getCustomers } from '@/app/[slug]/menu/actions/get-customers';
 import { formatCpf } from '@/app/[slug]/menu/helpers/format-cpf';
-import { formatCurrency } from '@/helpers/format-currency';
+import { logout } from '@/app/actions/logout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,6 +29,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { formatCurrency } from '@/helpers/format-currency';
 
 interface AdminSheetProps {
   isOpen: boolean;
@@ -410,7 +410,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         <div className="flex gap-2">
                           <Button
                             type="button"
-                            variant={viewMode === 'total' ? 'default' : 'outline'}
+                            variant={
+                              viewMode === 'total' ? 'default' : 'outline'
+                            }
                             size="sm"
                             onClick={() => setViewMode('total')}
                           >
@@ -418,7 +420,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                           </Button>
                           <Button
                             type="button"
-                            variant={viewMode === 'month' ? 'default' : 'outline'}
+                            variant={
+                              viewMode === 'month' ? 'default' : 'outline'
+                            }
                             size="sm"
                             onClick={() => setViewMode('month')}
                           >
@@ -456,11 +460,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     : customer.totalSpentThisMonth
                                 )}
                               </p>
-                              {viewMode === 'month' && customer.totalSpentThisMonth === 0 && (
-                                <p className="text-xs text-muted-foreground">
-                                  Sem pedidos este mês
-                                </p>
-                              )}
+                              {viewMode === 'month' &&
+                                customer.totalSpentThisMonth === 0 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Sem pedidos este mês
+                                  </p>
+                                )}
                             </div>
                           </div>
                         ))}
