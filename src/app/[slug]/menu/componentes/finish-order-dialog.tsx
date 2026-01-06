@@ -5,6 +5,7 @@ import { ConsumptionMethod } from '@prisma/client';
 import { Loader2Icon } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useContext, useState } from 'react';
+import type { Control } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 import { PatternFormat } from 'react-number-format';
 import { toast } from 'sonner';
@@ -35,13 +36,10 @@ import { createOrder } from '../actions/create-order';
 import { CartContext } from '../context/cart';
 import { isValidCpf } from '../helpers/cpf';
 
-const formSchema = z.object({
-  //z é um formulário já pronto e seguro
+const baseFormSchema = z.object({
   name: z.string().trim().min(1, {
     message: 'O nome é obrigatório!',
   }),
-  //trim tira os espaços se houve e min determina qual o minimo de caractere necessário para ser aceito
-  //Message é o erro que será exibido caso estiver inválido
   cpf: z
     .string()
     .trim()
@@ -49,13 +47,31 @@ const formSchema = z.object({
       message: 'O CPF é obrigatório!',
     })
     .refine((value) => isValidCpf(value), {
-      //refine eu uso para adicionar mais regrass
       message: 'CPF inválido!',
     }),
 });
 
-type FormSchema = z.infer<typeof formSchema>;
-//Cria a interface de formSchema
+const takeawayFormSchema = baseFormSchema.extend({
+  deliveryStreet: z.string().trim().min(1, {
+    message: 'A rua é obrigatória!',
+  }),
+  deliveryNumber: z.string().trim().min(1, {
+    message: 'O número é obrigatório!',
+  }),
+  deliveryComplement: z.string().trim().optional(),
+  deliveryNeighborhood: z.string().trim().min(1, {
+    message: 'O bairro é obrigatório!',
+  }),
+  deliveryCity: z.string().trim().min(1, {
+    message: 'A cidade é obrigatória!',
+  }),
+  deliveryState: z.string().trim().min(2, {
+    message: 'O estado é obrigatório!',
+  }),
+});
+
+type BaseFormSchema = z.infer<typeof baseFormSchema>;
+type TakeawayFormSchema = z.infer<typeof takeawayFormSchema>;
 
 interface FinishOrderDialogProps {
   open: boolean;
@@ -63,32 +79,47 @@ interface FinishOrderDialogProps {
 }
 
 const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
-  //Pega o schema e usa como interface para eu usar na validação
-
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
 
   const { products, clearCart } = useContext(CartContext);
-  //Vai no meu contexto e pega os produtos já salvos
 
   const searchParams = useSearchParams();
+  const consumptionMethod = searchParams.get(
+    'consumptionMethod'
+  ) as ConsumptionMethod;
+  const isTakeaway = consumptionMethod === 'TAKEANAY';
 
   const [isLoading, setIsLoading] = useState(false);
 
+  const formSchema = isTakeaway ? takeawayFormSchema : baseFormSchema;
+  type FormSchema = typeof isTakeaway extends true
+    ? TakeawayFormSchema
+    : BaseFormSchema;
+
+  const defaultValues = isTakeaway
+    ? ({
+        name: '',
+        cpf: '',
+        deliveryStreet: '',
+        deliveryNumber: '',
+        deliveryComplement: '',
+        deliveryNeighborhood: '',
+        deliveryCity: '',
+        deliveryState: '',
+      } satisfies TakeawayFormSchema)
+    : ({
+        name: '',
+        cpf: '',
+      } satisfies BaseFormSchema);
+
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      //defaultValues diz com o que os campos irão começar
-      name: '',
-      cpf: '',
-    },
+    defaultValues: defaultValues as FormSchema,
     shouldUnregister: true,
-    //shouldUnregister diz que quando parar de renderizar os campos para de funcionar
   });
 
   const onSubmit = async (data: FormSchema) => {
-    //Só executa caso o formulário seja valido
-
     if (products.length === 0) {
       toast.error('O carrinho está vazio');
       return;
@@ -97,18 +128,31 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     setIsLoading(true);
 
     try {
-      const consumptionMethod = searchParams.get(
-        'consumptionMethod'
-      ) as ConsumptionMethod;
-      //Pega meu consumptionMethod da URL e trás para const
-
-      await createOrder({
-        consumptionMethod,
-        customerCpf: data.cpf,
-        customerName: data.name,
-        products,
-        slug,
-      });
+      if (isTakeaway) {
+        const takeawayData = data as TakeawayFormSchema;
+        await createOrder({
+          consumptionMethod,
+          customerCpf: takeawayData.cpf,
+          customerName: takeawayData.name,
+          products,
+          slug,
+          deliveryStreet: takeawayData.deliveryStreet,
+          deliveryNumber: takeawayData.deliveryNumber,
+          deliveryComplement: takeawayData.deliveryComplement || '',
+          deliveryNeighborhood: takeawayData.deliveryNeighborhood,
+          deliveryCity: takeawayData.deliveryCity,
+          deliveryState: takeawayData.deliveryState,
+        });
+      } else {
+        const baseData = data as BaseFormSchema;
+        await createOrder({
+          consumptionMethod,
+          customerCpf: baseData.cpf,
+          customerName: baseData.name,
+          products,
+          slug,
+        });
+      }
 
       toast.success('Pedido criado com sucesso!');
       clearCart();
@@ -176,7 +220,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                         <PatternFormat
                           placeholder="Digite seu CPF..."
                           format="###.###.###-##"
-                          customInput={Input} //Vai ter a customização do Input normal
+                          customInput={Input}
                           {...field}
                         />
                       </FormControl>
@@ -184,6 +228,133 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                     </FormItem>
                   )}
                 />
+
+                {isTakeaway && (
+                  <>
+                    <div className="border-t pt-4">
+                      <h3 className="font-semibold mb-4">
+                        Endereço de Entrega
+                      </h3>
+                    </div>
+
+                    <FormField
+                      control={
+                        form.control as unknown as Control<TakeawayFormSchema>
+                      }
+                      name="deliveryStreet"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Rua</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Digite o nome da rua..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage></FormMessage>
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={
+                          form.control as unknown as Control<TakeawayFormSchema>
+                        }
+                        name="deliveryNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Número</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Número..." {...field} />
+                            </FormControl>
+                            <FormMessage></FormMessage>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={
+                          form.control as unknown as Control<TakeawayFormSchema>
+                        }
+                        name="deliveryComplement"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Complemento (opcional)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Apto, bloco..." {...field} />
+                            </FormControl>
+                            <FormMessage></FormMessage>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={
+                        form.control as unknown as Control<TakeawayFormSchema>
+                      }
+                      name="deliveryNeighborhood"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Bairro</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Digite o bairro..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage></FormMessage>
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={
+                          form.control as unknown as Control<TakeawayFormSchema>
+                        }
+                        name="deliveryCity"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Cidade</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Digite a cidade..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage></FormMessage>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={
+                          form.control as unknown as Control<TakeawayFormSchema>
+                        }
+                        name="deliveryState"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Estado</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="UF"
+                                maxLength={2}
+                                {...field}
+                                onChange={(e) =>
+                                  field.onChange(e.target.value.toUpperCase())
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage></FormMessage>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </>
+                )}
+
                 <DrawerFooter>
                   <Button
                     type="submit"

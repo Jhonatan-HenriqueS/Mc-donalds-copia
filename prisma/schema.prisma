@@ -83,18 +83,25 @@ model Product {
 }
 
 model Order {
-  id                Int               @id @default(autoincrement())
+  id                   Int               @id @default(autoincrement())
   //Cada pedido vai ter uma ordem, caso o primeiro esteja com id 1, o segundo recebe 2, e assim por diante, vai se complementando  
-  total             Float
-  status            OrderStatus
-  consumptionMethod ConsumptionMethod
-  orderProducts     OrderProduct[]
-  restaurant        Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  restaurantId      String
-  customerName      String
-  customerCpf       String
-  createdAt         DateTime          @default(now())
-  updateAt          DateTime          @updatedAt
+  total                Float
+  status               OrderStatus
+  consumptionMethod    ConsumptionMethod
+  orderProducts        OrderProduct[]
+  restaurant           Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId         String
+  customerName         String
+  customerCpf          String
+  deliveryStreet       String?
+  deliveryNumber       String?
+  deliveryComplement   String?
+  deliveryNeighborhood String?
+  deliveryCity         String?
+  deliveryState        String?
+  deliveryZipCode      String?
+  createdAt            DateTime          @default(now())
+  updateAt             DateTime          @updatedAt
 }
 
 model OrderProduct {
@@ -112,9 +119,8 @@ model OrderProduct {
 enum OrderStatus {
   PENDING
   IN_PREPARATION
-  PAYMENT_CONFIRMED
-  PAYMENT_FAILED
   FINISHED
+  OUT_FOR_DELIVERY
 }
 
 enum ConsumptionMethod {
@@ -136,4 +142,5 @@ enum SubscriptionStatus {
   EXPIRED
   GRACE_PERIOD
   INACTIVE
+  CANCELLED
 }

@@ -1,12 +1,12 @@
 //Vai usar server e client (back e front)
-"use server";
+'use server';
 
-import { ConsumptionMethod } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import { ConsumptionMethod, OrderStatus } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 
-import { db } from "@/lib/prisma";
+import { db } from '@/lib/prisma';
 
-import { removeCpfPunctuation } from "../helpers/cpf";
+import { removeCpfPunctuation } from '../helpers/cpf';
 
 interface createOrderInput {
   customerName: string;
@@ -18,6 +18,12 @@ interface createOrderInput {
   }>;
   consumptionMethod: ConsumptionMethod;
   slug: string;
+  deliveryStreet?: string;
+  deliveryNumber?: string;
+  deliveryComplement?: string;
+  deliveryNeighborhood?: string;
+  deliveryCity?: string;
+  deliveryState?: string;
 }
 
 export const createOrder = async (input: createOrderInput) => {
@@ -28,7 +34,7 @@ export const createOrder = async (input: createOrderInput) => {
   });
 
   if (!restaurant) {
-    throw new Error("Restaurant not Found!");
+    throw new Error('Restaurant not Found!');
   }
   const productsWithPrices = await db.product.findMany({
     where: {
@@ -45,23 +51,49 @@ export const createOrder = async (input: createOrderInput) => {
     price: productsWithPrices.find((p) => p.id === product.id)!.price,
   }));
 
-  const order = await db.order.create({
-    data: {
-      status: "PENDING",
-      customerName: input.customerName,
-      customerCpf: removeCpfPunctuation(input.customerCpf),
-      orderProducts: {
-        createMany: {
-          data: productsWithPricesQuantities,
-        },
+  const baseOrderData = {
+    status: 'PENDING' as OrderStatus,
+    customerName: input.customerName,
+    customerCpf: removeCpfPunctuation(input.customerCpf),
+    orderProducts: {
+      createMany: {
+        data: productsWithPricesQuantities,
       },
-      total: productsWithPricesQuantities.reduce(
-        (acc, product) => acc + product.price * product.quantity,
-        0
-      ),
-      consumptionMethod: input.consumptionMethod,
-      restaurantId: restaurant.id,
     },
+    total: productsWithPricesQuantities.reduce(
+      (acc, product) => acc + product.price * product.quantity,
+      0
+    ),
+    consumptionMethod: input.consumptionMethod,
+    restaurantId: restaurant.id,
+  };
+
+  // Criar dados da ordem com campos de endereço se for TAKEANAY
+  if (
+    input.consumptionMethod === 'TAKEANAY' &&
+    input.deliveryStreet &&
+    input.deliveryNumber &&
+    input.deliveryNeighborhood &&
+    input.deliveryCity &&
+    input.deliveryState
+  ) {
+    const order = await db.order.create({
+      data: {
+        ...baseOrderData,
+        deliveryStreet: input.deliveryStreet,
+        deliveryNumber: input.deliveryNumber,
+        deliveryComplement: input.deliveryComplement || null,
+        deliveryNeighborhood: input.deliveryNeighborhood,
+        deliveryCity: input.deliveryCity,
+        deliveryState: input.deliveryState,
+      },
+    });
+    revalidatePath(`/${input.slug}/orders`);
+    return order;
+  }
+
+  const order = await db.order.create({
+    data: baseOrderData,
   });
   revalidatePath(`/${input.slug}/orders`); //Sempre esse pedido vai ser guardado no servidor
   // redirect(

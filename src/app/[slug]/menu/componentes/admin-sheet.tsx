@@ -1,16 +1,41 @@
 'use client';
 
-import { Prisma } from '@prisma/client';
-import { ImageIcon, LogOut, Plus, Users } from 'lucide-react';
+import { OrderStatus, Prisma, Product } from '@prisma/client';
+import {
+  Bell,
+  Edit,
+  ImageIcon,
+  LogOut,
+  Package,
+  Plus,
+  Trash2,
+  Users,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { createCategory } from '@/app/[slug]/menu/actions/create-category';
 import { createProduct } from '@/app/[slug]/menu/actions/create-product';
+import { deleteCategory } from '@/app/[slug]/menu/actions/delete-category';
+import { deleteProduct } from '@/app/[slug]/menu/actions/delete-product';
 import { getCustomers } from '@/app/[slug]/menu/actions/get-customers';
+import { getOrders } from '@/app/[slug]/menu/actions/get-orders';
+import { getProducts } from '@/app/[slug]/menu/actions/get-products';
+import { updateOrderStatus } from '@/app/[slug]/menu/actions/update-order-status';
+import { updateProduct } from '@/app/[slug]/menu/actions/update-product';
 import { formatCpf } from '@/app/[slug]/menu/helpers/format-cpf';
 import { logout } from '@/app/actions/logout';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -49,16 +74,50 @@ interface Customer {
   totalSpentThisMonth: number;
 }
 
+type ProductWithCategory = Product & {
+  menuCategory: {
+    id: string;
+    name: string;
+  };
+};
+
 const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const router = useRouter();
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [showCustomers, setShowCustomers] = useState(false);
+  const [showManageProducts, setShowManageProducts] = useState(false);
+  const [showManageCategories, setShowManageCategories] = useState(false);
+  const [showOrders, setShowOrders] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<ProductWithCategory[]>([]);
+  const [orders, setOrders] = useState<
+    Array<
+      Prisma.OrderGetPayload<{
+        include: {
+          orderProducts: {
+            include: {
+              product: {
+                select: {
+                  name: true;
+                  imageUrl: true;
+                };
+              };
+            };
+          };
+        };
+      }>
+    >
+  >([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState<number | null>(null);
   const [totalMonthRevenue, setTotalMonthRevenue] = useState(0);
   const [viewMode, setViewMode] = useState<'total' | 'month'>('total');
   const [categories, setCategories] = useState(restaurant.menuCategorias);
+  const [lastOrderCount, setLastOrderCount] = useState(0);
+  const [hasNewOrders, setHasNewOrders] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -71,6 +130,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingProduct, setEditingProduct] =
+    useState<ProductWithCategory | null>(null);
+  const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
+  const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
   const [errors, setErrors] = useState<{
     name?: string;
     description?: string;
@@ -173,18 +238,38 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         .map((ing) => ing.trim())
         .filter((ing) => ing.length > 0);
 
-      const result = await createProduct({
-        name: name.trim(),
-        description: description.trim(),
-        price: Number(price),
-        imageUrl: imageUrl.trim(),
-        ingredients: ingredientsArray,
-        menuCategoryId,
-        restaurantId: restaurant.id,
-      });
+      let result;
+      if (editingProduct) {
+        // Atualizar produto existente
+        result = await updateProduct({
+          id: editingProduct.id,
+          name: name.trim(),
+          description: description.trim(),
+          price: Number(price),
+          imageUrl: imageUrl.trim(),
+          ingredients: ingredientsArray,
+          menuCategoryId,
+          restaurantId: restaurant.id,
+        });
+      } else {
+        // Criar novo produto
+        result = await createProduct({
+          name: name.trim(),
+          description: description.trim(),
+          price: Number(price),
+          imageUrl: imageUrl.trim(),
+          ingredients: ingredientsArray,
+          menuCategoryId,
+          restaurantId: restaurant.id,
+        });
+      }
 
       if (result.success) {
-        toast.success('Produto criado com sucesso!');
+        toast.success(
+          editingProduct
+            ? 'Produto atualizado com sucesso!'
+            : 'Produto criado com sucesso!'
+        );
         // Limpar formulário
         setName('');
         setDescription('');
@@ -193,11 +278,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         setMenuCategoryId('');
         setImageUrl('');
         setImagePreview(null);
+        setEditingProduct(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
         setShowAddProduct(false);
-        // Recarregar a página para mostrar o novo produto
+        // Recarregar a página para mostrar as mudanças
         window.location.reload();
       } else {
         toast.error(result.error || 'Erro ao criar produto');
@@ -226,6 +312,84 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       toast.error('Erro ao buscar clientes');
     } finally {
       setIsLoadingCustomers(false);
+    }
+  };
+
+  const handleShowProducts = async () => {
+    setShowManageProducts(true);
+    setIsLoadingProducts(true);
+
+    try {
+      const result = await getProducts(restaurant.id);
+      if (result.success && result.products) {
+        setProducts(result.products);
+      } else {
+        toast.error(result.error || 'Erro ao carregar produtos');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar produtos:', error);
+      toast.error('Erro ao buscar produtos');
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
+  const handleEditProduct = (product: ProductWithCategory) => {
+    setEditingProduct(product);
+    setName(product.name);
+    setDescription(product.description);
+    setPrice(product.price.toString());
+    setIngredients(product.ingredients.join(', '));
+    setMenuCategoryId(product.menuCategoryId);
+    setImageUrl(product.imageUrl);
+    setImagePreview(product.imageUrl);
+    setShowManageProducts(false);
+    setShowAddProduct(true);
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!deleteProductId) return;
+
+    setIsDeletingProduct(true);
+    try {
+      const result = await deleteProduct(deleteProductId, restaurant.id);
+      if (result.success) {
+        toast.success('Produto excluído com sucesso!');
+        setProducts((prev) => prev.filter((p) => p.id !== deleteProductId));
+        setDeleteProductId(null);
+        // Recarregar a página para atualizar o menu
+        window.location.reload();
+      } else {
+        toast.error(result.error || 'Erro ao excluir produto');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir produto:', error);
+      toast.error('Erro ao excluir produto');
+    } finally {
+      setIsDeletingProduct(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!deleteCategoryId) return;
+
+    setIsDeletingCategory(true);
+    try {
+      const result = await deleteCategory(deleteCategoryId, restaurant.id);
+      if (result.success) {
+        toast.success('Categoria excluída com sucesso!');
+        setCategories((prev) => prev.filter((c) => c.id !== deleteCategoryId));
+        setDeleteCategoryId(null);
+        // Recarregar a página para atualizar o menu
+        window.location.reload();
+      } else {
+        toast.error(result.error || 'Erro ao excluir categoria');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir categoria:', error);
+      toast.error('Erro ao excluir categoria');
+    } finally {
+      setIsDeletingCategory(false);
     }
   };
 
@@ -262,37 +426,190 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     }
   };
 
+  const handleShowOrders = async () => {
+    setShowOrders(true);
+    setIsLoadingOrders(true);
+    setHasNewOrders(false);
+
+    try {
+      const result = await getOrders(restaurant.id);
+      if (result.success && result.orders) {
+        setOrders(result.orders);
+        setLastOrderCount(result.orders.length);
+      } else {
+        toast.error(result.error || 'Erro ao carregar pedidos');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar pedidos:', error);
+      toast.error('Erro ao buscar pedidos');
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (
+    orderId: number,
+    newStatus: OrderStatus
+  ) => {
+    setIsUpdatingStatus(orderId);
+    try {
+      const result = await updateOrderStatus(orderId, restaurant.id, newStatus);
+      if (result.success) {
+        toast.success('Status do pedido atualizado com sucesso!');
+        // Atualizar o pedido na lista local
+        setOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+      } else {
+        toast.error(result.error || 'Erro ao atualizar status do pedido');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status do pedido:', error);
+      toast.error('Erro ao atualizar status do pedido');
+    } finally {
+      setIsUpdatingStatus(null);
+    }
+  };
+
+  // Polling para verificar novos pedidos
+  useEffect(() => {
+    if (!isOpen || !showOrders) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const result = await getOrders(restaurant.id);
+        if (result.success && result.orders) {
+          const newCount = result.orders.length;
+          if (newCount > lastOrderCount) {
+            setHasNewOrders(true);
+            toast.info(`Novo pedido recebido! Total: ${newCount}`);
+            setOrders(result.orders);
+            setLastOrderCount(newCount);
+          } else {
+            setOrders(result.orders);
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar novos pedidos:', error);
+      }
+    }, 5000); // Verifica a cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [isOpen, showOrders, restaurant.id, lastOrderCount]);
+
+  const getStatusLabel = (status: OrderStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return 'Pendente';
+      case 'IN_PREPARATION':
+        return 'Em Preparo';
+      case 'FINISHED':
+        return 'Finalizado';
+      case 'OUT_FOR_DELIVERY':
+        return 'Enviado para Entrega';
+      default:
+        return status;
+    }
+  };
+
+  const getStatusColor = (status: OrderStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'IN_PREPARATION':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'FINISHED':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'OUT_FOR_DELIVERY':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
+  const formatDateTime = (date: Date) => {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(date));
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[90%] sm:max-w-[90%]">
+      <SheetContent className="w-[90%] lg:min-w-[40%]">
         <SheetHeader>
-          <SheetTitle className="text-start">Painel Admin</SheetTitle>
+          <SheetTitle className="text-start text-lg sm:text-xl">
+            Painel Admin
+          </SheetTitle>
           <SheetDescription></SheetDescription>
         </SheetHeader>
-        <div className="py-5 flex flex-col h-full">
-          {!showAddProduct && !showAddCategory && !showCustomers ? (
-            <div className="flex-auto flex flex-col gap-4">
+        <div className="py-4 sm:py-5 flex flex-col h-full">
+          {!showAddProduct &&
+          !showAddCategory &&
+          !showCustomers &&
+          !showManageProducts &&
+          !showManageCategories &&
+          !showOrders ? (
+            <div className="flex-auto flex flex-col gap-3 sm:gap-4">
               <Button
                 onClick={() => setShowAddCategory(true)}
-                className="w-full"
+                className="w-full text-sm sm:text-base"
+                size="lg"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar Categoria
               </Button>
               <Button
                 onClick={() => setShowAddProduct(true)}
-                className="w-full"
+                className="w-full text-sm sm:text-base"
+                size="lg"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar Produto
               </Button>
               <Button
-                onClick={handleShowCustomers}
-                className="w-full"
+                onClick={handleShowProducts}
+                className="w-full text-sm sm:text-base"
                 variant="outline"
+                size="lg"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Gerenciar Produtos
+              </Button>
+              <Button
+                onClick={() => setShowManageCategories(true)}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Gerenciar Categorias
+              </Button>
+              <Button
+                onClick={handleShowCustomers}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
               >
                 <Users className="mr-2 h-4 w-4" />
                 Ver Clientes
+              </Button>
+              <Button
+                onClick={handleShowOrders}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
+              >
+                <Package className="mr-2 h-4 w-4" />
+                Pedidos
+                {hasNewOrders && (
+                  <Bell className="ml-2 h-4 w-4 text-yellow-500 animate-pulse" />
+                )}
               </Button>
               <div className="mt-auto pt-4 border-t">
                 <Button
@@ -305,7 +622,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                     }
                   }}
                   variant="outline"
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
+                  size="lg"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair
@@ -313,20 +631,29 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               </div>
             </div>
           ) : showAddCategory ? (
-            <div className="flex-auto overflow-y-auto">
+            <div className="flex-auto overflow-y-auto pr-1">
               <Card>
-                <CardHeader>
-                  <CardTitle>Adicionar Categoria</CardTitle>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <CardTitle className="text-base sm:text-lg">
+                    Adicionar Categoria
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form className="space-y-4" onSubmit={handleCategorySubmit}>
                     <div className="space-y-2">
-                      <Label htmlFor="categoryName">Nome da Categoria</Label>
+                      <Label
+                        htmlFor="categoryName"
+                        className="text-sm sm:text-base"
+                      >
+                        Nome da Categoria
+                      </Label>
                       <Input
                         id="categoryName"
                         type="text"
                         placeholder="Digite o nome da categoria"
-                        className={categoryError ? 'border-destructive' : ''}
+                        className={`text-sm sm:text-base ${
+                          categoryError ? 'border-destructive' : ''
+                        }`}
                         value={categoryName}
                         onChange={(e) => {
                           setCategoryName(e.target.value);
@@ -337,17 +664,17 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         disabled={isLoadingCategory}
                       />
                       {categoryError && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-xs sm:text-sm text-destructive">
                           {categoryError}
                         </p>
                       )}
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Button
                         type="button"
                         variant="outline"
-                        className="flex-1"
+                        className="flex-1 text-sm sm:text-base"
                         onClick={() => {
                           setShowAddCategory(false);
                           setCategoryName('');
@@ -359,7 +686,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       </Button>
                       <Button
                         type="submit"
-                        className="flex-1"
+                        className="flex-1 text-sm sm:text-base"
                         disabled={isLoadingCategory}
                       >
                         {isLoadingCategory ? 'Criando...' : 'Criar Categoria'}
@@ -370,15 +697,18 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               </Card>
             </div>
           ) : showCustomers ? (
-            <div className="flex-auto overflow-y-auto">
+            <div className="flex-auto overflow-y-auto pr-1">
               <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Clientes</CardTitle>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Clientes
+                    </CardTitle>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
+                      className="text-xs sm:text-sm"
                       onClick={() => {
                         setShowCustomers(false);
                         setCustomers([]);
@@ -393,27 +723,28 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 <CardContent>
                   {isLoadingCustomers ? (
                     <div className="flex items-center justify-center py-10">
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         Carregando clientes...
                       </p>
                     </div>
                   ) : customers.length === 0 ? (
                     <div className="flex items-center justify-center py-10">
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         Nenhum cliente encontrado
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {/* Seletor de visualização e total do mês */}
-                      <div className="flex items-center justify-between gap-4 p-3 bg-muted rounded-lg">
-                        <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 p-3 bg-muted rounded-lg">
+                        <div className="flex gap-2 w-full sm:w-auto">
                           <Button
                             type="button"
                             variant={
                               viewMode === 'total' ? 'default' : 'outline'
                             }
                             size="sm"
+                            className="flex-1 sm:flex-initial text-xs sm:text-sm"
                             onClick={() => setViewMode('total')}
                           >
                             Total Gasto
@@ -424,36 +755,39 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               viewMode === 'month' ? 'default' : 'outline'
                             }
                             size="sm"
+                            className="flex-1 sm:flex-initial text-xs sm:text-sm"
                             onClick={() => setViewMode('month')}
                           >
                             Total do Mês
                           </Button>
                         </div>
-                        <div className="text-right">
+                        <div className="text-center sm:text-right">
                           <p className="text-xs text-muted-foreground">
                             Total ganho no mês
                           </p>
-                          <p className="font-semibold text-lg">
+                          <p className="font-semibold text-base sm:text-lg">
                             {formatCurrency(totalMonthRevenue)}
                           </p>
                         </div>
                       </div>
 
                       {/* Lista de clientes */}
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3">
                         {customers.map((customer, index) => (
                           <div
                             key={`${customer.cpf}-${index}`}
-                            className="flex items-center justify-between p-3 border rounded-lg"
+                            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 p-3 border rounded-lg"
                           >
-                            <div className="flex-1">
-                              <p className="font-medium">{customer.name}</p>
-                              <p className="text-sm text-muted-foreground">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm sm:text-base truncate">
+                                {customer.name}
+                              </p>
+                              <p className="text-xs sm:text-sm text-muted-foreground">
                                 {formatCpf(customer.cpf)}
                               </p>
                             </div>
-                            <div className="text-right">
-                              <p className="font-semibold">
+                            <div className="text-left sm:text-right w-full sm:w-auto">
+                              <p className="font-semibold text-sm sm:text-base">
                                 {formatCurrency(
                                   viewMode === 'total'
                                     ? customer.totalSpent
@@ -475,16 +809,49 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 </CardContent>
               </Card>
             </div>
-          ) : (
-            <div className="flex-auto overflow-y-auto">
+          ) : showAddProduct ? (
+            <div className="flex-auto overflow-y-auto pr-1">
               <Card>
-                <CardHeader>
-                  <CardTitle>Adicionar Produto</CardTitle>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      {editingProduct ? 'Editar Produto' : 'Adicionar Produto'}
+                    </CardTitle>
+                    {editingProduct && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs sm:text-sm"
+                        onClick={() => {
+                          setEditingProduct(null);
+                          setName('');
+                          setDescription('');
+                          setPrice('');
+                          setIngredients('');
+                          setMenuCategoryId('');
+                          setImageUrl('');
+                          setImagePreview(null);
+                          setErrors({});
+                        }}
+                      >
+                        Novo Produto
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <form className="space-y-4" onSubmit={handleSubmit}>
+                  <form
+                    className="space-y-3 sm:space-y-4"
+                    onSubmit={handleSubmit}
+                  >
                     <div className="space-y-2">
-                      <Label htmlFor="category">Categoria</Label>
+                      <Label
+                        htmlFor="category"
+                        className="text-sm sm:text-base"
+                      >
+                        Categoria
+                      </Label>
                       <Select
                         value={menuCategoryId}
                         onValueChange={(value) => {
@@ -499,9 +866,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         disabled={isLoading}
                       >
                         <SelectTrigger
-                          className={
+                          className={`text-sm sm:text-base ${
                             errors.menuCategoryId ? 'border-destructive' : ''
-                          }
+                          }`}
                         >
                           <SelectValue placeholder="Selecione a categoria" />
                         </SelectTrigger>
@@ -514,19 +881,23 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         </SelectContent>
                       </Select>
                       {errors.menuCategoryId && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-xs sm:text-sm text-destructive">
                           {errors.menuCategoryId}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="name">Nome</Label>
+                      <Label htmlFor="name" className="text-sm sm:text-base">
+                        Nome
+                      </Label>
                       <Input
                         id="name"
                         type="text"
                         placeholder="Digite o nome do produto"
-                        className={errors.name ? 'border-destructive' : ''}
+                        className={`text-sm sm:text-base ${
+                          errors.name ? 'border-destructive' : ''
+                        }`}
                         value={name}
                         onChange={(e) => {
                           setName(e.target.value);
@@ -537,21 +908,26 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         disabled={isLoading}
                       />
                       {errors.name && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-xs sm:text-sm text-destructive">
                           {errors.name}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="description">Descrição</Label>
+                      <Label
+                        htmlFor="description"
+                        className="text-sm sm:text-base"
+                      >
+                        Descrição
+                      </Label>
                       <Input
                         id="description"
                         type="text"
                         placeholder="Digite a descrição do produto"
-                        className={
+                        className={`text-sm sm:text-base ${
                           errors.description ? 'border-destructive' : ''
-                        }
+                        }`}
                         value={description}
                         onChange={(e) => {
                           setDescription(e.target.value);
@@ -565,20 +941,24 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         disabled={isLoading}
                       />
                       {errors.description && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-xs sm:text-sm text-destructive">
                           {errors.description}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="price">Preço</Label>
+                      <Label htmlFor="price" className="text-sm sm:text-base">
+                        Preço
+                      </Label>
                       <Input
                         id="price"
                         type="number"
                         step="0.01"
                         placeholder="0.00"
-                        className={errors.price ? 'border-destructive' : ''}
+                        className={`text-sm sm:text-base ${
+                          errors.price ? 'border-destructive' : ''
+                        }`}
                         value={price}
                         onChange={(e) => {
                           setPrice(e.target.value);
@@ -592,20 +972,24 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         disabled={isLoading}
                       />
                       {errors.price && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-xs sm:text-sm text-destructive">
                           {errors.price}
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="ingredients">
+                      <Label
+                        htmlFor="ingredients"
+                        className="text-sm sm:text-base"
+                      >
                         Ingredientes (separados por vírgula)
                       </Label>
                       <Input
                         id="ingredients"
                         type="text"
                         placeholder="Ex: tomate, alface, queijo"
+                        className="text-sm sm:text-base"
                         value={ingredients}
                         onChange={(e) => setIngredients(e.target.value)}
                         disabled={isLoading}
@@ -614,7 +998,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="productImage">Foto do Produto</Label>
+                      <Label
+                        htmlFor="productImage"
+                        className="text-sm sm:text-base"
+                      >
+                        Foto do Produto
+                      </Label>
                       <input
                         ref={fileInputRef}
                         id="productImage"
@@ -631,13 +1020,13 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                             <img
                               src={imagePreview}
                               alt="Preview"
-                              className="h-32 w-full rounded-md object-cover"
+                              className="h-32 sm:h-40 w-full rounded-md object-cover"
                             />
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="mt-2 w-full"
+                              className="mt-2 w-full text-sm sm:text-base"
                               onClick={() => {
                                 setImageUrl('');
                                 setImagePreview(null);
@@ -654,7 +1043,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                           <Button
                             type="button"
                             variant="outline"
-                            className="w-full"
+                            className="w-full text-sm sm:text-base"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={isLoading || isUploading}
                           >
@@ -666,17 +1055,17 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         )}
                       </div>
                       {errors.imageUrl && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-xs sm:text-sm text-destructive">
                           {errors.imageUrl}
                         </p>
                       )}
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2 pt-2">
                       <Button
                         type="button"
                         variant="outline"
-                        className="flex-1"
+                        className="flex-1 text-sm sm:text-base"
                         onClick={() => {
                           setShowAddProduct(false);
                           setName('');
@@ -694,19 +1083,523 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       </Button>
                       <Button
                         type="submit"
-                        className="flex-1"
+                        className="flex-1 text-sm sm:text-base"
                         disabled={isLoading}
                       >
-                        {isLoading ? 'Criando...' : 'Criar Produto'}
+                        {isLoading
+                          ? editingProduct
+                            ? 'Atualizando...'
+                            : 'Criando...'
+                          : editingProduct
+                            ? 'Atualizar Produto'
+                            : 'Criar Produto'}
                       </Button>
                     </div>
                   </form>
                 </CardContent>
               </Card>
             </div>
-          )}
+          ) : showManageProducts ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Gerenciar Produtos
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                      onClick={() => {
+                        setShowManageProducts(false);
+                        setProducts([]);
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingProducts ? (
+                    <div className="flex items-center justify-center py-10">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Carregando produtos...
+                      </p>
+                    </div>
+                  ) : products.length === 0 ? (
+                    <div className="flex items-center justify-center py-10">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Nenhum produto encontrado
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {(() => {
+                        // Agrupar produtos por categoria
+                        const productsByCategory = products.reduce(
+                          (acc, product) => {
+                            const categoryId = product.menuCategory.id;
+                            const categoryName = product.menuCategory.name;
+
+                            if (!acc[categoryId]) {
+                              acc[categoryId] = {
+                                id: categoryId,
+                                name: categoryName,
+                                products: [],
+                              };
+                            }
+
+                            acc[categoryId].products.push(product);
+                            return acc;
+                          },
+                          {} as Record<
+                            string,
+                            {
+                              id: string;
+                              name: string;
+                              products: ProductWithCategory[];
+                            }
+                          >
+                        );
+
+                        // Converter para array e ordenar por nome da categoria
+                        const categoriesArray = Object.values(
+                          productsByCategory
+                        ).sort((a, b) => a.name.localeCompare(b.name));
+
+                        return categoriesArray.map((category) => (
+                          <div key={category.id} className="space-y-3">
+                            <div className="border-b pb-2">
+                              <h3 className="font-semibold text-base sm:text-lg">
+                                {category.name}
+                              </h3>
+                              <p className="text-xs sm:text-sm text-muted-foreground">
+                                {category.products.length}{' '}
+                                {category.products.length === 1
+                                  ? 'produto'
+                                  : 'produtos'}
+                              </p>
+                            </div>
+                            <div className="space-y-2 pl-2 sm:pl-4">
+                              {category.products.map((product) => (
+                                <div
+                                  key={product.id}
+                                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 border rounded-lg"
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm sm:text-base truncate">
+                                      {product.name}
+                                    </p>
+                                    <p className="text-xs sm:text-sm font-semibold mt-1">
+                                      {formatCurrency(product.price)}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2 w-full sm:w-auto">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="flex-1 sm:flex-initial text-xs sm:text-sm"
+                                      onClick={() => handleEditProduct(product)}
+                                    >
+                                      <Edit className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                                      Editar
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="sm"
+                                      className="flex-1 sm:flex-initial text-xs sm:text-sm"
+                                      onClick={() =>
+                                        setDeleteProductId(product.id)
+                                      }
+                                    >
+                                      <Trash2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                                      Excluir
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : showManageCategories ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Gerenciar Categorias
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                      onClick={() => setShowManageCategories(false)}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {categories.length === 0 ? (
+                    <div className="flex items-center justify-center py-10">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Nenhuma categoria encontrada
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {categories.map((category) => (
+                        <div
+                          key={category.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <p className="font-medium text-sm sm:text-base">
+                            {category.name}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="text-xs sm:text-sm"
+                            onClick={() => setDeleteCategoryId(category.id)}
+                          >
+                            <Trash2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                            Excluir
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : showOrders ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Pedidos
+                      {hasNewOrders && (
+                        <Bell className="ml-2 inline h-4 w-4 text-yellow-500 animate-pulse" />
+                      )}
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                      onClick={() => {
+                        setShowOrders(false);
+                        setOrders([]);
+                        setHasNewOrders(false);
+                        setLastOrderCount(0);
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingOrders ? (
+                    <div className="flex items-center justify-center py-10">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Carregando pedidos...
+                      </p>
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="flex items-center justify-center py-10">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Nenhum pedido encontrado
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {orders.map((order) => (
+                        <div
+                          key={order.id}
+                          className="border rounded-lg p-3 sm:p-4 space-y-3"
+                        >
+                          {/* Cabeçalho do pedido */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm sm:text-base">
+                                Pedido #{order.id}
+                              </p>
+                              <p className="text-xs sm:text-sm text-muted-foreground">
+                                {formatDateTime(order.createdAt)}
+                              </p>
+                            </div>
+                            <div
+                              className={`px-2 py-1 rounded border text-xs sm:text-sm font-medium ${getStatusColor(
+                                order.status
+                              )}`}
+                            >
+                              {getStatusLabel(order.status)}
+                            </div>
+                          </div>
+
+                          {/* Informações do cliente */}
+                          <div className="border-t pt-3 space-y-2">
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium">
+                                Cliente
+                              </p>
+                              <p className="text-sm sm:text-base">
+                                {order.customerName}
+                              </p>
+                              <p className="text-xs sm:text-sm text-muted-foreground">
+                                CPF: {formatCpf(order.customerCpf)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium">
+                                Método de Consumo
+                              </p>
+                              <p className="text-sm sm:text-base">
+                                {order.consumptionMethod === 'TAKEANAY'
+                                  ? 'Entrega'
+                                  : 'Comer no Local'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Endereço de entrega (apenas para TAKEANAY) */}
+                          {order.consumptionMethod === 'TAKEANAY' &&
+                            order.deliveryStreet && (
+                              <div className="border-t pt-3 space-y-1">
+                                <p className="text-xs sm:text-sm font-medium">
+                                  Endereço de Entrega
+                                </p>
+                                <div className="text-xs sm:text-sm text-muted-foreground space-y-0.5">
+                                  <p>
+                                    {order.deliveryStreet},{' '}
+                                    {order.deliveryNumber}
+                                  </p>
+                                  {order.deliveryComplement && (
+                                    <p>
+                                      Complemento: {order.deliveryComplement}
+                                    </p>
+                                  )}
+                                  <p>
+                                    {order.deliveryNeighborhood} -{' '}
+                                    {order.deliveryCity}/{order.deliveryState}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                          {/* Produtos do pedido */}
+                          <div className="border-t pt-3 space-y-2">
+                            <p className="text-xs sm:text-sm font-medium">
+                              Produtos
+                            </p>
+                            <div className="space-y-2">
+                              {order.orderProducts.map((orderProduct) => (
+                                <div
+                                  key={orderProduct.id}
+                                  className="flex items-center gap-2 sm:gap-3 p-2 bg-muted rounded"
+                                >
+                                  <div className="flex-1">
+                                    <p className="text-xs sm:text-sm font-medium">
+                                      {orderProduct.product.name} x
+                                      {orderProduct.quantity}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {formatCurrency(orderProduct.price)} cada
+                                    </p>
+                                  </div>
+                                  <p className="text-xs sm:text-sm font-semibold">
+                                    {formatCurrency(
+                                      orderProduct.price * orderProduct.quantity
+                                    )}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t">
+                              <p className="text-sm sm:text-base font-semibold">
+                                Total
+                              </p>
+                              <p className="text-base sm:text-lg font-bold">
+                                {formatCurrency(order.total)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Seletor de status */}
+                          <div className="border-t pt-3 space-y-2">
+                            <p className="text-xs sm:text-sm font-medium">
+                              Atualizar Status
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                variant={
+                                  order.status === 'PENDING'
+                                    ? 'default'
+                                    : 'outline'
+                                }
+                                size="sm"
+                                className="text-xs sm:text-sm"
+                                onClick={() =>
+                                  handleUpdateOrderStatus(order.id, 'PENDING')
+                                }
+                                disabled={
+                                  isUpdatingStatus === order.id ||
+                                  order.status === 'PENDING'
+                                }
+                              >
+                                Pendente
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={
+                                  order.status === 'IN_PREPARATION'
+                                    ? 'default'
+                                    : 'outline'
+                                }
+                                size="sm"
+                                className="text-xs sm:text-sm"
+                                onClick={() =>
+                                  handleUpdateOrderStatus(
+                                    order.id,
+                                    'IN_PREPARATION'
+                                  )
+                                }
+                                disabled={
+                                  isUpdatingStatus === order.id ||
+                                  order.status === 'IN_PREPARATION'
+                                }
+                              >
+                                Em Preparo
+                              </Button>
+                              {order.consumptionMethod === 'TAKEANAY' && (
+                                <Button
+                                  type="button"
+                                  variant={
+                                    order.status === 'OUT_FOR_DELIVERY'
+                                      ? 'default'
+                                      : 'outline'
+                                  }
+                                  size="sm"
+                                  className="text-xs sm:text-sm"
+                                  onClick={() =>
+                                    handleUpdateOrderStatus(
+                                      order.id,
+                                      'OUT_FOR_DELIVERY'
+                                    )
+                                  }
+                                  disabled={
+                                    isUpdatingStatus === order.id ||
+                                    order.status === 'OUT_FOR_DELIVERY'
+                                  }
+                                >
+                                  Enviado para Entrega
+                                </Button>
+                              )}
+                              <Button
+                                type="button"
+                                variant={
+                                  order.status === 'FINISHED'
+                                    ? 'default'
+                                    : 'outline'
+                                }
+                                size="sm"
+                                className="text-xs sm:text-sm"
+                                onClick={() =>
+                                  handleUpdateOrderStatus(order.id, 'FINISHED')
+                                }
+                                disabled={
+                                  isUpdatingStatus === order.id ||
+                                  order.status === 'FINISHED'
+                                }
+                              >
+                                Finalizado
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
         </div>
       </SheetContent>
+
+      {/* Modal de confirmação para excluir produto */}
+      <AlertDialog
+        open={!!deleteProductId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteProductId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este produto? Esta ação não pode
+              ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingProduct}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteProduct}
+              disabled={isDeletingProduct}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingProduct ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal de confirmação para excluir categoria */}
+      <AlertDialog
+        open={!!deleteCategoryId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteCategoryId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Categoria</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta categoria? Esta ação não pode
+              ser desfeita. Categorias com produtos não podem ser excluídas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingCategory}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCategory}
+              disabled={isDeletingCategory}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingCategory ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 };
