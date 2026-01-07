@@ -1,10 +1,10 @@
 'use server';
 
+import type { OrderStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 
 import { verifyRestaurantOwner } from '@/app/actions/session';
 import { db } from '@/lib/prisma';
-import type { OrderStatus } from '@prisma/client';
 
 export const updateOrderStatus = async (
   orderId: number,
