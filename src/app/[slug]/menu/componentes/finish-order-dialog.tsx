@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ConsumptionMethod } from '@prisma/client';
-import { Loader2Icon } from 'lucide-react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useContext, useState } from 'react';
-import type { Control } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
-import { PatternFormat } from 'react-number-format';
-import { toast } from 'sonner';
-import { z } from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ConsumptionMethod } from "@prisma/client";
+import { Loader2Icon } from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useContext, useState } from "react";
+import type { Control } from "react-hook-form";
+import { useForm } from "react-hook-form";
+import { PatternFormat } from "react-number-format";
+import { toast } from "sonner";
+import { z } from "zod";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Drawer,
   DrawerClose,
@@ -21,7 +21,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@/components/ui/drawer'; //Vindo de shadcn@2.3.0 add drawer
+} from "@/components/ui/drawer"; //Vindo de shadcn@2.3.0 add drawer
 import {
   Form,
   FormControl,
@@ -29,44 +29,44 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 
-import { createOrder } from '../actions/create-order';
-import { CartContext } from '../context/cart';
-import { isValidCpf } from '../helpers/cpf';
+import { createOrder } from "../actions/create-order";
+import { CartContext } from "../context/cart";
+import { isValidCpf } from "../helpers/cpf";
 
 const baseFormSchema = z.object({
   name: z.string().trim().min(1, {
-    message: 'O nome é obrigatório!',
+    message: "O nome é obrigatório!",
   }),
   cpf: z
     .string()
     .trim()
     .min(11, {
-      message: 'O CPF é obrigatório!',
+      message: "O CPF é obrigatório!",
     })
     .refine((value) => isValidCpf(value), {
-      message: 'CPF inválido!',
+      message: "CPF inválido!",
     }),
 });
 
 const takeawayFormSchema = baseFormSchema.extend({
   deliveryStreet: z.string().trim().min(1, {
-    message: 'A rua é obrigatória!',
+    message: "A rua é obrigatória!",
   }),
   deliveryNumber: z.string().trim().min(1, {
-    message: 'O número é obrigatório!',
+    message: "O número é obrigatório!",
   }),
   deliveryComplement: z.string().trim().optional(),
   deliveryNeighborhood: z.string().trim().min(1, {
-    message: 'O bairro é obrigatório!',
+    message: "O bairro é obrigatório!",
   }),
   deliveryCity: z.string().trim().min(1, {
-    message: 'A cidade é obrigatória!',
+    message: "A cidade é obrigatória!",
   }),
   deliveryState: z.string().trim().min(2, {
-    message: 'O estado é obrigatório!',
+    message: "O estado é obrigatório!",
   }),
 });
 
@@ -86,9 +86,9 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
 
   const searchParams = useSearchParams();
   const consumptionMethod = searchParams.get(
-    'consumptionMethod'
+    "consumptionMethod"
   ) as ConsumptionMethod;
-  const isTakeaway = consumptionMethod === 'TAKEANAY';
+  const isTakeaway = consumptionMethod === "TAKEANAY";
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -99,18 +99,18 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
 
   const defaultValues = isTakeaway
     ? ({
-        name: '',
-        cpf: '',
-        deliveryStreet: '',
-        deliveryNumber: '',
-        deliveryComplement: '',
-        deliveryNeighborhood: '',
-        deliveryCity: '',
-        deliveryState: '',
+        name: "",
+        cpf: "",
+        deliveryStreet: "",
+        deliveryNumber: "",
+        deliveryComplement: "",
+        deliveryNeighborhood: "",
+        deliveryCity: "",
+        deliveryState: "",
       } satisfies TakeawayFormSchema)
     : ({
-        name: '',
-        cpf: '',
+        name: "",
+        cpf: "",
       } satisfies BaseFormSchema);
 
   const form = useForm<FormSchema>({
@@ -121,7 +121,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
 
   const onSubmit = async (data: FormSchema) => {
     if (products.length === 0) {
-      toast.error('O carrinho está vazio');
+      toast.error("O carrinho está vazio");
       return;
     }
 
@@ -138,7 +138,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           slug,
           deliveryStreet: takeawayData.deliveryStreet,
           deliveryNumber: takeawayData.deliveryNumber,
-          deliveryComplement: takeawayData.deliveryComplement || '',
+          deliveryComplement: takeawayData.deliveryComplement || "",
           deliveryNeighborhood: takeawayData.deliveryNeighborhood,
           deliveryCity: takeawayData.deliveryCity,
           deliveryState: takeawayData.deliveryState,
@@ -154,19 +154,19 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         });
       }
 
-      toast.success('Pedido criado com sucesso!');
+      toast.success("Pedido criado com sucesso!");
       clearCart();
       form.reset();
       onOpenChange(false);
 
       // Redirecionar para a página de pedidos
-      router.push(`/${slug}/orders?cpf=${data.cpf.replace(/\D/g, '')}`);
+      router.push(`/${slug}/orders?cpf=${data.cpf.replace(/\D/g, "")}`);
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error("Error creating order:", error);
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Erro ao criar pedido. Tente novamente.'
+          : "Erro ao criar pedido. Tente novamente."
       );
     } finally {
       setIsLoading(false);
@@ -186,7 +186,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
               {/* && neste caso se diz o seguinte "se isLoading for verdadeiro faça isto" "se não for simplismente ele não executa" */}
               Finalizar pedido
             </DrawerTitle>
-            <DrawerDescription>
+            <DrawerDescription className="flex justify-center">
               Insira suas informações abaixo para finalizar seu pedido
             </DrawerDescription>
           </DrawerHeader>
@@ -361,7 +361,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                     className="rounded-full"
                     disabled={isLoading}
                   >
-                    {isLoading ? 'Criando pedido...' : 'Finalizar'}
+                    {isLoading ? "Criando pedido..." : "Finalizar"}
                   </Button>
 
                   <DrawerClose asChild>

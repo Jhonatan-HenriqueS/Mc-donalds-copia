@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
@@ -26,15 +27,21 @@ const CartSheet = () => {
           <SheetTitle className="text-start">Carrinho</SheetTitle>
           <SheetDescription></SheetDescription>
         </SheetHeader>
+
         <div className="py-5 flex flex-col h-full">
-          <div className="flex-auto flex flex-col gap-4">
-            {/* Flex-auto para ocupar a largura toda, para empurrar o botão para baixo
+          <ScrollArea className="h-full overflow-y-auto pb-6">
+            <div className="flex-auto flex flex-col gap-4">
+              {/* Flex-auto para ocupar a largura toda, para empurrar o botão para baixo
             feito com html e body no global com @apply h-full
             */}
-            {products.map((product) => (
-              <CartProductItem key={product.id} product={product} />
-            ))}
-          </div>
+
+              {products.map((product) => (
+                <CartProductItem key={product.id} product={product} />
+              ))}
+            </div>
+            <ScrollBar orientation="vertical" className="hidden"></ScrollBar>
+          </ScrollArea>
+
           <Card className="mb-10">
             <CardContent className="p-5">
               <div className="flex justify-between">

@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { Prisma } from '@prisma/client';
-import { ClockIcon } from 'lucide-react';
-import Image from 'next/image';
-import { useContext, useState } from 'react';
+import { Prisma } from "@prisma/client";
+import { ClockIcon } from "lucide-react";
+import Image from "next/image";
+import { useContext, useState } from "react";
 
-import { Button } from '@/components/ui/button';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { formatCurrency } from '@/helpers/format-currency';
+import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { formatCurrency } from "@/helpers/format-currency";
 
-import { CartContext } from '../context/cart';
-import AdminButton from './admin-button';
-import CartSheet from './cart-sheet';
-import Products from './products';
+import { CartContext } from "../context/cart";
+import AdminButton from "./admin-button";
+import CartSheet from "./cart-sheet";
+import Products from "./products";
 
 interface RestaurantsCategoriesProps {
   restaurant: Prisma.RestaurantGetPayload<{
@@ -44,7 +44,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
   };
 
   const getCategoryButtonVariant = (category: MenuCategoriesMithProducts) => {
-    return selectedCategory?.id === category.id ? 'default' : 'secondary';
+    return selectedCategory?.id === category.id ? "default" : "secondary";
     // Navariant caso o botão específico estiver selecionado ele se tranforma ao inverso do que era
   };
 
@@ -99,7 +99,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
           </p>
         </div>
       )}
-      <div className={`${products.length > 0 ? 'pb-14' : ''}`}>
+      <div className={`${products.length > 0 ? "pb-14" : ""}`}>
         <Products products={selectedCategory?.products || []} />
       </div>
 
@@ -111,12 +111,12 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
               {formatCurrency(total)}
               <span className="text-xs font-normal text-muted-foreground ">
                 /{totalQuantity}
-                {totalQuantity > 1 ? ' itens' : ' item'}
+                {totalQuantity > 1 ? " itens" : " item"}
               </span>
             </p>
+            <CartSheet />
           </div>
           <Button onClick={taggleCart}>Ver Pedidos</Button>
-          <CartSheet />
         </div>
       )}
     </div>

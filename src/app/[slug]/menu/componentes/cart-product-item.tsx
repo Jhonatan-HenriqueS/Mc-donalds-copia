@@ -1,11 +1,11 @@
-import { ChevronLeftIcon, ChevronRightIcon, Trash2Icon } from 'lucide-react';
-import Image from 'next/image';
-import { useContext } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon, Trash2Icon } from "lucide-react";
+import Image from "next/image";
+import { useContext } from "react";
 
-import { Button } from '@/components/ui/button';
-import { formatCurrency } from '@/helpers/format-currency';
+import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/helpers/format-currency";
 
-import { CartContext, CartProduct } from '../context/cart';
+import { CartContext, CartProduct } from "../context/cart";
 
 interface CartItemProps {
   product: CartProduct;
@@ -17,8 +17,8 @@ const CartProductItem = ({ product }: CartItemProps) => {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-6">
-        <div className="bg-gray-100 rounded-xl p-2.5">
-          <div className="relative h-20 w-20">
+        <div>
+          <div className="relative h-20 w-20 mr-3">
             <Image
               src={product.imageUrl}
               alt={product.name}
@@ -55,7 +55,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
         </div>
       </div>
       <Button
-        className="h-7 w-7 fixed right-4 rounded-lg border-none"
+        className="h-7 w-7 relative right-1 rounded-lg border-none"
         variant="outline"
         onClick={() => removeProduct(product.id)}
       >
