@@ -5,7 +5,6 @@ import { Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { getOrdersCount } from '@/app/[slug]/menu/actions/get-orders-count';
-
 import { Button } from '@/components/ui/button';
 
 import { useOrderNotifications } from '../hooks/use-order-notifications';

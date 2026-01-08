@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 interface UseOrderNotificationsProps {
   restaurantId: string;
@@ -39,9 +39,10 @@ export const useOrderNotifications = ({
 
     if (lastSeenCount) {
       const parsedLastSeen = parseInt(lastSeenCount, 10);
-      const parsedLastSeenIds = lastSeenIds
-        ? JSON.parse(lastSeenIds)
-        : [];
+
+      if (!parsedLastSeen) return;
+
+      const parsedLastSeenIds = lastSeenIds ? JSON.parse(lastSeenIds) : [];
 
       // Calcular pedidos novos
       const newIds = currentOrderIds.filter(
@@ -57,10 +58,7 @@ export const useOrderNotifications = ({
 
   const markAsSeen = () => {
     localStorage.setItem(storageKey, currentOrderCount.toString());
-    localStorage.setItem(
-      `${storageKey}_ids`,
-      JSON.stringify(currentOrderIds)
-    );
+    localStorage.setItem(`${storageKey}_ids`, JSON.stringify(currentOrderIds));
     setNewOrderCount(0);
   };
 
@@ -79,14 +77,12 @@ export const useCustomerOrderNotifications = ({
   enabled = true,
 }: UseCustomerOrderNotificationsProps) => {
   const [hasStatusChanged, setHasStatusChanged] = useState(false);
-  const storageKey = cpf
-    ? `customer_last_status_${restaurantId}_${cpf}`
-    : null;
+  const storageKey = cpf ? `customer_last_status_${restaurantId}_${cpf}` : null;
 
   // Criar uma string serializada dos pedidos para usar como dependência
   const ordersSignature = orders
     .map((order) => `${order.id}:${order.status}:${order.updateAt.getTime()}`)
-    .join('|');
+    .join("|");
 
   useEffect(() => {
     if (!enabled || !storageKey || !cpf || orders.length === 0) {
@@ -120,7 +116,7 @@ export const useCustomerOrderNotifications = ({
 
         setHasStatusChanged(hasChanged);
       } catch (error) {
-        console.error('Erro ao verificar status:', error);
+        console.error("Erro ao verificar status:", error);
         // Se houver erro, considerar como mudança para garantir que o cliente veja
         setHasStatusChanged(true);
       }
@@ -149,7 +145,9 @@ export const useCustomerOrderNotifications = ({
       storageKey,
       JSON.stringify({
         statuses,
-        lastUpdateAt: maxUpdateAt?.toISOString() || new Date().toISOString(),
+        lastUpdateAt: maxUpdateAt
+          ? (maxUpdateAt as Date).toISOString()
+          : new Date().toISOString(),
       })
     );
 

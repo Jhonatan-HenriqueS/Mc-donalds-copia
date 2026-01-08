@@ -4,7 +4,6 @@ import { Prisma } from '@prisma/client';
 import { useEffect } from 'react';
 
 import { useCustomerOrderNotifications } from '../../menu/hooks/use-order-notifications';
-
 import OrderList from './orders';
 
 interface OrderListWrapperProps {
