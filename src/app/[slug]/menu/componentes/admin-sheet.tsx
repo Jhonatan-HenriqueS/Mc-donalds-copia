@@ -21,10 +21,12 @@ import { deleteCategory } from '@/app/[slug]/menu/actions/delete-category';
 import { deleteProduct } from '@/app/[slug]/menu/actions/delete-product';
 import { getCustomers } from '@/app/[slug]/menu/actions/get-customers';
 import { getOrders } from '@/app/[slug]/menu/actions/get-orders';
+import { getOrdersCount } from '@/app/[slug]/menu/actions/get-orders-count';
 import { getProducts } from '@/app/[slug]/menu/actions/get-products';
 import { updateOrderStatus } from '@/app/[slug]/menu/actions/update-order-status';
 import { updateProduct } from '@/app/[slug]/menu/actions/update-product';
 import { formatCpf } from '@/app/[slug]/menu/helpers/format-cpf';
+import { useOrderNotifications } from '@/app/[slug]/menu/hooks/use-order-notifications';
 import { logout } from '@/app/actions/logout';
 import {
   AlertDialog,
@@ -118,7 +120,18 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [categories, setCategories] = useState(restaurant.menuCategorias);
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const [hasNewOrders, setHasNewOrders] = useState(false);
+  const [orderCount, setOrderCount] = useState(0);
+  const [orderIds, setOrderIds] = useState<number[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Hook de notificações para o painel admin
+  const { newOrderCount, markAsSeen, hasNewOrders: hasNewOrdersFromHook } =
+    useOrderNotifications({
+      restaurantId: restaurant.id,
+      currentOrderCount: orderCount,
+      currentOrderIds: orderIds,
+      enabled: isOpen,
+    });
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -427,6 +440,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   };
 
   const handleShowOrders = async () => {
+    // Marcar pedidos como vistos quando abrir a seção de pedidos
+    markAsSeen();
     setShowOrders(true);
     setIsLoadingOrders(true);
     setHasNewOrders(false);
@@ -436,6 +451,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       if (result.success && result.orders) {
         setOrders(result.orders);
         setLastOrderCount(result.orders.length);
+        // Atualizar IDs dos pedidos para o hook
+        setOrderIds(result.orders.map((order) => order.id));
+        setOrderCount(result.orders.length);
       } else {
         toast.error(result.error || 'Erro ao carregar pedidos');
       }
@@ -473,7 +491,32 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     }
   };
 
-  // Polling para verificar novos pedidos
+  // Buscar contador de pedidos quando o painel abrir
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchOrderCount = async () => {
+      try {
+        const result = await getOrdersCount(restaurant.id);
+        if (result.success) {
+          setOrderCount(result.count);
+          setOrderIds(result.orderIds);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar contador de pedidos:', error);
+      }
+    };
+
+    // Buscar imediatamente quando abrir
+    fetchOrderCount();
+
+    // Buscar a cada 30 segundos enquanto o painel estiver aberto
+    const interval = setInterval(fetchOrderCount, 30000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, restaurant.id]);
+
+  // Polling para verificar novos pedidos (quando a seção de pedidos estiver aberta)
   useEffect(() => {
     if (!isOpen || !showOrders) return;
 
@@ -487,8 +530,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
             toast.info(`Novo pedido recebido! Total: ${newCount}`);
             setOrders(result.orders);
             setLastOrderCount(newCount);
+            // Atualizar IDs dos pedidos para o hook
+            setOrderIds(result.orders.map((order) => order.id));
+            setOrderCount(result.orders.length);
           } else {
             setOrders(result.orders);
+            // Atualizar IDs dos pedidos mesmo sem novos pedidos
+            setOrderIds(result.orders.map((order) => order.id));
+            setOrderCount(result.orders.length);
           }
         }
       } catch (error) {
@@ -601,14 +650,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               </Button>
               <Button
                 onClick={handleShowOrders}
-                className="w-full text-sm sm:text-base"
+                className="w-full text-sm sm:text-base relative"
                 variant="outline"
                 size="lg"
               >
                 <Package className="mr-2 h-4 w-4" />
                 Pedidos
-                {hasNewOrders && (
-                  <Bell className="ml-2 h-4 w-4 text-yellow-500 animate-pulse" />
+                {hasNewOrdersFromHook && (
+                  <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                    {newOrderCount > 9 ? '9+' : newOrderCount}
+                  </span>
                 )}
               </Button>
               <div className="mt-auto pt-4 border-t">

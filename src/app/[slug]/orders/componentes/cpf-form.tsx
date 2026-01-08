@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { PatternFormat } from "react-number-format";
 import z from "zod";
@@ -47,18 +48,57 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>;
 
-const CpfForm = () => {
+interface CpfFormProps {
+  restaurantId?: string;
+}
+
+const CpfForm = ({ restaurantId }: CpfFormProps) => {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
   });
 
   const router = useRouter();
-
+  const { slug } = useParams<{ slug: string }>();
   const pathname = usePathname();
+  const [resolvedRestaurantId, setResolvedRestaurantId] = useState<
+    string | null
+  >(restaurantId || null);
+
+  // Buscar restaurantId se não foi fornecido
+  useEffect(() => {
+    if (resolvedRestaurantId || !slug) return;
+
+    const fetchRestaurantId = async () => {
+      try {
+        const response = await fetch(
+          `/api/restaurant-by-slug?slug=${slug}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.restaurantId) {
+            setResolvedRestaurantId(data.restaurantId);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar restaurantId:", error);
+      }
+    };
+
+    fetchRestaurantId();
+  }, [slug, resolvedRestaurantId]);
 
   const onSubmit = (data: FormSchema) => {
-    router.replace(`${pathname}?cpf=${removeCpfPunctuation(data.cpf)}`);
+    const cpfWithoutPunctuation = removeCpfPunctuation(data.cpf);
+    router.replace(`${pathname}?cpf=${cpfWithoutPunctuation}`);
     //transforma a rota para o nome do restaurant junto com o cpf informado
+
+    // Salvar CPF no localStorage se tiver restaurantId
+    if (resolvedRestaurantId) {
+      localStorage.setItem(
+        `last_order_cpf_${resolvedRestaurantId}`,
+        cpfWithoutPunctuation
+      );
+    }
   };
 
   const handleCancel = () => {

@@ -2,7 +2,7 @@ import { db } from '@/lib/prisma';
 
 import { isValidCpf, removeCpfPunctuation } from '../menu/helpers/cpf';
 import CpfForm from './componentes/cpf-form';
-import OrderList from './componentes/orders';
+import OrderListWrapper from './componentes/order-list-wrapper';
 
 interface OrdersPageProps {
   params: Promise<{ slug: string }>;
@@ -14,11 +14,19 @@ const OrdersPage = async ({ params, searchParams }: OrdersPageProps) => {
   const { cpf } = await searchParams;
 
   if (!cpf) {
-    return <CpfForm />;
+    const restaurant = await db.restaurant.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    return <CpfForm restaurantId={restaurant?.id} />;
   }
 
   if (!isValidCpf(cpf)) {
-    return <CpfForm />;
+    const restaurant = await db.restaurant.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    return <CpfForm restaurantId={restaurant?.id} />;
   }
 
   // Buscar o restaurante pelo slug para garantir que estamos no restaurante correto
@@ -32,7 +40,7 @@ const OrdersPage = async ({ params, searchParams }: OrdersPageProps) => {
   });
 
   if (!restaurant) {
-    return <CpfForm />;
+    return <CpfForm restaurantId={undefined} />;
   }
 
   const orders = await db.order.findMany({
@@ -60,7 +68,13 @@ const OrdersPage = async ({ params, searchParams }: OrdersPageProps) => {
       },
     },
   });
-  return <OrderList orders={orders} />;
+  return (
+    <OrderListWrapper
+      orders={orders}
+      restaurantId={restaurant.id}
+      cpf={removeCpfPunctuation(cpf)}
+    />
+  );
 };
 
 export default OrdersPage;

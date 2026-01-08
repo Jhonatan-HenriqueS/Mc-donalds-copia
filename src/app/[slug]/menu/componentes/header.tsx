@@ -6,12 +6,21 @@ import { Restaurant } from "@prisma/client";
 import { ChevronLeftIcon, ScrollTextIcon } from "lucide-react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
+import { useCustomerOrderNotifications } from "../hooks/use-order-notifications";
+
 interface RestaurantHeaderProps {
-  restaurant: Pick<Restaurant, "name" | "coverImageUrl">;
+  restaurant: Pick<Restaurant, "id" | "name" | "coverImageUrl">;
   //Pick pega todas, mas eu seleciono a especifica
+}
+
+interface OrderFromApi {
+  id: number;
+  status: string;
+  updateAt: string | Date;
 }
 
 const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
@@ -19,6 +28,68 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
   const router = useRouter();
   const handleBackClick = () => router.back();
   const handleOrdersClick = () => router.push(`/${slug}/orders`);
+
+  // Buscar CPF do localStorage se existir algum pedido
+  const [cpf, setCpf] = useState<string | null>(null);
+  const [orders, setOrders] = useState<
+    Array<{
+      id: number;
+      status: string;
+      updateAt: Date;
+    }>
+  >([]);
+
+  // Buscar CPF salvo do último pedido feito
+  useEffect(() => {
+    const savedCpf = localStorage.getItem(`last_order_cpf_${restaurant.id}`);
+    if (savedCpf) {
+      setCpf(savedCpf);
+    }
+  }, [restaurant.id]);
+
+  // Buscar pedidos do cliente quando tiver CPF
+  useEffect(() => {
+    if (!cpf) {
+      setOrders([]);
+      return;
+    }
+
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch(
+          `/api/customer-orders?restaurantId=${restaurant.id}&cpf=${cpf}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.orders) {
+            setOrders(
+              (data.orders as OrderFromApi[]).map((order) => ({
+                id: order.id,
+                status: order.status,
+                updateAt: new Date(order.updateAt),
+              }))
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar pedidos:", error);
+      }
+    };
+
+    fetchOrders();
+
+    // Verificar a cada 30 segundos
+    const interval = setInterval(fetchOrders, 30000);
+
+    return () => clearInterval(interval);
+  }, [cpf, restaurant.id]);
+
+  const { hasStatusChanged } = useCustomerOrderNotifications({
+    restaurantId: restaurant.id,
+    cpf: cpf || undefined,
+    orders,
+    enabled: !!cpf,
+  });
 
   return (
     <div className="relative h-[250px] w-full">
@@ -40,10 +111,15 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
       <Button
         variant="secondary"
         size="icon"
-        className="absolute top-4 right-4 rounded-full z-50"
+        className="absolute top-4 right-4 rounded-full z-50 "
         onClick={handleOrdersClick}
       >
         <ScrollTextIcon />
+        {hasStatusChanged && (
+          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white">
+            !
+          </span>
+        )}
       </Button>
     </div>
   );
