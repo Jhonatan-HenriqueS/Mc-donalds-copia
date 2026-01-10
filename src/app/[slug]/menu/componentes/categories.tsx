@@ -105,7 +105,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
 
       {products.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 flex w-full items-center justify-between border-t bg-white px-5 py-3">
-          <div className="">
+          <div>
             <p className="text-ms text-muted-foreground">Total do pedido</p>
             <p className="text-sm font-semibold">
               {formatCurrency(total)}

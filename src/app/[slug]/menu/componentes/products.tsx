@@ -1,9 +1,9 @@
-import { Product } from '@prisma/client';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { Product } from "@prisma/client";
+import Image from "next/image";
+import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
 
-import { formatCurrency } from '@/helpers/format-currency';
+import { formatCurrency } from "@/helpers/format-currency";
 
 interface ProductsProps {
   products: Product[];
@@ -16,7 +16,7 @@ const Products = ({ products }: ProductsProps) => {
   const searchParams = useSearchParams();
   //Pega a URL e insere ela nesta const
 
-  const consumptionMethod = searchParams.get('consumptionMethod');
+  const consumptionMethod = searchParams.get("consumptionMethod");
   //Manipulo para pegar o consumptionMethod da URL
 
   return (
@@ -27,7 +27,15 @@ const Products = ({ products }: ProductsProps) => {
           href={`/${slug}/menu/${product.id}?consumptionMethod=${consumptionMethod}`}
           className="flex items-center justify-between gap-10 py-3 border-b "
         >
-          <div>
+          <div className="relative min-h-[85px] min-w-[120px] ">
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              className="rounded-lg object-cover"
+            />
+          </div>
+          <div className="text-end">
             <h3 className="text-sm font-medium">{product.name}</h3>
             <p className="line-clamp-2 text-sm text-muted-foreground">
               {/* Vai ocupar no máximo 2 linhas */}
@@ -36,14 +44,6 @@ const Products = ({ products }: ProductsProps) => {
             <p className="pt-3 text-sm font-semibold">
               {formatCurrency(product.price)}
             </p>
-          </div>
-          <div className="relative min-h-[85px] min-w-[120px]">
-            <Image
-              src={product.imageUrl}
-              alt={product.name}
-              fill
-              className="rounded-lg object-cover"
-            />
           </div>
         </Link>
       ))}

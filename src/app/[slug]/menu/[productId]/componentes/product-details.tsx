@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useContext, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/helpers/format-currency";
 
 import CartSheet from "../../componentes/cart-sheet";
@@ -56,7 +57,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
   return (
     <>
       <div className="relative z-50 rounded-t-3xl p-5 mt-[-2rem] flex flex-auto flex-col h-full bg-white ">
-        <div className="flex-auto overflow-hidden">
+        <ScrollArea className="flex-auto overflow-hidden">
           <div className="flex items-center gap-1.5">
             <Image
               src={product.restaurant.avatarImageUrl}
@@ -117,7 +118,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
               ))}
             </ul>
           </div>
-        </div>
+        </ScrollArea>
         <Button className="rounded-full w-full z-50 " onClick={handleAddToCart}>
           Adicionar ao carrinho
         </Button>
