@@ -12,6 +12,7 @@ interface RestaurantMenuPageProps {
 
 const isConsumptionMethodValid = (consumptionMethod: string) => {
   //A pagina só sera acesada caso houver um dos 2 no link
+  if (!consumptionMethod) return false;
   return ["DINE_IN", "TAKEANAY"].includes(consumptionMethod.toUpperCase());
 };
 
@@ -22,6 +23,7 @@ const RestaurantMenuPage = async ({
   const { slug } = await params;
 
   const { consumptionMethod } = await searchParams;
+  const normalizedMethod = consumptionMethod?.toUpperCase();
   const restaurant = await db.restaurant.findUnique({
     where: { slug },
     include: {
@@ -33,11 +35,22 @@ const RestaurantMenuPage = async ({
     },
   });
 
-  if (!isConsumptionMethodValid(consumptionMethod)) {
+  if (!isConsumptionMethodValid(normalizedMethod || "")) {
     return notFound();
   }
 
   if (!restaurant) {
+    return notFound();
+  }
+
+  // Defaults to true to keep legacy restaurants accessible
+  const allowDineIn = restaurant.allowDineIn ?? true;
+  const allowTakeaway = restaurant.allowTakeaway ?? true;
+
+  if (
+    (normalizedMethod === "DINE_IN" && !allowDineIn) ||
+    (normalizedMethod === "TAKEANAY" && !allowTakeaway)
+  ) {
     return notFound();
   }
 

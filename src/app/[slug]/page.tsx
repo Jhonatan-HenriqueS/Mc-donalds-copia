@@ -17,6 +17,11 @@ const RestaurantPage = async ({ params }: RestaurantPageProps) => {
     return notFound(); //Mostra o erro do next
   }
 
+  // Defaults to true to keep legacy restaurants available until admin changes
+  const allowDineIn = restaurant.allowDineIn ?? true;
+  const allowTakeaway = restaurant.allowTakeaway ?? true;
+  const hasAnyMethod = allowDineIn || allowTakeaway;
+
   return (
     <div className="h-screen flex flex-col items-center justify-center px-6 pt-24">
       <div className="flex flex-col items-center gap-2">
@@ -32,26 +37,36 @@ const RestaurantPage = async ({ params }: RestaurantPageProps) => {
       <div className="pt-12 text-center space-y-2">
         <h3 className="text-2x1 font-semibold">Seja Bem-vindo</h3>
         <p className="opacity-55">
-          Escolha como prefere aproveitar sua refeição <br />
-          Estamos aqui para oferecer praticidade e fechar cada detalhe
+          Escolha seu método de consumo <br />
+          Estamos aqui para te entregar a melhor experiência!
         </p>
       </div>
-      <div className="pt-14 grid grid-cols-2 gap-4">
-        <ConsumptionMethodOPtion
-          option="DINE_IN"
-          slug={slug}
-          buttonText="Comer no local"
-          imageUrl="/dine_in.png"
-          imageAlt="Comer no local"
-        />
-        <ConsumptionMethodOPtion
-          option="TAKEANAY"
-          slug={slug}
-          buttonText="Para entregar"
-          imageUrl="/takeaway.png"
-          imageAlt="Para entregar"
-        />
-      </div>
+      {hasAnyMethod ? (
+        <div className="pt-14 flex justify-center gap-4 ">
+          {allowDineIn && (
+            <ConsumptionMethodOPtion
+              option="DINE_IN"
+              slug={slug}
+              buttonText="Comer no local"
+              imageUrl="/dine_in.png"
+              imageAlt="Comer no local"
+            />
+          )}
+          {allowTakeaway && (
+            <ConsumptionMethodOPtion
+              option="TAKEANAY"
+              slug={slug}
+              buttonText="Para entregar"
+              imageUrl="/takeaway.png"
+              imageAlt="Para entregar"
+            />
+          )}
+        </div>
+      ) : (
+        <div className="pt-14 text-center text-muted-foreground">
+          <p>Este restaurante não está aceitando pedidos no momento.</p>
+        </div>
+      )}
     </div>
   );
 };

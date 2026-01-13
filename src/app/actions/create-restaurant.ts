@@ -49,6 +49,8 @@ export const createRestaurant = async (input: CreateRestaurantInput) => {
         description: '',
         avatarImageUrl: input.imageUrl,
         coverImageUrl: input.coverImageUrl,
+        allowDineIn: true,
+        allowTakeaway: true,
         userId: input.userId,
       },
     });

@@ -44,6 +44,8 @@ model Restaurant {
   description        String
   avatarImageUrl     String
   coverImageUrl      String
+  allowDineIn        Boolean             @default(true)
+  allowTakeaway      Boolean             @default(true)
   userId             String
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   menuCategorias     MenuCategory[] //Não salva no bd, mas referencia

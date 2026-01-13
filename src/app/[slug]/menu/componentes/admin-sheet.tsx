@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { OrderStatus, Prisma, Product } from '@prisma/client';
+import { OrderStatus, Prisma, Product } from "@prisma/client";
 import {
   Bell,
   Edit,
@@ -10,24 +10,26 @@ import {
   Plus,
   Trash2,
   Users,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+  UtensilsCrossed,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
-import { createCategory } from '@/app/[slug]/menu/actions/create-category';
-import { createProduct } from '@/app/[slug]/menu/actions/create-product';
-import { deleteCategory } from '@/app/[slug]/menu/actions/delete-category';
-import { deleteProduct } from '@/app/[slug]/menu/actions/delete-product';
-import { getCustomers } from '@/app/[slug]/menu/actions/get-customers';
-import { getOrders } from '@/app/[slug]/menu/actions/get-orders';
-import { getOrdersCount } from '@/app/[slug]/menu/actions/get-orders-count';
-import { getProducts } from '@/app/[slug]/menu/actions/get-products';
-import { updateOrderStatus } from '@/app/[slug]/menu/actions/update-order-status';
-import { updateProduct } from '@/app/[slug]/menu/actions/update-product';
-import { formatCpf } from '@/app/[slug]/menu/helpers/format-cpf';
-import { useOrderNotifications } from '@/app/[slug]/menu/hooks/use-order-notifications';
-import { logout } from '@/app/actions/logout';
+import { createCategory } from "@/app/[slug]/menu/actions/create-category";
+import { createProduct } from "@/app/[slug]/menu/actions/create-product";
+import { deleteCategory } from "@/app/[slug]/menu/actions/delete-category";
+import { deleteProduct } from "@/app/[slug]/menu/actions/delete-product";
+import { getCustomers } from "@/app/[slug]/menu/actions/get-customers";
+import { getOrders } from "@/app/[slug]/menu/actions/get-orders";
+import { getOrdersCount } from "@/app/[slug]/menu/actions/get-orders-count";
+import { getProducts } from "@/app/[slug]/menu/actions/get-products";
+import { updateConsumptionMethods } from "@/app/[slug]/menu/actions/update-consumption-methods";
+import { updateOrderStatus } from "@/app/[slug]/menu/actions/update-order-status";
+import { updateProduct } from "@/app/[slug]/menu/actions/update-product";
+import { formatCpf } from "@/app/[slug]/menu/helpers/format-cpf";
+import { useOrderNotifications } from "@/app/[slug]/menu/hooks/use-order-notifications";
+import { logout } from "@/app/actions/logout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,26 +39,26 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
-import { formatCurrency } from '@/helpers/format-currency';
+} from "@/components/ui/sheet";
+import { formatCurrency } from "@/helpers/format-currency";
 
 interface AdminSheetProps {
   isOpen: boolean;
@@ -91,6 +93,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [showManageProducts, setShowManageProducts] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
+  const [showConsumptionMethods, setShowConsumptionMethods] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<ProductWithCategory[]>([]);
   const [orders, setOrders] = useState<
@@ -116,30 +119,45 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<number | null>(null);
   const [totalMonthRevenue, setTotalMonthRevenue] = useState(0);
-  const [viewMode, setViewMode] = useState<'total' | 'month'>('total');
+  const [viewMode, setViewMode] = useState<"total" | "month">("total");
   const [categories, setCategories] = useState(restaurant.menuCategorias);
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const [hasNewOrders, setHasNewOrders] = useState(false);
   const [orderCount, setOrderCount] = useState(0);
   const [orderIds, setOrderIds] = useState<number[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [allowDineIn, setAllowDineIn] = useState(
+    restaurant.allowDineIn ?? true
+  );
+  const [allowTakeaway, setAllowTakeaway] = useState(
+    restaurant.allowTakeaway ?? true
+  );
+  const [lastSavedAllowDineIn, setLastSavedAllowDineIn] = useState(
+    restaurant.allowDineIn ?? true
+  );
+  const [lastSavedAllowTakeaway, setLastSavedAllowTakeaway] = useState(
+    restaurant.allowTakeaway ?? true
+  );
 
   // Hook de notificações para o painel admin
-  const { newOrderCount, markAsSeen, hasNewOrders: hasNewOrdersFromHook } =
-    useOrderNotifications({
-      restaurantId: restaurant.id,
-      currentOrderCount: orderCount,
-      currentOrderIds: orderIds,
-      enabled: isOpen,
-    });
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [ingredients, setIngredients] = useState('');
-  const [menuCategoryId, setMenuCategoryId] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const {
+    newOrderCount,
+    markAsSeen,
+    hasNewOrders: hasNewOrdersFromHook,
+  } = useOrderNotifications({
+    restaurantId: restaurant.id,
+    currentOrderCount: orderCount,
+    currentOrderIds: orderIds,
+    enabled: isOpen,
+  });
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [ingredients, setIngredients] = useState("");
+  const [menuCategoryId, setMenuCategoryId] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [categoryName, setCategoryName] = useState('');
+  const [categoryName, setCategoryName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -157,18 +175,21 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     imageUrl?: string;
   }>({});
   const [categoryError, setCategoryError] = useState<string | undefined>();
+  const [isSavingConsumptionMethods, setIsSavingConsumptionMethods] =
+    useState(false);
+  const [consumptionError, setConsumptionError] = useState<string | null>(null);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('O arquivo deve ser uma imagem');
+    if (!file.type.startsWith("image/")) {
+      toast.error("O arquivo deve ser uma imagem");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('O arquivo deve ter no máximo 5MB');
+      toast.error("O arquivo deve ter no máximo 5MB");
       return;
     }
 
@@ -176,17 +197,17 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
+      const response = await fetch("/api/upload", {
+        method: "POST",
         body: formData,
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao fazer upload');
+        throw new Error(data.error || "Erro ao fazer upload");
       }
 
       setImageUrl(data.url);
@@ -194,10 +215,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       if (errors.imageUrl) {
         setErrors((prev) => ({ ...prev, imageUrl: undefined }));
       }
-      toast.success('Imagem carregada com sucesso!');
+      toast.success("Imagem carregada com sucesso!");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Erro ao fazer upload'
+        error instanceof Error ? error.message : "Erro ao fazer upload"
       );
     } finally {
       setIsUploading(false);
@@ -217,25 +238,25 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     } = {};
 
     if (!name.trim()) {
-      newErrors.name = 'O nome é obrigatório';
+      newErrors.name = "O nome é obrigatório";
     }
 
     if (!description.trim()) {
-      newErrors.description = 'A descrição é obrigatória';
+      newErrors.description = "A descrição é obrigatória";
     }
 
     if (!price.trim()) {
-      newErrors.price = 'O preço é obrigatório';
+      newErrors.price = "O preço é obrigatório";
     } else if (isNaN(Number(price)) || Number(price) <= 0) {
-      newErrors.price = 'O preço deve ser um número válido maior que zero';
+      newErrors.price = "O preço deve ser um número válido maior que zero";
     }
 
     if (!menuCategoryId) {
-      newErrors.menuCategoryId = 'A categoria é obrigatória';
+      newErrors.menuCategoryId = "A categoria é obrigatória";
     }
 
     if (!imageUrl.trim()) {
-      newErrors.imageUrl = 'A imagem é obrigatória';
+      newErrors.imageUrl = "A imagem é obrigatória";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -247,7 +268,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
     try {
       const ingredientsArray = ingredients
-        .split(',')
+        .split(",")
         .map((ing) => ing.trim())
         .filter((ing) => ing.length > 0);
 
@@ -280,29 +301,29 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       if (result.success) {
         toast.success(
           editingProduct
-            ? 'Produto atualizado com sucesso!'
-            : 'Produto criado com sucesso!'
+            ? "Produto atualizado com sucesso!"
+            : "Produto criado com sucesso!"
         );
         // Limpar formulário
-        setName('');
-        setDescription('');
-        setPrice('');
-        setIngredients('');
-        setMenuCategoryId('');
-        setImageUrl('');
+        setName("");
+        setDescription("");
+        setPrice("");
+        setIngredients("");
+        setMenuCategoryId("");
+        setImageUrl("");
         setImagePreview(null);
         setEditingProduct(null);
         if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+          fileInputRef.current.value = "";
         }
         setShowAddProduct(false);
         // Recarregar a página para mostrar as mudanças
         window.location.reload();
       } else {
-        toast.error(result.error || 'Erro ao criar produto');
+        toast.error(result.error || "Erro ao criar produto");
       }
     } catch {
-      toast.error('Erro ao processar solicitação');
+      toast.error("Erro ao processar solicitação");
     } finally {
       setIsLoading(false);
     }
@@ -318,11 +339,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         setCustomers(result.customers);
         setTotalMonthRevenue(result.totalMonthRevenue || 0);
       } else {
-        toast.error(result.error || 'Erro ao carregar clientes');
+        toast.error(result.error || "Erro ao carregar clientes");
       }
     } catch (error) {
-      console.error('Erro ao buscar clientes:', error);
-      toast.error('Erro ao buscar clientes');
+      console.error("Erro ao buscar clientes:", error);
+      toast.error("Erro ao buscar clientes");
     } finally {
       setIsLoadingCustomers(false);
     }
@@ -337,11 +358,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       if (result.success && result.products) {
         setProducts(result.products);
       } else {
-        toast.error(result.error || 'Erro ao carregar produtos');
+        toast.error(result.error || "Erro ao carregar produtos");
       }
     } catch (error) {
-      console.error('Erro ao buscar produtos:', error);
-      toast.error('Erro ao buscar produtos');
+      console.error("Erro ao buscar produtos:", error);
+      toast.error("Erro ao buscar produtos");
     } finally {
       setIsLoadingProducts(false);
     }
@@ -352,7 +373,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     setName(product.name);
     setDescription(product.description);
     setPrice(product.price.toString());
-    setIngredients(product.ingredients.join(', '));
+    setIngredients(product.ingredients.join(", "));
     setMenuCategoryId(product.menuCategoryId);
     setImageUrl(product.imageUrl);
     setImagePreview(product.imageUrl);
@@ -367,17 +388,17 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     try {
       const result = await deleteProduct(deleteProductId, restaurant.id);
       if (result.success) {
-        toast.success('Produto excluído com sucesso!');
+        toast.success("Produto excluído com sucesso!");
         setProducts((prev) => prev.filter((p) => p.id !== deleteProductId));
         setDeleteProductId(null);
         // Recarregar a página para atualizar o menu
         window.location.reload();
       } else {
-        toast.error(result.error || 'Erro ao excluir produto');
+        toast.error(result.error || "Erro ao excluir produto");
       }
     } catch (error) {
-      console.error('Erro ao excluir produto:', error);
-      toast.error('Erro ao excluir produto');
+      console.error("Erro ao excluir produto:", error);
+      toast.error("Erro ao excluir produto");
     } finally {
       setIsDeletingProduct(false);
     }
@@ -390,19 +411,54 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     try {
       const result = await deleteCategory(deleteCategoryId, restaurant.id);
       if (result.success) {
-        toast.success('Categoria excluída com sucesso!');
+        toast.success("Categoria excluída com sucesso!");
         setCategories((prev) => prev.filter((c) => c.id !== deleteCategoryId));
         setDeleteCategoryId(null);
         // Recarregar a página para atualizar o menu
         window.location.reload();
       } else {
-        toast.error(result.error || 'Erro ao excluir categoria');
+        toast.error(result.error || "Erro ao excluir categoria");
       }
     } catch (error) {
-      console.error('Erro ao excluir categoria:', error);
-      toast.error('Erro ao excluir categoria');
+      console.error("Erro ao excluir categoria:", error);
+      toast.error("Erro ao excluir categoria");
     } finally {
       setIsDeletingCategory(false);
+    }
+  };
+
+  const handleSaveConsumptionMethods = async () => {
+    setConsumptionError(null);
+
+    if (!allowDineIn && !allowTakeaway) {
+      setConsumptionError("Selecione ao menos um método de consumo.");
+      return;
+    }
+
+    setIsSavingConsumptionMethods(true);
+    try {
+      const result = await updateConsumptionMethods({
+        restaurantId: restaurant.id,
+        allowDineIn,
+        allowTakeaway,
+      });
+
+      if (result.success && result.restaurant) {
+        // && result.restaurant adicionado
+        toast.success("Métodos de consumo atualizados!");
+        setLastSavedAllowDineIn(result.restaurant.allowDineIn);
+        setLastSavedAllowTakeaway(result.restaurant.allowTakeaway);
+        setAllowDineIn(result.restaurant.allowDineIn);
+        setAllowTakeaway(result.restaurant.allowTakeaway);
+        setShowConsumptionMethods(false);
+      } else {
+        toast.error(result.error || "Erro ao atualizar métodos de consumo.");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar métodos de consumo:", error);
+      toast.error("Erro ao salvar métodos de consumo.");
+    } finally {
+      setIsSavingConsumptionMethods(false);
     }
   };
 
@@ -411,7 +467,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     setCategoryError(undefined);
 
     if (!categoryName.trim()) {
-      setCategoryError('O nome da categoria é obrigatório');
+      setCategoryError("O nome da categoria é obrigatório");
       return;
     }
 
@@ -424,16 +480,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       });
 
       if (result.success && result.category) {
-        toast.success('Categoria criada com sucesso!');
+        toast.success("Categoria criada com sucesso!");
         // Adicionar nova categoria à lista local
         setCategories((prev) => [...prev, result.category!]);
-        setCategoryName('');
+        setCategoryName("");
         setShowAddCategory(false);
       } else {
-        toast.error(result.error || 'Erro ao criar categoria');
+        toast.error(result.error || "Erro ao criar categoria");
       }
     } catch {
-      toast.error('Erro ao processar solicitação');
+      toast.error("Erro ao processar solicitação");
     } finally {
       setIsLoadingCategory(false);
     }
@@ -455,11 +511,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         setOrderIds(result.orders.map((order) => order.id));
         setOrderCount(result.orders.length);
       } else {
-        toast.error(result.error || 'Erro ao carregar pedidos');
+        toast.error(result.error || "Erro ao carregar pedidos");
       }
     } catch (error) {
-      console.error('Erro ao buscar pedidos:', error);
-      toast.error('Erro ao buscar pedidos');
+      console.error("Erro ao buscar pedidos:", error);
+      toast.error("Erro ao buscar pedidos");
     } finally {
       setIsLoadingOrders(false);
     }
@@ -473,7 +529,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     try {
       const result = await updateOrderStatus(orderId, restaurant.id, newStatus);
       if (result.success) {
-        toast.success('Status do pedido atualizado com sucesso!');
+        toast.success("Status do pedido atualizado com sucesso!");
         // Atualizar o pedido na lista local
         setOrders((prev) =>
           prev.map((order) =>
@@ -481,11 +537,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           )
         );
       } else {
-        toast.error(result.error || 'Erro ao atualizar status do pedido');
+        toast.error(result.error || "Erro ao atualizar status do pedido");
       }
     } catch (error) {
-      console.error('Erro ao atualizar status do pedido:', error);
-      toast.error('Erro ao atualizar status do pedido');
+      console.error("Erro ao atualizar status do pedido:", error);
+      toast.error("Erro ao atualizar status do pedido");
     } finally {
       setIsUpdatingStatus(null);
     }
@@ -503,7 +559,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           setOrderIds(result.orderIds);
         }
       } catch (error) {
-        console.error('Erro ao buscar contador de pedidos:', error);
+        console.error("Erro ao buscar contador de pedidos:", error);
       }
     };
 
@@ -541,7 +597,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           }
         }
       } catch (error) {
-        console.error('Erro ao verificar novos pedidos:', error);
+        console.error("Erro ao verificar novos pedidos:", error);
       }
     }, 5000); // Verifica a cada 5 segundos
 
@@ -550,14 +606,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   const getStatusLabel = (status: OrderStatus) => {
     switch (status) {
-      case 'PENDING':
-        return 'Pendente';
-      case 'IN_PREPARATION':
-        return 'Em Preparo';
-      case 'FINISHED':
-        return 'Finalizado';
-      case 'OUT_FOR_DELIVERY':
-        return 'Enviado para Entrega';
+      case "PENDING":
+        return "Pendente";
+      case "IN_PREPARATION":
+        return "Em Preparo";
+      case "FINISHED":
+        return "Finalizado";
+      case "OUT_FOR_DELIVERY":
+        return "Enviado para Entrega";
       default:
         return status;
     }
@@ -565,26 +621,26 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'IN_PREPARATION':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'FINISHED':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'OUT_FOR_DELIVERY':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "IN_PREPARATION":
+        return "bg-blue-100 text-blue-800 border-blue-300";
+      case "FINISHED":
+        return "bg-green-100 text-green-800 border-green-300";
+      case "OUT_FOR_DELIVERY":
+        return "bg-purple-100 text-purple-800 border-purple-300";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return "bg-gray-100 text-gray-800 border-gray-300";
     }
   };
 
   const formatDateTime = (date: Date) => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(new Date(date));
   };
 
@@ -603,7 +659,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           !showCustomers &&
           !showManageProducts &&
           !showManageCategories &&
-          !showOrders ? (
+          !showOrders &&
+          !showConsumptionMethods ? (
             <div className="flex-auto flex flex-col gap-3 sm:gap-4">
               <Button
                 onClick={() => setShowAddCategory(true)}
@@ -640,6 +697,15 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 Gerenciar Categorias
               </Button>
               <Button
+                onClick={() => setShowConsumptionMethods(true)}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
+              >
+                <UtensilsCrossed className="mr-2 h-4 w-4" />
+                Métodos de Consumo
+              </Button>
+              <Button
                 onClick={handleShowCustomers}
                 className="w-full text-sm sm:text-base"
                 variant="outline"
@@ -658,7 +724,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 Pedidos
                 {hasNewOrdersFromHook && (
                   <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                    {newOrderCount > 9 ? '9+' : newOrderCount}
+                    {newOrderCount > 9 ? "9+" : newOrderCount}
                   </span>
                 )}
               </Button>
@@ -667,9 +733,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   onClick={async () => {
                     const result = await logout();
                     if (result.success) {
-                      router.push('/');
+                      router.push("/");
                     } else {
-                      toast.error('Erro ao fazer logout');
+                      toast.error("Erro ao fazer logout");
                     }
                   }}
                   variant="outline"
@@ -703,7 +769,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         type="text"
                         placeholder="Digite o nome da categoria"
                         className={`text-sm sm:text-base ${
-                          categoryError ? 'border-destructive' : ''
+                          categoryError ? "border-destructive" : ""
                         }`}
                         value={categoryName}
                         onChange={(e) => {
@@ -728,7 +794,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         className="flex-1 text-sm sm:text-base"
                         onClick={() => {
                           setShowAddCategory(false);
-                          setCategoryName('');
+                          setCategoryName("");
                           setCategoryError(undefined);
                         }}
                         disabled={isLoadingCategory}
@@ -740,10 +806,91 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         className="flex-1 text-sm sm:text-base"
                         disabled={isLoadingCategory}
                       >
-                        {isLoadingCategory ? 'Criando...' : 'Criar Categoria'}
+                        {isLoadingCategory ? "Criando..." : "Criar Categoria"}
                       </Button>
                     </div>
                   </form>
+                </CardContent>
+              </Card>
+            </div>
+          ) : showConsumptionMethods ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Métodos de Consumo
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                      onClick={() => {
+                        setShowConsumptionMethods(false);
+                        setConsumptionError(null);
+                        setAllowDineIn(lastSavedAllowDineIn);
+                        setAllowTakeaway(lastSavedAllowTakeaway);
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 sm:space-y-5">
+                    <p className="text-sm sm:text-base text-muted-foreground">
+                      Escolha quais métodos de consumo o restaurante aceita no
+                      momento. Pelo menos um precisa estar habilitado.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <Button
+                        type="button"
+                        variant={allowDineIn ? "default" : "outline"}
+                        size="lg"
+                        className="justify-start text-sm sm:text-base"
+                        onClick={() => {
+                          setAllowDineIn((prev) => !prev);
+                          setConsumptionError(null);
+                        }}
+                        disabled={isSavingConsumptionMethods}
+                      >
+                        <UtensilsCrossed className="mr-2 h-4 w-4" />
+                        Comer no local
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={allowTakeaway ? "default" : "outline"}
+                        size="lg"
+                        className="justify-start text-sm sm:text-base"
+                        onClick={() => {
+                          setAllowTakeaway((prev) => !prev);
+                          setConsumptionError(null);
+                        }}
+                        disabled={isSavingConsumptionMethods}
+                      >
+                        <Package className="mr-2 h-4 w-4" />
+                        Entrega
+                      </Button>
+                    </div>
+                    {consumptionError && (
+                      <p className="text-xs sm:text-sm text-destructive">
+                        {consumptionError}
+                      </p>
+                    )}
+                    <div className="pt-2">
+                      <Button
+                        type="button"
+                        className="flex-1 w-full text-sm sm:text-base"
+                        onClick={handleSaveConsumptionMethods}
+                        disabled={isSavingConsumptionMethods}
+                      >
+                        {isSavingConsumptionMethods
+                          ? "Salvando..."
+                          : "Salvar métodos"}
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -764,7 +911,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         setShowCustomers(false);
                         setCustomers([]);
                         setTotalMonthRevenue(0);
-                        setViewMode('total');
+                        setViewMode("total");
                       }}
                     >
                       Voltar
@@ -792,29 +939,30 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                           <Button
                             type="button"
                             variant={
-                              viewMode === 'total' ? 'default' : 'outline'
+                              viewMode === "total" ? "default" : "outline"
                             }
                             size="sm"
                             className="flex-1 sm:flex-initial text-xs sm:text-sm"
-                            onClick={() => setViewMode('total')}
+                            onClick={() => setViewMode("total")}
                           >
-                            Total Gasto
+                            Total Ganho
                           </Button>
                           <Button
                             type="button"
                             variant={
-                              viewMode === 'month' ? 'default' : 'outline'
+                              viewMode === "month" ? "default" : "outline"
                             }
                             size="sm"
                             className="flex-1 sm:flex-initial text-xs sm:text-sm"
-                            onClick={() => setViewMode('month')}
+                            onClick={() => setViewMode("month")}
                           >
                             Total do Mês
                           </Button>
                         </div>
                         <div className="text-center sm:text-right">
                           <p className="text-xs text-muted-foreground">
-                            Total ganho no mês
+                            Total ganho
+                            {viewMode === "month" ? "no mês" : ""}:
                           </p>
                           <p className="font-semibold text-base sm:text-lg">
                             {formatCurrency(totalMonthRevenue)}
@@ -840,12 +988,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                             <div className="text-left sm:text-right w-full sm:w-auto">
                               <p className="font-semibold text-sm sm:text-base">
                                 {formatCurrency(
-                                  viewMode === 'total'
+                                  viewMode === "total"
                                     ? customer.totalSpent
                                     : customer.totalSpentThisMonth
                                 )}
                               </p>
-                              {viewMode === 'month' &&
+                              {viewMode === "month" &&
                                 customer.totalSpentThisMonth === 0 && (
                                   <p className="text-xs text-muted-foreground">
                                     Sem pedidos este mês
@@ -866,7 +1014,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 <CardHeader className="pb-3 sm:pb-6">
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="text-base sm:text-lg">
-                      {editingProduct ? 'Editar Produto' : 'Adicionar Produto'}
+                      {editingProduct ? "Editar Produto" : "Adicionar Produto"}
                     </CardTitle>
                     {editingProduct && (
                       <Button
@@ -876,12 +1024,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         className="text-xs sm:text-sm"
                         onClick={() => {
                           setEditingProduct(null);
-                          setName('');
-                          setDescription('');
-                          setPrice('');
-                          setIngredients('');
-                          setMenuCategoryId('');
-                          setImageUrl('');
+                          setName("");
+                          setDescription("");
+                          setPrice("");
+                          setIngredients("");
+                          setMenuCategoryId("");
+                          setImageUrl("");
                           setImagePreview(null);
                           setErrors({});
                         }}
@@ -918,7 +1066,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       >
                         <SelectTrigger
                           className={`text-sm sm:text-base ${
-                            errors.menuCategoryId ? 'border-destructive' : ''
+                            errors.menuCategoryId ? "border-destructive" : ""
                           }`}
                         >
                           <SelectValue placeholder="Selecione a categoria" />
@@ -947,7 +1095,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         type="text"
                         placeholder="Digite o nome do produto"
                         className={`text-sm sm:text-base ${
-                          errors.name ? 'border-destructive' : ''
+                          errors.name ? "border-destructive" : ""
                         }`}
                         value={name}
                         onChange={(e) => {
@@ -977,7 +1125,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         type="text"
                         placeholder="Digite a descrição do produto"
                         className={`text-sm sm:text-base ${
-                          errors.description ? 'border-destructive' : ''
+                          errors.description ? "border-destructive" : ""
                         }`}
                         value={description}
                         onChange={(e) => {
@@ -1008,7 +1156,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         step="0.01"
                         placeholder="0.00"
                         className={`text-sm sm:text-base ${
-                          errors.price ? 'border-destructive' : ''
+                          errors.price ? "border-destructive" : ""
                         }`}
                         value={price}
                         onChange={(e) => {
@@ -1079,10 +1227,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               size="sm"
                               className="mt-2 w-full text-sm sm:text-base"
                               onClick={() => {
-                                setImageUrl('');
+                                setImageUrl("");
                                 setImagePreview(null);
                                 if (fileInputRef.current) {
-                                  fileInputRef.current.value = '';
+                                  fileInputRef.current.value = "";
                                 }
                               }}
                               disabled={isLoading || isUploading}
@@ -1100,8 +1248,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                           >
                             <ImageIcon className="mr-2 h-4 w-4" />
                             {isUploading
-                              ? 'Carregando...'
-                              : 'Selecionar da Galeria'}
+                              ? "Carregando..."
+                              : "Selecionar da Galeria"}
                           </Button>
                         )}
                       </div>
@@ -1119,12 +1267,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         className="flex-1 text-sm sm:text-base"
                         onClick={() => {
                           setShowAddProduct(false);
-                          setName('');
-                          setDescription('');
-                          setPrice('');
-                          setIngredients('');
-                          setMenuCategoryId('');
-                          setImageUrl('');
+                          setName("");
+                          setDescription("");
+                          setPrice("");
+                          setIngredients("");
+                          setMenuCategoryId("");
+                          setImageUrl("");
                           setImagePreview(null);
                           setErrors({});
                         }}
@@ -1139,11 +1287,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       >
                         {isLoading
                           ? editingProduct
-                            ? 'Atualizando...'
-                            : 'Criando...'
+                            ? "Atualizando..."
+                            : "Criando..."
                           : editingProduct
-                            ? 'Atualizar Produto'
-                            : 'Criar Produto'}
+                            ? "Atualizar Produto"
+                            : "Criar Produto"}
                       </Button>
                     </div>
                   </form>
@@ -1227,10 +1375,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 {category.name}
                               </h3>
                               <p className="text-xs sm:text-sm text-muted-foreground">
-                                {category.products.length}{' '}
+                                {category.products.length}{" "}
                                 {category.products.length === 1
-                                  ? 'produto'
-                                  : 'produtos'}
+                                  ? "produto"
+                                  : "produtos"}
                               </p>
                             </div>
                             <div className="space-y-2 pl-2 sm:pl-4">
@@ -1419,15 +1567,15 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 Método de Consumo
                               </p>
                               <p className="text-sm sm:text-base">
-                                {order.consumptionMethod === 'TAKEANAY'
-                                  ? 'Entrega'
-                                  : 'Comer no Local'}
+                                {order.consumptionMethod === "TAKEANAY"
+                                  ? "Entrega"
+                                  : "Comer no Local"}
                               </p>
                             </div>
                           </div>
 
                           {/* Endereço de entrega (apenas para TAKEANAY) */}
-                          {order.consumptionMethod === 'TAKEANAY' &&
+                          {order.consumptionMethod === "TAKEANAY" &&
                             order.deliveryStreet && (
                               <div className="border-t pt-3 space-y-1">
                                 <p className="text-xs sm:text-sm font-medium">
@@ -1435,7 +1583,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 </p>
                                 <div className="text-xs sm:text-sm text-muted-foreground space-y-0.5">
                                   <p>
-                                    {order.deliveryStreet},{' '}
+                                    {order.deliveryStreet},{" "}
                                     {order.deliveryNumber}
                                   </p>
                                   {order.deliveryComplement && (
@@ -1444,7 +1592,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     </p>
                                   )}
                                   <p>
-                                    {order.deliveryNeighborhood} -{' '}
+                                    {order.deliveryNeighborhood} -{" "}
                                     {order.deliveryCity}/{order.deliveryState}
                                   </p>
                                 </div>
@@ -1498,18 +1646,18 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               <Button
                                 type="button"
                                 variant={
-                                  order.status === 'PENDING'
-                                    ? 'default'
-                                    : 'outline'
+                                  order.status === "PENDING"
+                                    ? "default"
+                                    : "outline"
                                 }
                                 size="sm"
                                 className="text-xs sm:text-sm"
                                 onClick={() =>
-                                  handleUpdateOrderStatus(order.id, 'PENDING')
+                                  handleUpdateOrderStatus(order.id, "PENDING")
                                 }
                                 disabled={
                                   isUpdatingStatus === order.id ||
-                                  order.status === 'PENDING'
+                                  order.status === "PENDING"
                                 }
                               >
                                 Pendente
@@ -1517,44 +1665,44 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               <Button
                                 type="button"
                                 variant={
-                                  order.status === 'IN_PREPARATION'
-                                    ? 'default'
-                                    : 'outline'
+                                  order.status === "IN_PREPARATION"
+                                    ? "default"
+                                    : "outline"
                                 }
                                 size="sm"
                                 className="text-xs sm:text-sm"
                                 onClick={() =>
                                   handleUpdateOrderStatus(
                                     order.id,
-                                    'IN_PREPARATION'
+                                    "IN_PREPARATION"
                                   )
                                 }
                                 disabled={
                                   isUpdatingStatus === order.id ||
-                                  order.status === 'IN_PREPARATION'
+                                  order.status === "IN_PREPARATION"
                                 }
                               >
                                 Em Preparo
                               </Button>
-                              {order.consumptionMethod === 'TAKEANAY' && (
+                              {order.consumptionMethod === "TAKEANAY" && (
                                 <Button
                                   type="button"
                                   variant={
-                                    order.status === 'OUT_FOR_DELIVERY'
-                                      ? 'default'
-                                      : 'outline'
+                                    order.status === "OUT_FOR_DELIVERY"
+                                      ? "default"
+                                      : "outline"
                                   }
                                   size="sm"
                                   className="text-xs sm:text-sm"
                                   onClick={() =>
                                     handleUpdateOrderStatus(
                                       order.id,
-                                      'OUT_FOR_DELIVERY'
+                                      "OUT_FOR_DELIVERY"
                                     )
                                   }
                                   disabled={
                                     isUpdatingStatus === order.id ||
-                                    order.status === 'OUT_FOR_DELIVERY'
+                                    order.status === "OUT_FOR_DELIVERY"
                                   }
                                 >
                                   Enviado para Entrega
@@ -1563,18 +1711,18 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               <Button
                                 type="button"
                                 variant={
-                                  order.status === 'FINISHED'
-                                    ? 'default'
-                                    : 'outline'
+                                  order.status === "FINISHED"
+                                    ? "default"
+                                    : "outline"
                                 }
                                 size="sm"
                                 className="text-xs sm:text-sm"
                                 onClick={() =>
-                                  handleUpdateOrderStatus(order.id, 'FINISHED')
+                                  handleUpdateOrderStatus(order.id, "FINISHED")
                                 }
                                 disabled={
                                   isUpdatingStatus === order.id ||
-                                  order.status === 'FINISHED'
+                                  order.status === "FINISHED"
                                 }
                               >
                                 Finalizado
@@ -1616,7 +1764,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               disabled={isDeletingProduct}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeletingProduct ? 'Excluindo...' : 'Excluir'}
+              {isDeletingProduct ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1646,7 +1794,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               disabled={isDeletingCategory}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeletingCategory ? 'Excluindo...' : 'Excluir'}
+              {isDeletingCategory ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
