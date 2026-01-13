@@ -100,7 +100,6 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [showConsumptionMethods, setShowConsumptionMethods] = useState(false);
   const [showUpdateAvatar, setShowUpdateAvatar] = useState(false);
   const [showUpdateCover, setShowUpdateCover] = useState(false);
-  const [showUpdateSlug, setShowUpdateSlug] = useState(false);
   const [ordersView, setOrdersView] = useState<"today" | "all">("today");
   const [ordersStatusFilter, setOrdersStatusFilter] = useState<
     OrderStatus | "ALL"
@@ -857,8 +856,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           !showOrders &&
           !showConsumptionMethods &&
           !showUpdateAvatar &&
-          !showUpdateCover &&
-          !showUpdateSlug ? (
+          !showUpdateCover ? (
             <div className="flex-auto flex flex-col gap-3 sm:gap-4">
               <Button
                 onClick={() => setShowAddCategory(true)}
@@ -921,15 +919,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 <ImageIcon className="mr-2 h-4 w-4" />
                 Alterar capa
               </Button>
-              <Button
-                onClick={() => setShowUpdateSlug(true)}
-                className="w-full text-sm sm:text-base"
-                variant="outline"
-                size="lg"
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Alterar slug
-              </Button>
+
               <Button
                 onClick={handleShowCustomers}
                 className="w-full text-sm sm:text-base"
@@ -2006,23 +1996,29 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {(["ALL", "PENDING", "IN_PREPARATION", "OUT_FOR_DELIVERY", "FINISHED"] as const).map(
-                      (status) => (
-                        <Button
-                          key={status}
-                          type="button"
-                          size="sm"
-                          variant={
-                            ordersStatusFilter === status ? "default" : "outline"
-                          }
-                          onClick={() => setOrdersStatusFilter(status)}
-                        >
-                          {status === "ALL"
-                            ? "Todos status"
-                            : getStatusLabel(status as OrderStatus)}
-                        </Button>
-                      )
-                    )}
+                    {(
+                      [
+                        "ALL",
+                        "PENDING",
+                        "IN_PREPARATION",
+                        "OUT_FOR_DELIVERY",
+                        "FINISHED",
+                      ] as const
+                    ).map((status) => (
+                      <Button
+                        key={status}
+                        type="button"
+                        size="sm"
+                        variant={
+                          ordersStatusFilter === status ? "default" : "outline"
+                        }
+                        onClick={() => setOrdersStatusFilter(status)}
+                      >
+                        {status === "ALL"
+                          ? "Todos status"
+                          : getStatusLabel(status as OrderStatus)}
+                      </Button>
+                    ))}
                   </div>
 
                   {isLoadingOrders ? (
@@ -2064,7 +2060,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         );
                       }
 
-                      const renderOrderCard = (order: (typeof orders)[number]) => (
+                      const renderOrderCard = (
+                        order: (typeof orders)[number]
+                      ) => (
                         <div
                           key={order.id}
                           className="border rounded-lg p-3 sm:p-4 space-y-3"
