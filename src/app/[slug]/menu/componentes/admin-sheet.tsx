@@ -11,6 +11,7 @@ import {
   Trash2,
   Users,
   UtensilsCrossed,
+  Wand2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -27,6 +28,8 @@ import { getProducts } from "@/app/[slug]/menu/actions/get-products";
 import { updateConsumptionMethods } from "@/app/[slug]/menu/actions/update-consumption-methods";
 import { updateOrderStatus } from "@/app/[slug]/menu/actions/update-order-status";
 import { updateProduct } from "@/app/[slug]/menu/actions/update-product";
+import { updateRestaurantAvatar } from "@/app/[slug]/menu/actions/update-restaurant-avatar";
+import { updateRestaurantCover } from "@/app/[slug]/menu/actions/update-restaurant-cover";
 import { formatCpf } from "@/app/[slug]/menu/helpers/format-cpf";
 import { useOrderNotifications } from "@/app/[slug]/menu/hooks/use-order-notifications";
 import { logout } from "@/app/actions/logout";
@@ -87,6 +90,7 @@ type ProductWithCategory = Product & {
 
 const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const router = useRouter();
+
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [showCustomers, setShowCustomers] = useState(false);
@@ -94,6 +98,13 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
   const [showConsumptionMethods, setShowConsumptionMethods] = useState(false);
+  const [showUpdateAvatar, setShowUpdateAvatar] = useState(false);
+  const [showUpdateCover, setShowUpdateCover] = useState(false);
+  const [showUpdateSlug, setShowUpdateSlug] = useState(false);
+  const [ordersView, setOrdersView] = useState<"today" | "all">("today");
+  const [ordersStatusFilter, setOrdersStatusFilter] = useState<
+    OrderStatus | "ALL"
+  >("ALL");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<ProductWithCategory[]>([]);
   const [orders, setOrders] = useState<
@@ -126,6 +137,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [orderCount, setOrderCount] = useState(0);
   const [orderIds, setOrderIds] = useState<number[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
   const [allowDineIn, setAllowDineIn] = useState(
     restaurant.allowDineIn ?? true
   );
@@ -157,10 +170,30 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [menuCategoryId, setMenuCategoryId] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [avatarImageUrl, setAvatarImageUrl] = useState(
+    restaurant.avatarImageUrl
+  );
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(
+    restaurant.avatarImageUrl
+  );
+  const [lastSavedAvatar, setLastSavedAvatar] = useState(
+    restaurant.avatarImageUrl
+  );
+  const [coverImageUrl, setCoverImageUrl] = useState(restaurant.coverImageUrl);
+  const [coverPreview, setCoverPreview] = useState<string | null>(
+    restaurant.coverImageUrl
+  );
+  const [lastSavedCover, setLastSavedCover] = useState(
+    restaurant.coverImageUrl
+  );
   const [categoryName, setCategoryName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isSavingCover, setIsSavingCover] = useState(false);
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [editingProduct, setEditingProduct] =
     useState<ProductWithCategory | null>(null);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
@@ -178,6 +211,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [isSavingConsumptionMethods, setIsSavingConsumptionMethods] =
     useState(false);
   const [consumptionError, setConsumptionError] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [coverError, setCoverError] = useState<string | null>(null);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -222,6 +257,90 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       );
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("O arquivo deve ser uma imagem");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 5MB");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao fazer upload");
+      }
+
+      setAvatarImageUrl(data.url);
+      setAvatarPreview(data.url);
+      setAvatarError(null);
+      toast.success("Logo carregado com sucesso!");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao fazer upload"
+      );
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleCoverSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("O arquivo deve ser uma imagem");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 5MB");
+      return;
+    }
+
+    setIsUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao fazer upload");
+      }
+
+      setCoverImageUrl(data.url);
+      setCoverPreview(data.url);
+      setCoverError(null);
+      toast.success("Capa carregada com sucesso!");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao fazer upload"
+      );
+    } finally {
+      setIsUploadingCover(false);
     }
   };
 
@@ -462,6 +581,72 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     }
   };
 
+  const handleSaveAvatar = async () => {
+    setAvatarError(null);
+
+    if (!avatarImageUrl.trim()) {
+      setAvatarError("Selecione uma imagem para o logo.");
+      return;
+    }
+
+    setIsSavingAvatar(true);
+    try {
+      const result = await updateRestaurantAvatar({
+        restaurantId: restaurant.id,
+        avatarImageUrl,
+      });
+
+      if (result.success && result.restaurant) {
+        toast.success("Logo atualizado com sucesso!");
+        setAvatarPreview(result.restaurant.avatarImageUrl);
+        setAvatarImageUrl(result.restaurant.avatarImageUrl);
+        setLastSavedAvatar(result.restaurant.avatarImageUrl);
+        setShowUpdateAvatar(false);
+        router.refresh();
+      } else {
+        toast.error(result.error || "Erro ao atualizar logo.");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar logo:", error);
+      toast.error("Erro ao atualizar logo.");
+    } finally {
+      setIsSavingAvatar(false);
+    }
+  };
+
+  const handleSaveCover = async () => {
+    setCoverError(null);
+
+    if (!coverImageUrl.trim()) {
+      setCoverError("Selecione uma imagem para a capa.");
+      return;
+    }
+
+    setIsSavingCover(true);
+    try {
+      const result = await updateRestaurantCover({
+        restaurantId: restaurant.id,
+        coverImageUrl,
+      });
+
+      if (result.success && result.restaurant) {
+        toast.success("Capa atualizada com sucesso!");
+        setCoverPreview(result.restaurant.coverImageUrl);
+        setCoverImageUrl(result.restaurant.coverImageUrl);
+        setLastSavedCover(result.restaurant.coverImageUrl);
+        setShowUpdateCover(false);
+        router.refresh();
+      } else {
+        toast.error(result.error || "Erro ao atualizar capa.");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar capa:", error);
+      toast.error("Erro ao atualizar capa.");
+    } finally {
+      setIsSavingCover(false);
+    }
+  };
+
   const handleCategorySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCategoryError(undefined);
@@ -644,6 +829,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     }).format(new Date(date));
   };
 
+  const isToday = (date: Date) => {
+    const now = new Date();
+    const d = new Date(date);
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className="w-[90%] lg:min-w-[40%]">
@@ -660,7 +855,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           !showManageProducts &&
           !showManageCategories &&
           !showOrders &&
-          !showConsumptionMethods ? (
+          !showConsumptionMethods &&
+          !showUpdateAvatar &&
+          !showUpdateCover &&
+          !showUpdateSlug ? (
             <div className="flex-auto flex flex-col gap-3 sm:gap-4">
               <Button
                 onClick={() => setShowAddCategory(true)}
@@ -704,6 +902,33 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               >
                 <UtensilsCrossed className="mr-2 h-4 w-4" />
                 Métodos de Consumo
+              </Button>
+              <Button
+                onClick={() => setShowUpdateAvatar(true)}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
+              >
+                <Wand2 className="mr-2 h-4 w-4" />
+                Alterar logo
+              </Button>
+              <Button
+                onClick={() => setShowUpdateCover(true)}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
+              >
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Alterar capa
+              </Button>
+              <Button
+                onClick={() => setShowUpdateSlug(true)}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Alterar slug
               </Button>
               <Button
                 onClick={handleShowCustomers}
@@ -810,6 +1035,250 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       </Button>
                     </div>
                   </form>
+                </CardContent>
+              </Card>
+            </div>
+          ) : showUpdateAvatar ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Alterar logo
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                      onClick={() => {
+                        setShowUpdateAvatar(false);
+                        setAvatarError(null);
+                        setAvatarImageUrl(lastSavedAvatar);
+                        setAvatarPreview(lastSavedAvatar);
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 sm:space-y-5">
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    Atualize a logo (avatar) exibida nas telas do restaurante.
+                    Use uma imagem quadrada para melhor resultado.
+                  </p>
+
+                  <input
+                    ref={avatarFileInputRef}
+                    id="restaurantAvatar"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarSelect}
+                    className="hidden"
+                    disabled={isUploadingAvatar || isSavingAvatar}
+                  />
+
+                  {avatarPreview ? (
+                    <div className="space-y-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={avatarPreview}
+                        alt="Logo do restaurante"
+                        className="h-32 sm:h-40 w-full rounded-md object-cover"
+                      />
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="flex-1 text-sm sm:text-base"
+                          onClick={() => avatarFileInputRef.current?.click()}
+                          disabled={isUploadingAvatar || isSavingAvatar}
+                        >
+                          {isUploadingAvatar
+                            ? "Carregando..."
+                            : "Trocar imagem"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          className="flex-1 text-sm sm:text-base"
+                          onClick={() => {
+                            setAvatarImageUrl("");
+                            setAvatarPreview(null);
+                            setAvatarError(null);
+                            if (avatarFileInputRef.current) {
+                              avatarFileInputRef.current.value = "";
+                            }
+                          }}
+                          disabled={isUploadingAvatar || isSavingAvatar}
+                        >
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full text-sm sm:text-base"
+                      onClick={() => avatarFileInputRef.current?.click()}
+                      disabled={isUploadingAvatar || isSavingAvatar}
+                    >
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      {isUploadingAvatar ? "Carregando..." : "Selecionar logo"}
+                    </Button>
+                  )}
+
+                  {avatarError && (
+                    <p className="text-xs sm:text-sm text-destructive">
+                      {avatarError}
+                    </p>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 text-sm sm:text-base"
+                      onClick={() => {
+                        setAvatarImageUrl(lastSavedAvatar);
+                        setAvatarPreview(lastSavedAvatar);
+                        setAvatarError(null);
+                      }}
+                      disabled={isSavingAvatar}
+                    >
+                      Desfazer alterações
+                    </Button>
+                    <Button
+                      type="button"
+                      className="flex-1 text-sm sm:text-base"
+                      onClick={handleSaveAvatar}
+                      disabled={isSavingAvatar || isUploadingAvatar}
+                    >
+                      {isSavingAvatar ? "Salvando..." : "Salvar logo"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : showUpdateCover ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Alterar capa
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                      onClick={() => {
+                        setShowUpdateCover(false);
+                        setCoverError(null);
+                        setCoverImageUrl(lastSavedCover);
+                        setCoverPreview(lastSavedCover);
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 sm:space-y-5">
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    Atualize a imagem de capa exibida no topo do menu. Prefira
+                    imagens horizontais.
+                  </p>
+
+                  <input
+                    ref={coverFileInputRef}
+                    id="restaurantCover"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverSelect}
+                    className="hidden"
+                    disabled={isUploadingCover || isSavingCover}
+                  />
+
+                  {coverPreview ? (
+                    <div className="space-y-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={coverPreview}
+                        alt="Capa do restaurante"
+                        className="h-40 sm:h-52 w-full rounded-md object-cover"
+                      />
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="flex-1 text-sm sm:text-base"
+                          onClick={() => coverFileInputRef.current?.click()}
+                          disabled={isUploadingCover || isSavingCover}
+                        >
+                          {isUploadingCover ? "Carregando..." : "Trocar imagem"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          className="flex-1 text-sm sm:text-base"
+                          onClick={() => {
+                            setCoverImageUrl("");
+                            setCoverPreview(null);
+                            setCoverError(null);
+                            if (coverFileInputRef.current) {
+                              coverFileInputRef.current.value = "";
+                            }
+                          }}
+                          disabled={isUploadingCover || isSavingCover}
+                        >
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full text-sm sm:text-base"
+                      onClick={() => coverFileInputRef.current?.click()}
+                      disabled={isUploadingCover || isSavingCover}
+                    >
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      {isUploadingCover ? "Carregando..." : "Selecionar capa"}
+                    </Button>
+                  )}
+
+                  {coverError && (
+                    <p className="text-xs sm:text-sm text-destructive">
+                      {coverError}
+                    </p>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 text-sm sm:text-base"
+                      onClick={() => {
+                        setCoverImageUrl(lastSavedCover);
+                        setCoverPreview(lastSavedCover);
+                        setCoverError(null);
+                      }}
+                      disabled={isSavingCover}
+                    >
+                      Desfazer alterações
+                    </Button>
+                    <Button
+                      type="button"
+                      className="flex-1 text-sm sm:text-base"
+                      onClick={handleSaveCover}
+                      disabled={isSavingCover || isUploadingCover}
+                    >
+                      {isSavingCover ? "Salvando..." : "Salvar capa"}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -962,7 +1431,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         <div className="text-center sm:text-right">
                           <p className="text-xs text-muted-foreground">
                             Total ganho
-                            {viewMode === "month" ? "no mês" : ""}:
+                            {viewMode === "month" ? " no mês" : ""}:
                           </p>
                           <p className="font-semibold text-base sm:text-lg">
                             {formatCurrency(totalMonthRevenue)}
@@ -1511,26 +1980,95 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
+                    <Button
+                      type="button"
+                      variant={ordersView === "today" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setOrdersView("today");
+                        setOrdersStatusFilter("ALL");
+                      }}
+                    >
+                      Pedidos de hoje
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={ordersView === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setOrdersView("all");
+                        setOrdersStatusFilter("ALL");
+                      }}
+                    >
+                      Todos os pedidos
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {(["ALL", "PENDING", "IN_PREPARATION", "OUT_FOR_DELIVERY", "FINISHED"] as const).map(
+                      (status) => (
+                        <Button
+                          key={status}
+                          type="button"
+                          size="sm"
+                          variant={
+                            ordersStatusFilter === status ? "default" : "outline"
+                          }
+                          onClick={() => setOrdersStatusFilter(status)}
+                        >
+                          {status === "ALL"
+                            ? "Todos status"
+                            : getStatusLabel(status as OrderStatus)}
+                        </Button>
+                      )
+                    )}
+                  </div>
+
                   {isLoadingOrders ? (
                     <div className="flex items-center justify-center py-10">
                       <p className="text-xs sm:text-sm text-muted-foreground">
                         Carregando pedidos...
                       </p>
                     </div>
-                  ) : orders.length === 0 ? (
-                    <div className="flex items-center justify-center py-10">
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Nenhum pedido encontrado
-                      </p>
-                    </div>
                   ) : (
-                    <div className="space-y-4">
-                      {orders.map((order) => (
+                    (() => {
+                      const filteredOrders =
+                        ordersView === "today"
+                          ? orders.filter((order) => isToday(order.createdAt))
+                          : orders;
+
+                      const orderedFilteredOrders =
+                        ordersView === "today"
+                          ? [...filteredOrders].sort(
+                              (a, b) =>
+                                new Date(a.createdAt).getTime() -
+                                new Date(b.createdAt).getTime()
+                            )
+                          : filteredOrders;
+
+                      const statusFilteredOrders =
+                        ordersStatusFilter === "ALL"
+                          ? orderedFilteredOrders
+                          : orderedFilteredOrders.filter(
+                              (order) => order.status === ordersStatusFilter
+                            );
+
+                      if (statusFilteredOrders.length === 0) {
+                        return (
+                          <div className="flex items-center justify-center py-10">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              Nenhum pedido encontrado
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      const renderOrderCard = (order: (typeof orders)[number]) => (
                         <div
                           key={order.id}
                           className="border rounded-lg p-3 sm:p-4 space-y-3"
                         >
-                          {/* Cabeçalho do pedido */}
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                             <div className="flex-1">
                               <p className="font-semibold text-sm sm:text-base">
@@ -1549,7 +2087,6 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                             </div>
                           </div>
 
-                          {/* Informações do cliente */}
                           <div className="border-t pt-3 space-y-2">
                             <div>
                               <p className="text-xs sm:text-sm font-medium">
@@ -1574,7 +2111,6 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                             </div>
                           </div>
 
-                          {/* Endereço de entrega (apenas para TAKEANAY) */}
                           {order.consumptionMethod === "TAKEANAY" &&
                             order.deliveryStreet && (
                               <div className="border-t pt-3 space-y-1">
@@ -1599,7 +2135,6 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               </div>
                             )}
 
-                          {/* Produtos do pedido */}
                           <div className="border-t pt-3 space-y-2">
                             <p className="text-xs sm:text-sm font-medium">
                               Produtos
@@ -1637,7 +2172,6 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                             </div>
                           </div>
 
-                          {/* Seletor de status */}
                           <div className="border-t pt-3 space-y-2">
                             <p className="text-xs sm:text-sm font-medium">
                               Atualizar Status
@@ -1730,8 +2264,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                             </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+
+                      return (
+                        <div className="space-y-4">
+                          {statusFilteredOrders.map((order) =>
+                            renderOrderCard(order)
+                          )}
+                        </div>
+                      );
+                    })()
                   )}
                 </CardContent>
               </Card>
