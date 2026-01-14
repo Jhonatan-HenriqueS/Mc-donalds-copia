@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { Eye, EyeOff } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 
-import { login } from '@/app/actions/login';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { login } from "@/app/actions/login";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const HomePage = () => {
-  const focus = 'focus:border-1';
+  const focus = "focus:border-1";
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
@@ -40,13 +40,13 @@ const HomePage = () => {
     } = {};
 
     if (!email.trim()) {
-      newErrors.email = 'O email é obrigatório';
+      newErrors.email = "O email é obrigatório";
     } else if (!validateEmail(email)) {
-      newErrors.email = 'Digite um email válido';
+      newErrors.email = "Digite um email válido";
     }
 
     if (!password.trim()) {
-      newErrors.password = 'A senha é obrigatória';
+      newErrors.password = "A senha é obrigatória";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -63,22 +63,22 @@ const HomePage = () => {
       });
 
       if (result.success) {
-        toast.success('Login realizado com sucesso!');
+        toast.success("Login realizado com sucesso!");
 
         if (result.needsRestaurant) {
-          router.push('/create-restaurant');
+          router.push("/create-restaurant");
         } else if (result.restaurantSlug) {
           router.push(
-            `/${result.restaurantSlug}/menu?consumptionMethod=DINE_IN`
+            `/${result.restaurantSlug}/menu?consumptionMethod=TAKEANAY`
           );
         } else {
-          router.push('/create-restaurant');
+          router.push("/create-restaurant");
         }
       } else {
-        toast.error(result.error || 'Erro ao fazer login');
+        toast.error(result.error || "Erro ao fazer login");
       }
     } catch {
-      toast.error('Erro ao processar solicitação');
+      toast.error("Erro ao processar solicitação");
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +98,7 @@ const HomePage = () => {
                 id="email"
                 type="email"
                 placeholder="Digite seu email"
-                className={`w-full ${focus} ${errors.email ? 'border-destructive' : ''}`}
+                className={`w-full ${focus} ${errors.email ? "border-destructive" : ""}`}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -117,9 +117,9 @@ const HomePage = () => {
               <div className="relative">
                 <Input
                   id="senha"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Digite sua senha"
-                  className={`w-full pr-10 ${focus} ${errors.password ? 'border-destructive' : ''}`}
+                  className={`w-full pr-10 ${focus} ${errors.password ? "border-destructive" : ""}`}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -152,7 +152,7 @@ const HomePage = () => {
               size="lg"
               disabled={isLoading}
             >
-              {isLoading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? "Entrando..." : "Entrar"}
             </Button>
             <div className="text-center text-sm">
               <Link href="/register" className="text-primary hover:underline">

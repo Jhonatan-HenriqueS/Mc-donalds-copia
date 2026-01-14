@@ -18,11 +18,20 @@ import FinishOrderDialog from "./finish-order-dialog";
 
 interface CartSheetProps {
   isRestaurantOpen?: boolean;
+  isTakeaway?: boolean;
+  deliveryFee?: number;
 }
 
-const CartSheet = ({ isRestaurantOpen = true }: CartSheetProps) => {
+const CartSheet = ({
+  isRestaurantOpen = true,
+  isTakeaway = false,
+  deliveryFee = 0,
+}: CartSheetProps) => {
   const [finishOnderDialogIsOPen, setFinishOnderDialogIsOPen] = useState(false);
   const { isOpen, taggleCart, products, total } = useContext(CartContext);
+  const subtotal = total;
+  const fee = isTakeaway ? deliveryFee : 0;
+  const totalWithFee = subtotal + fee;
 
   return (
     <Sheet open={isOpen} onOpenChange={taggleCart}>
@@ -49,8 +58,24 @@ const CartSheet = ({ isRestaurantOpen = true }: CartSheetProps) => {
           <Card className="mb-10">
             <CardContent className="p-5">
               <div className="flex justify-between">
+                <p className="text-sm ">Subtotal</p>
+                <p className="font-semibold text-sm">
+                  {formatCurrency(subtotal)}
+                </p>
+              </div>
+              {isTakeaway && (
+                <div className="flex justify-between">
+                  <p className="text-sm text-red-500">Taxa de entrega</p>
+                  <p className="font-semibold text-sm text-red-500">
+                    {formatCurrency(fee)}
+                  </p>
+                </div>
+              )}
+              <div className="flex justify-between pt-2 border-t mt-2">
                 <p className="text-sm ">Total</p>
-                <p className="font-semibold text-sm">{formatCurrency(total)}</p>
+                <p className="font-semibold text-sm">
+                  {formatCurrency(totalWithFee)}
+                </p>
               </div>
             </CardContent>
           </Card>

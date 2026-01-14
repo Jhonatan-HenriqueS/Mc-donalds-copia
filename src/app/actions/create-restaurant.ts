@@ -50,6 +50,7 @@ export const createRestaurant = async (input: CreateRestaurantInput) => {
         avatarImageUrl: input.imageUrl,
         coverImageUrl: input.coverImageUrl,
         isOpen: true,
+        deliveryFee: 0,
         allowDineIn: true,
         allowTakeaway: true,
         userId: input.userId,

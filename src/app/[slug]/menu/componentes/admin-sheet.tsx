@@ -31,6 +31,7 @@ import { updateOrderStatus } from "@/app/[slug]/menu/actions/update-order-status
 import { updateProduct } from "@/app/[slug]/menu/actions/update-product";
 import { updateRestaurantAvatar } from "@/app/[slug]/menu/actions/update-restaurant-avatar";
 import { updateRestaurantCover } from "@/app/[slug]/menu/actions/update-restaurant-cover";
+import { updateRestaurantDeliveryFee } from "@/app/[slug]/menu/actions/update-restaurant-delivery-fee";
 import { updateRestaurantStatus } from "@/app/[slug]/menu/actions/update-restaurant-status";
 import { formatCpf } from "@/app/[slug]/menu/helpers/format-cpf";
 import { useOrderNotifications } from "@/app/[slug]/menu/hooks/use-order-notifications";
@@ -102,6 +103,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [showConsumptionMethods, setShowConsumptionMethods] = useState(false);
   const [showUpdateAvatar, setShowUpdateAvatar] = useState(false);
   const [showUpdateCover, setShowUpdateCover] = useState(false);
+  const [showUpdateDeliveryFee, setShowUpdateDeliveryFee] = useState(false);
   const [ordersView, setOrdersView] = useState<"today" | "all">("today");
   const [ordersStatusFilter, setOrdersStatusFilter] = useState<
     OrderStatus | "ALL"
@@ -180,6 +182,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [lastSavedAvatar, setLastSavedAvatar] = useState(
     restaurant.avatarImageUrl
   );
+  const [deliveryFee, setDeliveryFee] = useState(restaurant.deliveryFee ?? 0);
+  const [lastSavedDeliveryFee, setLastSavedDeliveryFee] = useState(
+    restaurant.deliveryFee ?? 0
+  );
   const [isRestaurantOpen, setIsRestaurantOpen] = useState(
     restaurant.isOpen ?? true
   );
@@ -199,6 +205,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isSavingCover, setIsSavingCover] = useState(false);
   const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [isSavingDeliveryFee, setIsSavingDeliveryFee] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [editingProduct, setEditingProduct] =
     useState<ProductWithCategory | null>(null);
@@ -220,6 +227,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [coverError, setCoverError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [deliveryFeeError, setDeliveryFeeError] = useState<string | null>(null);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -621,6 +629,35 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     }
   };
 
+  const handleSaveDeliveryFee = async () => {
+    setDeliveryFeeError(null);
+    if (deliveryFee < 0) {
+      setDeliveryFeeError("A taxa deve ser maior ou igual a zero.");
+      return;
+    }
+
+    setIsSavingDeliveryFee(true);
+    try {
+      const result = await updateRestaurantDeliveryFee(
+        restaurant.id,
+        Number(deliveryFee)
+      );
+      if (result.success && result.restaurant) {
+        setLastSavedDeliveryFee(result.restaurant.deliveryFee);
+        setDeliveryFee(result.restaurant.deliveryFee);
+        setShowUpdateDeliveryFee(false);
+        toast.success("Taxa de entrega atualizada!");
+      } else {
+        setDeliveryFeeError(result.error || "Erro ao atualizar taxa.");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar taxa:", error);
+      setDeliveryFeeError("Erro ao atualizar taxa.");
+    } finally {
+      setIsSavingDeliveryFee(false);
+    }
+  };
+
   const handleToggleRestaurantStatus = async () => {
     setStatusError(null);
     const nextStatus = !isRestaurantOpen;
@@ -893,7 +930,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           !showOrders &&
           !showConsumptionMethods &&
           !showUpdateAvatar &&
-          !showUpdateCover ? (
+          !showUpdateCover &&
+          !showUpdateDeliveryFee ? (
             <div className="flex-auto flex flex-col gap-3 sm:gap-4">
               <Button
                 onClick={() => setShowAddCategory(true)}
@@ -963,6 +1001,15 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               >
                 <Wand2 className="mr-2 h-4 w-4" />
                 Alterar logo
+              </Button>
+              <Button
+                onClick={() => setShowUpdateDeliveryFee(true)}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
+              >
+                <Package className="mr-2 h-4 w-4" />
+                Taxa de entrega
               </Button>
 
               <Button
@@ -1322,6 +1369,83 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       disabled={isSavingCover || isUploadingCover}
                     >
                       {isSavingCover ? "Salvando..." : "Salvar capa"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : showUpdateDeliveryFee ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Taxa de entrega
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                      onClick={() => {
+                        setShowUpdateDeliveryFee(false);
+                        setDeliveryFee(lastSavedDeliveryFee);
+                        setDeliveryFeeError(null);
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 sm:space-y-5">
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    Defina a taxa de entrega aplicada a pedidos de entrega.
+                  </p>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="deliveryFee"
+                      className="text-sm sm:text-base"
+                    >
+                      Taxa (R$)
+                    </Label>
+                    <Input
+                      id="deliveryFee"
+                      type="number"
+                      step="0.01"
+                      value={deliveryFee}
+                      onChange={(e) => {
+                        setDeliveryFee(Number(e.target.value));
+                        setDeliveryFeeError(null);
+                      }}
+                      className={deliveryFeeError ? "border-destructive" : ""}
+                      disabled={isSavingDeliveryFee}
+                    />
+                    {deliveryFeeError && (
+                      <p className="text-xs sm:text-sm text-destructive">
+                        {deliveryFeeError}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 text-sm sm:text-base"
+                      onClick={() => {
+                        setDeliveryFee(lastSavedDeliveryFee);
+                        setDeliveryFeeError(null);
+                      }}
+                      disabled={isSavingDeliveryFee}
+                    >
+                      Desfazer alterações
+                    </Button>
+                    <Button
+                      type="button"
+                      className="flex-1 text-sm sm:text-base"
+                      onClick={handleSaveDeliveryFee}
+                      disabled={isSavingDeliveryFee}
+                    >
+                      {isSavingDeliveryFee ? "Salvando..." : "Salvar taxa"}
                     </Button>
                   </div>
                 </CardContent>

@@ -53,6 +53,13 @@ export const createOrder = async (input: createOrderInput) => {
     price: productsWithPrices.find((p) => p.id === product.id)!.price,
   }));
 
+  const subtotal = productsWithPricesQuantities.reduce(
+    (acc, product) => acc + product.price * product.quantity,
+    0
+  );
+  const deliveryFee =
+    input.consumptionMethod === 'TAKEANAY' ? restaurant.deliveryFee ?? 0 : 0;
+
   const baseOrderData = {
     status: 'PENDING' as OrderStatus,
     customerName: input.customerName,
@@ -64,10 +71,8 @@ export const createOrder = async (input: createOrderInput) => {
         data: productsWithPricesQuantities,
       },
     },
-    total: productsWithPricesQuantities.reduce(
-      (acc, product) => acc + product.price * product.quantity,
-      0
-    ),
+    total: subtotal + deliveryFee,
+    deliveryFee,
     consumptionMethod: input.consumptionMethod,
     restaurantId: restaurant.id,
   };

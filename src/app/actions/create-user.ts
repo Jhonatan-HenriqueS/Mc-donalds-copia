@@ -8,6 +8,8 @@ interface CreateUserInput {
   name: string;
   email: string;
   password: string;
+  cpf: string;
+  phone: string;
 }
 
 export const createUser = async (input: CreateUserInput) => {
@@ -32,6 +34,8 @@ export const createUser = async (input: CreateUserInput) => {
         name: input.name,
         email: input.email,
         password: hashedPassword,
+        cpf: input.cpf,
+        phone: input.phone,
       },
     });
 

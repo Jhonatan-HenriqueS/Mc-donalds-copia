@@ -3,7 +3,8 @@
 import { Prisma } from "@prisma/client";
 import { ClockIcon } from "lucide-react";
 import Image from "next/image";
-import { useContext, useState } from "react";
+import { useContext, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -38,6 +39,11 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
 
   const { products, total, taggleCart, totalQuantity } =
     useContext(CartContext);
+  const searchParams = useSearchParams();
+  const isTakeaway = useMemo(
+    () => (searchParams.get("consumptionMethod") || "").toUpperCase() === "TAKEANAY",
+    [searchParams]
+  );
 
   const handlesCategoryClick = (category: MenuCategoriesMithProducts) => {
     setSelectedCategory(category);
@@ -74,6 +80,14 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
             {restaurant.isOpen ? "Aberto!" : "Fechado!"}
           </p>
         </div>
+        {isTakeaway && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Taxa de entrega:{" "}
+            <span className="text-red-500">
+              {formatCurrency(restaurant.deliveryFee ?? 0)}
+            </span>
+          </p>
+        )}
       </div>
 
       <ScrollArea className="w-full ">
@@ -110,13 +124,19 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
           <div>
             <p className="text-ms text-muted-foreground">Total do pedido</p>
             <p className="text-sm font-semibold">
-              {formatCurrency(total)}
+              {formatCurrency(
+                isTakeaway ? total + (restaurant.deliveryFee ?? 0) : total
+              )}
               <span className="text-xs font-normal text-muted-foreground ">
                 /{totalQuantity}
                 {totalQuantity > 1 ? " itens" : " item"}
               </span>
             </p>
-            <CartSheet isRestaurantOpen={restaurant.isOpen ?? true} />
+            <CartSheet
+              isRestaurantOpen={restaurant.isOpen ?? true}
+              isTakeaway={isTakeaway}
+              deliveryFee={restaurant.deliveryFee ?? 0}
+            />
           </div>
           <Button onClick={taggleCart}>Ver Pedidos</Button>
         </div>

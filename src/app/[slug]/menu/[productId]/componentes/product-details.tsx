@@ -3,7 +3,8 @@
 import { Prisma } from "@prisma/client";
 import { ChefHatIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import Image from "next/image";
-import { useContext, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useContext, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,6 +23,7 @@ interface ProductDetailsProps {
           name: true;
           avatarImageUrl: true;
           isOpen: true;
+          deliveryFee: true;
         };
       };
     };
@@ -30,6 +32,13 @@ interface ProductDetailsProps {
 
 const ProductDetails = ({ product }: ProductDetailsProps) => {
   const { taggleCart, addProducts } = useContext(CartContext);
+  const searchParams = useSearchParams();
+  const isTakeaway = useMemo(
+    () =>
+      (searchParams.get("consumptionMethod") || "").toUpperCase() ===
+      "TAKEANAY",
+    [searchParams]
+  );
 
   const [quantity, setQuantity] = useState<number>(1);
 
@@ -124,7 +133,11 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
           Adicionar ao carrinho
         </Button>
       </div>
-      <CartSheet isRestaurantOpen={product.restaurant.isOpen ?? true} />
+      <CartSheet
+        isRestaurantOpen={product.restaurant.isOpen ?? true}
+        isTakeaway={isTakeaway}
+        deliveryFee={product.restaurant.deliveryFee ?? 0}
+      />
     </>
   );
 };

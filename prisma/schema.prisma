@@ -23,6 +23,8 @@ model User {
   name        String
   email       String       @unique
   password    String
+  cpf         String       @unique
+  phone       String
   restaurants Restaurant[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -45,6 +47,7 @@ model Restaurant {
   avatarImageUrl     String
   coverImageUrl      String
   isOpen             Boolean             @default(true)
+  deliveryFee        Float               @default(0)
   allowDineIn        Boolean             @default(true)
   allowTakeaway      Boolean             @default(true)
   userId             String
@@ -98,6 +101,7 @@ model Order {
   customerCpf          String
   customerEmail        String?
   customerPhone        String?
+  deliveryFee          Float              @default(0)
   deliveryStreet       String?
   deliveryNumber       String?
   deliveryComplement   String?

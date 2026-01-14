@@ -20,6 +20,7 @@ const ProductPage = async ({ params }: ProductPageProps) => {
           avatarImageUrl: true,
           slug: true,
           isOpen: true,
+          deliveryFee: true,
         },
       },
     },
