@@ -51,28 +51,22 @@ export const createOrder = async (input: createOrderInput) => {
     },
   });
 
-  const productsWithPricesQuantities = input.products.map((product) => ({
-    productId: product.id,
-    quantity: product.quantity,
-    price:
-      input.consumptionMethod === 'TAKEANAY' &&
-      productsWithPrices.find((p) => p.id === product.id)?.sizes.length &&
-      productsWithPrices
-        .find((p) => p.id === product.id)
-        ?.sizes.find((s) => s.id === product.sizeId)?.price
-        ? productsWithPrices
-            .find((p) => p.id === product.id)
-            ?.sizes.find((s) => s.id === product.sizeId)!.price!
-        : input.products.find((p) => p.id === product.id)?.price ??
-          productsWithPrices.find((p) => p.id === product.id)!.price,
-    sizeId: product.sizeId,
-    sizeName: productsWithPrices
-      .find((p) => p.id === product.id)
-      ?.sizes.find((s) => s.id === product.sizeId)?.name,
-    sizePrice: productsWithPrices
-      .find((p) => p.id === product.id)
-      ?.sizes.find((s) => s.id === product.sizeId)?.price,
-  }));
+  const productsWithPricesQuantities = input.products.map((product) => {
+    const dbProduct = productsWithPrices.find((p) => p.id === product.id);
+    const selectedSize = dbProduct?.sizes.find((s) => s.id === product.sizeId);
+
+    const priceToUse =
+      (selectedSize?.price ?? product.price ?? dbProduct?.price) ?? 0;
+
+    return {
+      productId: product.id,
+      quantity: product.quantity,
+      price: priceToUse,
+      sizeId: product.sizeId,
+      sizeName: selectedSize?.name || null,
+      sizePrice: selectedSize?.price || null,
+    };
+  });
 
   const subtotal = productsWithPricesQuantities.reduce(
     (acc, product) => acc + product.price * product.quantity,
