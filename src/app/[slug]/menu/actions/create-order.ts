@@ -1,12 +1,12 @@
 //Vai usar server e client (back e front)
-'use server';
+"use server";
 
-import { ConsumptionMethod, OrderStatus } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
+import { ConsumptionMethod, OrderStatus } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 
-import { db } from '@/lib/prisma';
+import { db } from "@/lib/prisma";
 
-import { removeCpfPunctuation } from '../helpers/cpf';
+import { removeCpfPunctuation } from "../helpers/cpf";
 
 interface createOrderInput {
   customerName: string;
@@ -37,7 +37,7 @@ export const createOrder = async (input: createOrderInput) => {
   });
 
   if (!restaurant) {
-    throw new Error('Restaurant not Found!');
+    throw new Error("Restaurant not Found!");
   }
   const productsWithPrices = await db.product.findMany({
     where: {
@@ -56,7 +56,7 @@ export const createOrder = async (input: createOrderInput) => {
     const selectedSize = dbProduct?.sizes.find((s) => s.id === product.sizeId);
 
     const priceToUse =
-      (selectedSize?.price ?? product.price ?? dbProduct?.price) ?? 0;
+      selectedSize?.price ?? product.price ?? dbProduct?.price ?? 0;
 
     return {
       productId: product.id,
@@ -73,10 +73,10 @@ export const createOrder = async (input: createOrderInput) => {
     0
   );
   const deliveryFee =
-    input.consumptionMethod === 'TAKEANAY' ? restaurant.deliveryFee ?? 0 : 0;
+    input.consumptionMethod === "TAKEANAY" ? (restaurant.deliveryFee ?? 0) : 0;
 
   const baseOrderData = {
-    status: 'PENDING' as OrderStatus,
+    status: "PENDING" as OrderStatus,
     customerName: input.customerName,
     customerCpf: removeCpfPunctuation(input.customerCpf),
     customerEmail: input.customerEmail,
@@ -101,7 +101,7 @@ export const createOrder = async (input: createOrderInput) => {
 
   // Criar dados da ordem com campos de endereço se for TAKEANAY
   if (
-    input.consumptionMethod === 'TAKEANAY' &&
+    input.consumptionMethod === "TAKEANAY" &&
     input.deliveryStreet &&
     input.deliveryNumber &&
     input.deliveryNeighborhood &&
