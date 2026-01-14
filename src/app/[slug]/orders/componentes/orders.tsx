@@ -87,7 +87,14 @@ const OrderList = ({ orders }: OrdersPageProps) => {
                   <div className="h-5 w-5 flex items-center justify-center rounded-full bg-gray-300 text-white text-xs font-semibold">
                     {orderProduct.quantity}
                   </div>
-                  <p className="text-sm">{orderProduct.product.name}</p>
+                  <div className="text-sm">
+                    <p>{orderProduct.product.name}</p>
+                    {orderProduct.sizeName && (
+                      <p className="text-xs text-muted-foreground">
+                        Tam: {orderProduct.sizeName}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

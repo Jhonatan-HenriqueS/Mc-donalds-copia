@@ -5,10 +5,18 @@ import { createContext, ReactNode, useState } from 'react';
 
 export interface CartProduct extends Pick<
   Product,
-  'id' | 'name' | 'price' | 'imageUrl'
+  'id' | 'name' | 'imageUrl'
 > {
-  //Pega os dados salvos de fato
   quantity: number;
+  price: number; // preço atual considerando tamanho
+  sizeId?: string | null;
+  sizeName?: string | null;
+  sizePrice?: number | null;
+  sizes?: Array<{
+    id?: string;
+    name: string;
+    price: number;
+  }>;
 }
 
 export interface IcartContext {
@@ -18,9 +26,14 @@ export interface IcartContext {
   totalQuantity: number;
   taggleCart: () => void;
   addProducts: (product: CartProduct) => void;
-  descreaseProductQuantity: (productId: string) => void;
-  inCreaseProductQuantity: (productId: string) => void;
-  removeProduct: (productId: string) => void;
+  descreaseProductQuantity: (productId: string, sizeId?: string | null) => void;
+  inCreaseProductQuantity: (productId: string, sizeId?: string | null) => void;
+  removeProduct: (productId: string, sizeId?: string | null) => void;
+  updateProductSize: (
+    productId: string,
+    currentSizeId: string | null | undefined,
+    newSize: { id?: string; name: string; price: number } | null
+  ) => void;
   clearCart: () => void;
 }
 
@@ -34,6 +47,7 @@ export const CartContext = createContext<IcartContext>({
   descreaseProductQuantity: () => {},
   inCreaseProductQuantity: () => {},
   removeProduct: () => {},
+  updateProductSize: () => {},
   clearCart: () => {},
 });
 
@@ -58,20 +72,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addProducts = (product: CartProduct) => {
     const productsIsAreadyOnTheCart = products.some(
-      (prevProducts) => prevProducts.id === product.id
-      //some() pega como parametro prevProduct e ve se ele é === a product.id
-      //Se for ele retorna true, se não false, ele percorre mas só retorna boolean, igual um map
+      (prevProducts) =>
+        prevProducts.id === product.id &&
+        (prevProducts.sizeId || null) === (product.sizeId || null)
     );
     if (!productsIsAreadyOnTheCart) {
-      //Se não tiver o produto no meu carrinho, retorna a lista e o produto
       return setProducts((prev) => [...prev, product]);
-      //...prevProducts retorna tudo que estava na lista anterior
     }
 
     setProducts((prevProducts) => {
-      //Se esse produto existe e eu to salvando novamente, eu adiciono a quantidade que estava com a nova quantidade que o usuário quer
       return prevProducts.map((prevProduct) => {
-        if (prevProduct.id === product.id) {
+        if (
+          prevProduct.id === product.id &&
+          (prevProduct.sizeId || null) === (product.sizeId || null)
+        ) {
           return {
             ...prevProduct,
             quantity: prevProduct.quantity + product.quantity,
@@ -83,10 +97,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
   //Nesse dois caso, os dois verifica se o id do produto for diferente do produto selecionado, não faz nada com esse produto
   //Se for os mesmo id some ou subtrai 1
-  const descreaseProductQuantity = (productId: string) => {
+  const descreaseProductQuantity = (
+    productId: string,
+    sizeId?: string | null
+  ) => {
     setProducts((prevProducts) => {
       return prevProducts.map((prevProduct) => {
-        if (prevProduct.id != productId) {
+        if (
+          prevProduct.id != productId ||
+          (sizeId || null) !== (prevProduct.sizeId || null)
+        ) {
           return prevProduct;
         }
 
@@ -98,10 +118,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const inCreaseProductQuantity = (productId: string) => {
+  const inCreaseProductQuantity = (
+    productId: string,
+    sizeId?: string | null
+  ) => {
     setProducts((prevProducts) => {
       return prevProducts.map((prevProduct) => {
-        if (prevProduct.id != productId) {
+        if (
+          prevProduct.id != productId ||
+          (sizeId || null) !== (prevProduct.sizeId || null)
+        ) {
           return prevProduct;
         }
 
@@ -110,11 +136,38 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const removeProduct = (productId: string) => {
+  const removeProduct = (productId: string, sizeId?: string | null) => {
     setProducts(
       (prevProducts) =>
-        prevProducts.filter((prevProduct) => prevProduct.id != productId)
-      //Caso o id != do id do produto selecionado ele permanece, mas se === ele é removido com filter
+        prevProducts.filter(
+          (prevProduct) =>
+            prevProduct.id != productId ||
+            (prevProduct.sizeId || null) !== (sizeId || null)
+        )
+    );
+  };
+
+  const updateProductSize = (
+    productId: string,
+    currentSizeId: string | null | undefined,
+    newSize: { id?: string; name: string; price: number } | null
+  ) => {
+    setProducts((prevProducts) =>
+      prevProducts.map((prevProduct) => {
+        if (
+          prevProduct.id !== productId ||
+          (prevProduct.sizeId || null) !== (currentSizeId || null)
+        ) {
+          return prevProduct;
+        }
+        return {
+          ...prevProduct,
+          sizeId: newSize?.id ?? null,
+          sizeName: newSize?.name ?? null,
+          sizePrice: newSize?.price ?? null,
+          price: newSize?.price ?? prevProduct.price,
+        };
+      })
     );
   };
 
@@ -136,6 +189,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         removeProduct,
         clearCart,
         total,
+        updateProductSize,
       }}
     >
       {children}

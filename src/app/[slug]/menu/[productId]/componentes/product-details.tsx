@@ -26,6 +26,7 @@ interface ProductDetailsProps {
           deliveryFee: true;
         };
       };
+      sizes: true;
     };
   }>;
 }
@@ -41,6 +42,10 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
   );
 
   const [quantity, setQuantity] = useState<number>(1);
+  const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null);
+  const selectedSize = product.sizes?.find(
+    (size) => size.id === selectedSizeId
+  );
 
   const handleDecreaseQuantity = () => {
     setQuantity((prev) => {
@@ -57,8 +62,22 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
   };
 
   const handleAddToCart = () => {
+    if (product.sizes?.length && !selectedSize) {
+      return;
+    }
     addProducts({
-      ...product, //Pega o produto e suas informações e a quantity
+      id: product.id,
+      name: product.name,
+      imageUrl: product.imageUrl,
+      price: selectedSize ? selectedSize.price : product.price,
+      sizeId: selectedSize?.id,
+      sizeName: selectedSize?.name,
+      sizePrice: selectedSize?.price,
+      sizes: product.sizes?.map((size) => ({
+        id: size.id,
+        name: size.name,
+        price: size.price,
+      })),
       quantity,
     });
     taggleCart();
@@ -86,7 +105,9 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
           <div className="flex items-center justify-between mb-4 mt-2">
             <h3 className="text-xl font-semibold">
-              {formatCurrency(product.price)}
+              {formatCurrency(
+                selectedSize ? selectedSize.price : product.price
+              )}
             </h3>
             <div className="flex items-center gap-3 text-center">
               <Button
@@ -109,14 +130,36 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
             </div>
           </div>
 
-          <div className="mt-3 space-y-3">
-            <h4 className="font-semibold">Sobre</h4>
-            <p className="text-sm text-muted-foreground">
-              {product.description}
-            </p>
-          </div>
-
           <div className="mt-6 space-y-3 mb-4">
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold">Tamanhos</h4>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map((size) => (
+                    <Button
+                      key={size.id}
+                      type="button"
+                      variant={
+                        selectedSizeId === size.id ? "default" : "outline"
+                      }
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => setSelectedSizeId(size.id)}
+                    >
+                      {size.name} - {formatCurrency(size.price)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-3 space-y-3">
+              <h4 className="font-semibold">Sobre</h4>
+              <p className="text-sm text-muted-foreground">
+                {product.description}
+              </p>
+            </div>
+
             <div className="flex items-center gap-1.5 ">
               <ChefHatIcon size={18} />
               <h4 className="font-semibold">Ingredientes</h4>

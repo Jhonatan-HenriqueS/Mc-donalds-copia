@@ -14,6 +14,11 @@ interface UpdateProductInput {
   ingredients: string[];
   menuCategoryId: string;
   restaurantId: string;
+  sizes?: Array<{
+    id?: string;
+    name: string;
+    price: number;
+  }>;
 }
 
 export const updateProduct = async (input: UpdateProductInput) => {
@@ -83,6 +88,19 @@ export const updateProduct = async (input: UpdateProductInput) => {
         imageUrl: input.imageUrl,
         ingredients: input.ingredients,
         menuCategoryId: input.menuCategoryId,
+        sizes: input.sizes
+          ? {
+              deleteMany: {
+                productId: input.id,
+              },
+              createMany: {
+                data: input.sizes.map((size) => ({
+                  name: size.name,
+                  price: size.price,
+                })),
+              },
+            }
+          : undefined,
       },
     });
 

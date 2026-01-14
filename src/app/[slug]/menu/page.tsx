@@ -30,7 +30,13 @@ const RestaurantMenuPage = async ({
       //Vai trazer todas as categorias deste restaurante
       menuCategorias: {
         //Vai pegar todas categorias e seus produtos
-        include: { products: true },
+        include: {
+          products: {
+            include: {
+              sizes: true,
+            },
+          },
+        },
       },
     },
   });

@@ -89,6 +89,11 @@ type ProductWithCategory = Product & {
     id: string;
     name: string;
   };
+  sizes?: {
+    id: string;
+    name: string;
+    price: number;
+  }[];
 };
 
 const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
@@ -173,6 +178,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [menuCategoryId, setMenuCategoryId] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [sizes, setSizes] = useState<
+    { id?: string; name: string; price: string }[]
+  >([]);
+  const [enableSizes, setEnableSizes] = useState(false);
   const [avatarImageUrl, setAvatarImageUrl] = useState(
     restaurant.avatarImageUrl
   );
@@ -219,6 +228,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     price?: string;
     menuCategoryId?: string;
     imageUrl?: string;
+    sizes?: string;
   }>({});
   const [categoryError, setCategoryError] = useState<string | undefined>();
   const [isSavingConsumptionMethods, setIsSavingConsumptionMethods] =
@@ -369,6 +379,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       price?: string;
       menuCategoryId?: string;
       imageUrl?: string;
+      sizes?: string;
     } = {};
 
     if (!name.trim()) {
@@ -391,6 +402,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
     if (!imageUrl.trim()) {
       newErrors.imageUrl = "A imagem é obrigatória";
+    }
+
+    if (enableSizes && sizes.some((s) => !s.name.trim() || !s.price.trim())) {
+      newErrors.sizes = "Preencha nome e preço para todos os tamanhos.";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -418,6 +433,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           ingredients: ingredientsArray,
           menuCategoryId,
           restaurantId: restaurant.id,
+          sizes: enableSizes
+            ? sizes.map((size) => ({
+                name: size.name.trim(),
+                price: Number(size.price),
+              }))
+            : [],
         });
       } else {
         // Criar novo produto
@@ -429,6 +450,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           ingredients: ingredientsArray,
           menuCategoryId,
           restaurantId: restaurant.id,
+          sizes: enableSizes
+            ? sizes.map((size) => ({
+                name: size.name.trim(),
+                price: Number(size.price),
+              }))
+            : [],
         });
       }
 
@@ -446,6 +473,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         setMenuCategoryId("");
         setImageUrl("");
         setImagePreview(null);
+        setSizes([]);
+        setEnableSizes(false);
         setEditingProduct(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
@@ -511,6 +540,19 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     setMenuCategoryId(product.menuCategoryId);
     setImageUrl(product.imageUrl);
     setImagePreview(product.imageUrl);
+    if (product.sizes && product.sizes.length > 0) {
+      setEnableSizes(true);
+      setSizes(
+        product.sizes.map((size) => ({
+          id: size.id,
+          name: size.name,
+          price: size.price.toString(),
+        }))
+      );
+    } else {
+      setEnableSizes(false);
+      setSizes([]);
+    }
     setShowManageProducts(false);
     setShowAddProduct(true);
   };
@@ -1835,6 +1877,106 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                     </div>
 
                     <div className="space-y-2">
+                      <Label className="text-sm sm:text-base">
+                        Tamanhos (opcional)
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant={enableSizes ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setEnableSizes((prev) => !prev);
+                            setSizes([]);
+                            setErrors((prev) => ({
+                              ...prev,
+                              sizes: undefined,
+                            }));
+                          }}
+                          disabled={isLoading}
+                        >
+                          {enableSizes
+                            ? "Remover tamanhos"
+                            : "Adicionar tamanhos"}
+                        </Button>
+                        {errors.sizes && (
+                          <p className="text-xs text-destructive">
+                            {errors.sizes}
+                          </p>
+                        )}
+                      </div>
+
+                      {enableSizes && (
+                        <div className="space-y-3">
+                          {sizes.map((size, index) => (
+                            <div
+                              key={index}
+                              className="grid grid-cols-5 gap-2 items-center"
+                            >
+                              <Input
+                                placeholder="Nome"
+                                value={size.name}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setSizes((prev) =>
+                                    prev.map((s, i) =>
+                                      i === index ? { ...s, name: value } : s
+                                    )
+                                  );
+                                }}
+                                className="col-span-2 text-sm sm:text-base"
+                                disabled={isLoading}
+                              />
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="Preço"
+                                value={size.price}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setSizes((prev) =>
+                                    prev.map((s, i) =>
+                                      i === index ? { ...s, price: value } : s
+                                    )
+                                  );
+                                }}
+                                className="col-span-2 text-sm sm:text-base"
+                                disabled={isLoading}
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                  setSizes((prev) =>
+                                    prev.filter((_, i) => i !== index)
+                                  )
+                                }
+                                disabled={isLoading}
+                              >
+                                Remover
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setSizes((prev) => [
+                                ...prev,
+                                { name: "", price: "" },
+                              ])
+                            }
+                            disabled={isLoading}
+                          >
+                            Adicionar tamanho
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
                       <Label
                         htmlFor="productImage"
                         className="text-sm sm:text-base"
@@ -2327,6 +2469,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                       {orderProduct.product.name} x
                                       {orderProduct.quantity}
                                     </p>
+                                    {orderProduct.sizeName && (
+                                      <p className="text-[11px] text-muted-foreground">
+                                        Tam: {orderProduct.sizeName}
+                                      </p>
+                                    )}
                                     <p className="text-xs text-muted-foreground">
                                       {formatCurrency(orderProduct.price)} cada
                                     </p>

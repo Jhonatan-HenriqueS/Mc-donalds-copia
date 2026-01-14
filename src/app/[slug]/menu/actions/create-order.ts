@@ -17,6 +17,7 @@ interface createOrderInput {
     id: string;
     price: number;
     quantity: number;
+    sizeId?: string | null;
   }>;
   consumptionMethod: ConsumptionMethod;
   slug: string;
@@ -45,12 +46,32 @@ export const createOrder = async (input: createOrderInput) => {
         //Busca todos os produtos existentes pelo seu id
       },
     },
+    include: {
+      sizes: true,
+    },
   });
 
   const productsWithPricesQuantities = input.products.map((product) => ({
     productId: product.id,
     quantity: product.quantity,
-    price: productsWithPrices.find((p) => p.id === product.id)!.price,
+    price:
+      input.consumptionMethod === 'TAKEANAY' &&
+      productsWithPrices.find((p) => p.id === product.id)?.sizes.length &&
+      productsWithPrices
+        .find((p) => p.id === product.id)
+        ?.sizes.find((s) => s.id === product.sizeId)?.price
+        ? productsWithPrices
+            .find((p) => p.id === product.id)
+            ?.sizes.find((s) => s.id === product.sizeId)!.price!
+        : input.products.find((p) => p.id === product.id)?.price ??
+          productsWithPrices.find((p) => p.id === product.id)!.price,
+    sizeId: product.sizeId,
+    sizeName: productsWithPrices
+      .find((p) => p.id === product.id)
+      ?.sizes.find((s) => s.id === product.sizeId)?.name,
+    sizePrice: productsWithPrices
+      .find((p) => p.id === product.id)
+      ?.sizes.find((s) => s.id === product.sizeId)?.price,
   }));
 
   const subtotal = productsWithPricesQuantities.reduce(
@@ -68,7 +89,14 @@ export const createOrder = async (input: createOrderInput) => {
     customerPhone: input.customerPhone,
     orderProducts: {
       createMany: {
-        data: productsWithPricesQuantities,
+        data: productsWithPricesQuantities.map((p) => ({
+          productId: p.productId,
+          quantity: p.quantity,
+          price: p.price,
+          sizeId: p.sizeId || null,
+          sizeName: p.sizeName || null,
+          sizePrice: p.sizePrice || null,
+        })),
       },
     },
     total: subtotal + deliveryFee,

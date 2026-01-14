@@ -252,6 +252,12 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         const takeawayData = data as TakeawayFormSchema;
         await createOrder({
           ...payloadBase,
+          products: products.map((p) => ({
+            id: p.id,
+            price: p.price,
+            quantity: p.quantity,
+            sizeId: p.sizeId || undefined,
+          })),
           deliveryStreet: takeawayData.deliveryStreet,
           deliveryNumber: takeawayData.deliveryNumber,
           deliveryComplement: takeawayData.deliveryComplement || "",
@@ -260,7 +266,15 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           deliveryState: takeawayData.deliveryState,
         });
       } else {
-        await createOrder(payloadBase);
+        await createOrder({
+          ...payloadBase,
+          products: products.map((p) => ({
+            id: p.id,
+            price: p.price,
+            quantity: p.quantity,
+            sizeId: p.sizeId || undefined,
+          })),
+        });
       }
 
       toast.success("Pedido criado com sucesso!");

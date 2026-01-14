@@ -23,6 +23,7 @@ const ProductPage = async ({ params }: ProductPageProps) => {
           deliveryFee: true,
         },
       },
+      sizes: true,
     },
   });
 

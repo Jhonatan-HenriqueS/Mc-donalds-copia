@@ -28,6 +28,7 @@ export const getProducts = async (restaurantId: string) => {
             name: true,
           },
         },
+        sizes: true,
       },
       orderBy: {
         createdAt: 'desc',

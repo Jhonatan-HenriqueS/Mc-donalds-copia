@@ -13,6 +13,10 @@ interface CreateProductInput {
   ingredients: string[];
   menuCategoryId: string;
   restaurantId: string;
+  sizes?: Array<{
+    name: string;
+    price: number;
+  }>;
 }
 
 export const createProduct = async (input: CreateProductInput) => {
@@ -52,6 +56,16 @@ export const createProduct = async (input: CreateProductInput) => {
         ingredients: input.ingredients,
         menuCategoryId: input.menuCategoryId,
         restaurantId: input.restaurantId,
+        sizes: input.sizes?.length
+          ? {
+              createMany: {
+                data: input.sizes.map((size) => ({
+                  name: size.name,
+                  price: size.price,
+                })),
+              },
+            }
+          : undefined,
       },
     });
 

@@ -79,6 +79,7 @@ model Product {
   price          Float //Para não atrapalhar o next, usa-se float ao invés de decimal
   imageUrl       String
   ingredients    String[]
+  sizes          ProductSize[]
   orderProducts  OrderProduct[]
   restaurant     Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId   String
@@ -86,6 +87,16 @@ model Product {
   menuCategoryId String
   createdAt      DateTime       @default(now())
   updateAt       DateTime       @updatedAt
+}
+
+model ProductSize {
+  id        String   @id @default(uuid())
+  name      String
+  price     Float
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
 }
 
 model Order {
@@ -102,6 +113,8 @@ model Order {
   customerEmail        String?
   customerPhone        String?
   deliveryFee          Float              @default(0)
+  sizeName             String?
+  sizePrice            Float?
   deliveryStreet       String?
   deliveryNumber       String?
   deliveryComplement   String?
@@ -121,6 +134,9 @@ model OrderProduct {
   orderId   Int
   quantity  Int
   price     Float
+  sizeName  String?
+  sizePrice Float?
+  sizeId    String?
   createdAt DateTime @default(now())
   updateAt  DateTime @updatedAt
 }
