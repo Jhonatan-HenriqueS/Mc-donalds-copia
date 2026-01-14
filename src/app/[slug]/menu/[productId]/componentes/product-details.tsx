@@ -21,6 +21,7 @@ interface ProductDetailsProps {
         select: {
           name: true;
           avatarImageUrl: true;
+          isOpen: true;
         };
       };
     };
