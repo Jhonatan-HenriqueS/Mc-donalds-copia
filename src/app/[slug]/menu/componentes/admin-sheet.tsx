@@ -3,6 +3,7 @@
 import { OrderStatus, Prisma, Product } from "@prisma/client";
 import {
   Bell,
+  ClockIcon,
   Edit,
   ImageIcon,
   LogOut,
@@ -30,6 +31,7 @@ import { updateOrderStatus } from "@/app/[slug]/menu/actions/update-order-status
 import { updateProduct } from "@/app/[slug]/menu/actions/update-product";
 import { updateRestaurantAvatar } from "@/app/[slug]/menu/actions/update-restaurant-avatar";
 import { updateRestaurantCover } from "@/app/[slug]/menu/actions/update-restaurant-cover";
+import { updateRestaurantStatus } from "@/app/[slug]/menu/actions/update-restaurant-status";
 import { formatCpf } from "@/app/[slug]/menu/helpers/format-cpf";
 import { useOrderNotifications } from "@/app/[slug]/menu/hooks/use-order-notifications";
 import { logout } from "@/app/actions/logout";
@@ -178,6 +180,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [lastSavedAvatar, setLastSavedAvatar] = useState(
     restaurant.avatarImageUrl
   );
+  const [isRestaurantOpen, setIsRestaurantOpen] = useState(
+    restaurant.isOpen ?? true
+  );
+  const [, setLastSavedStatus] = useState(restaurant.isOpen ?? true);
   const [coverImageUrl, setCoverImageUrl] = useState(restaurant.coverImageUrl);
   const [coverPreview, setCoverPreview] = useState<string | null>(
     restaurant.coverImageUrl
@@ -192,6 +198,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isSavingCover, setIsSavingCover] = useState(false);
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [editingProduct, setEditingProduct] =
     useState<ProductWithCategory | null>(null);
@@ -212,6 +219,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [consumptionError, setConsumptionError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [coverError, setCoverError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -613,6 +621,35 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     }
   };
 
+  const handleToggleRestaurantStatus = async () => {
+    setStatusError(null);
+    const nextStatus = !isRestaurantOpen;
+    setIsSavingStatus(true);
+    try {
+      const result = await updateRestaurantStatus({
+        restaurantId: restaurant.id,
+        isOpen: nextStatus,
+      });
+
+      if (result.success && result.restaurant) {
+        setIsRestaurantOpen(result.restaurant.isOpen);
+        setLastSavedStatus(result.restaurant.isOpen);
+        toast.success(
+          result.restaurant.isOpen
+            ? "Restaurante aberto!"
+            : "Restaurante fechado!"
+        );
+      } else {
+        setStatusError(result.error || "Erro ao atualizar status.");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      setStatusError("Erro ao atualizar status.");
+    } finally {
+      setIsSavingStatus(false);
+    }
+  };
+
   const handleSaveCover = async () => {
     setCoverError(null);
 
@@ -875,6 +912,23 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 Adicionar Produto
               </Button>
               <Button
+                onClick={handleToggleRestaurantStatus}
+                className="w-full text-sm sm:text-base"
+                variant={isRestaurantOpen ? "default" : "destructive"}
+                size="lg"
+                disabled={isSavingStatus}
+              >
+                <ClockIcon className="mr-2 h-4 w-4" />
+                {isSavingStatus
+                  ? "Atualizando..."
+                  : isRestaurantOpen
+                    ? "Marcar como fechado"
+                    : "Marcar como aberto"}
+              </Button>
+              {statusError && (
+                <p className="text-xs text-destructive">{statusError}</p>
+              )}
+              <Button
                 onClick={handleShowProducts}
                 className="w-full text-sm sm:text-base"
                 variant="outline"
@@ -910,6 +964,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 <Wand2 className="mr-2 h-4 w-4" />
                 Alterar logo
               </Button>
+
               <Button
                 onClick={() => setShowUpdateCover(true)}
                 className="w-full text-sm sm:text-base"

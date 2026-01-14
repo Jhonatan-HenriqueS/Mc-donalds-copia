@@ -16,7 +16,11 @@ import { CartContext } from "../context/cart";
 import CartProductItem from "./cart-product-item";
 import FinishOrderDialog from "./finish-order-dialog";
 
-const CartSheet = () => {
+interface CartSheetProps {
+  isRestaurantOpen?: boolean;
+}
+
+const CartSheet = ({ isRestaurantOpen = true }: CartSheetProps) => {
   const [finishOnderDialogIsOPen, setFinishOnderDialogIsOPen] = useState(false);
   const { isOpen, taggleCart, products, total } = useContext(CartContext);
 
@@ -50,16 +54,24 @@ const CartSheet = () => {
               </div>
             </CardContent>
           </Card>
-          <Button
-            className="w-full rounded-full"
-            onClick={() => setFinishOnderDialogIsOPen(true)}
-          >
-            Finalizar pedido
-          </Button>
-          <FinishOrderDialog
-            open={finishOnderDialogIsOPen}
-            onOpenChange={setFinishOnderDialogIsOPen}
-          />
+          {isRestaurantOpen ? (
+            <>
+              <Button
+                className="w-full rounded-full"
+                onClick={() => setFinishOnderDialogIsOPen(true)}
+              >
+                Finalizar pedido
+              </Button>
+              <FinishOrderDialog
+                open={finishOnderDialogIsOPen}
+                onOpenChange={setFinishOnderDialogIsOPen}
+              />
+            </>
+          ) : (
+            <p className="w-full rounded-full text-center text-sm font-semibold text-red-500">
+              Restaurante fechado no momento
+            </p>
+          )}
         </div>
       </SheetContent>
     </Sheet>

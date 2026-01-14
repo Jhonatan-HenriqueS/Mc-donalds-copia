@@ -19,6 +19,7 @@ const ProductPage = async ({ params }: ProductPageProps) => {
           name: true,
           avatarImageUrl: true,
           slug: true,
+          isOpen: true,
         },
       },
     },

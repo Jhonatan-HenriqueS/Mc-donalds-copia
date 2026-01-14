@@ -68,9 +68,11 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
           <div></div>
         </div>
 
-        <div className="flex items-center mt-3 gap-1 text-xs text-green-500">
+        <div className="flex items-center mt-3 gap-1 text-xs">
           <ClockIcon size={12} />
-          <p>Aberto!</p>
+          <p className={restaurant.isOpen ? "text-green-500" : "text-red-500"}>
+            {restaurant.isOpen ? "Aberto!" : "Fechado!"}
+          </p>
         </div>
       </div>
 
@@ -114,7 +116,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
                 {totalQuantity > 1 ? " itens" : " item"}
               </span>
             </p>
-            <CartSheet />
+            <CartSheet isRestaurantOpen={restaurant.isOpen ?? true} />
           </div>
           <Button onClick={taggleCart}>Ver Pedidos</Button>
         </div>

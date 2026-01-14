@@ -2,9 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ConsumptionMethod } from "@prisma/client";
-import { Loader2Icon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, Loader2Icon } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import type { Control } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { PatternFormat } from "react-number-format";
@@ -42,6 +42,20 @@ const baseFormSchema = z.object({
   name: z.string().trim().min(1, {
     message: "O nome é obrigatório!",
   }),
+  email: z
+    .string()
+    .trim()
+    .email({ message: "Digite um email válido!" }),
+  phone: z
+    .string()
+    .trim()
+    .refine(
+      (value) => {
+        const digits = value.replace(/\D/g, "");
+        return digits.length === 10;
+      },
+      { message: "Digite um telefone válido (ex: (69) 9999-9999)" }
+    ),
   cpf: z
     .string()
     .trim()
@@ -93,6 +107,15 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   const isTakeaway = consumptionMethod === "TAKEANAY";
 
   const [isLoading, setIsLoading] = useState(false);
+  const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [savedProfile, setSavedProfile] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    cpf: string;
+  } | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(true);
 
   const formSchema = isTakeaway ? takeawayFormSchema : baseFormSchema;
   type FormSchema = typeof isTakeaway extends true
@@ -102,6 +125,8 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   const defaultValues = isTakeaway
     ? ({
         name: "",
+        email: "",
+        phone: "",
         cpf: "",
         deliveryStreet: "",
         deliveryNumber: "",
@@ -112,6 +137,8 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       } satisfies TakeawayFormSchema)
     : ({
         name: "",
+        email: "",
+        phone: "",
         cpf: "",
       } satisfies BaseFormSchema);
 
@@ -120,6 +147,53 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     defaultValues: defaultValues as FormSchema,
     shouldUnregister: true,
   });
+
+  // Buscar restaurantId para salvar perfil local
+  useEffect(() => {
+    const fetchRestaurantId = async () => {
+      if (!slug) return;
+      try {
+        const response = await fetch(`/api/restaurant-by-slug?slug=${slug}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.restaurantId) {
+            setRestaurantId(data.restaurantId);
+            const saved = localStorage.getItem(
+              `last_order_profile_${data.restaurantId}`
+            );
+            if (saved) {
+              try {
+                const parsed = JSON.parse(saved);
+                if (
+                  parsed.name &&
+                  parsed.email &&
+                  parsed.phone &&
+                  parsed.cpf
+                ) {
+                  setSavedProfile(parsed);
+                  setEditingProfile(false);
+                  form.reset({
+                    ...(defaultValues as FormSchema),
+                    name: parsed.name,
+                    email: parsed.email,
+                    phone: parsed.phone,
+                    cpf: parsed.cpf,
+                  });
+                }
+              } catch (error) {
+                console.error("Erro ao ler perfil salvo:", error);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar restaurantId:", error);
+      }
+    };
+
+    fetchRestaurantId();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   const onSubmit = async (data: FormSchema) => {
     if (products.length === 0) {
@@ -130,14 +204,20 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     setIsLoading(true);
 
     try {
+      const payloadBase = {
+        consumptionMethod,
+        customerCpf: data.cpf,
+        customerName: data.name,
+        customerEmail: data.email,
+        customerPhone: data.phone,
+        products,
+        slug,
+      };
+
       if (isTakeaway) {
         const takeawayData = data as TakeawayFormSchema;
         await createOrder({
-          consumptionMethod,
-          customerCpf: takeawayData.cpf,
-          customerName: takeawayData.name,
-          products,
-          slug,
+          ...payloadBase,
           deliveryStreet: takeawayData.deliveryStreet,
           deliveryNumber: takeawayData.deliveryNumber,
           deliveryComplement: takeawayData.deliveryComplement || "",
@@ -146,19 +226,19 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           deliveryState: takeawayData.deliveryState,
         });
       } else {
-        const baseData = data as BaseFormSchema;
-        await createOrder({
-          consumptionMethod,
-          customerCpf: baseData.cpf,
-          customerName: baseData.name,
-          products,
-          slug,
-        });
+        await createOrder(payloadBase);
       }
 
       toast.success("Pedido criado com sucesso!");
+      setSavedProfile({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        cpf: data.cpf,
+      });
+      setEditingProfile(false);
       clearCart();
-      form.reset();
+      form.reset(data as FormSchema);
       onOpenChange(false);
 
       // Buscar restaurantId e salvar CPF no localStorage
@@ -171,6 +251,15 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
             localStorage.setItem(
               `last_order_cpf_${result.restaurantId}`,
               cpfWithoutPunctuation
+            );
+            localStorage.setItem(
+              `last_order_profile_${result.restaurantId}`,
+              JSON.stringify({
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                cpf: data.cpf,
+              })
             );
           }
         }
@@ -217,38 +306,154 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="flex flex-col gap-6"
                 >
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Seu nome</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Digite seu nome..." {...field} />
-                        </FormControl>
-                        <FormMessage></FormMessage>
-                      </FormItem>
-                    )}
-                  />
+                  {savedProfile && !editingProfile ? (
+                    <div className="space-y-3 rounded-md border p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {savedProfile.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {savedProfile.email}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingProfile(true)}
+                        >
+                          Editar dados
+                        </Button>
+                      </div>
 
-                  <FormField
-                    control={form.control}
-                    name="cpf"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Seu cpf</FormLabel>
-                        <FormControl>
-                          <PatternFormat
-                            placeholder="Digite seu CPF..."
-                            format="###.###.###-##"
-                            customInput={Input}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage></FormMessage>
-                      </FormItem>
-                    )}
-                  />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="px-0"
+                          onClick={() => setShowDetails((prev) => !prev)}
+                        >
+                          {showDetails ? (
+                            <>
+                              <ChevronUpIcon className="h-4 w-4" />
+                              <span className="text-xs">Ocultar detalhes</span>
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDownIcon className="h-4 w-4" />
+                              <span className="text-xs">Mostrar detalhes</span>
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="px-0 text-red-500"
+                          onClick={() => {
+                            setSavedProfile(null);
+                            setEditingProfile(true);
+                            setShowDetails(false);
+                            form.reset(defaultValues as FormSchema);
+                            if (restaurantId) {
+                              localStorage.removeItem(
+                                `last_order_profile_${restaurantId}`
+                              );
+                            }
+                          }}
+                        >
+                          Pedir em outra conta
+                        </Button>
+                      </div>
+
+                      {showDetails && (
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>Telefone: {savedProfile.phone}</p>
+                          <p>
+                            CPF:{" "}
+                            {`${savedProfile.cpf.slice(0, 3)}***.***-${savedProfile.cpf.slice(-2)}`}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Seu nome</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Digite seu nome..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage></FormMessage>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Seu email</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="Digite seu email..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage></FormMessage>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Telefone</FormLabel>
+                            <FormControl>
+                              <PatternFormat
+                                placeholder="(69) 9999-9999"
+                                format="(##) ####-####"
+                                customInput={Input}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage></FormMessage>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="cpf"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Seu cpf</FormLabel>
+                            <FormControl>
+                              <PatternFormat
+                                placeholder="Digite seu CPF..."
+                                format="###.###.###-##"
+                                customInput={Input}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage></FormMessage>
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
 
                   {isTakeaway && (
                     <>

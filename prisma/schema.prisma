@@ -44,6 +44,7 @@ model Restaurant {
   description        String
   avatarImageUrl     String
   coverImageUrl      String
+  isOpen             Boolean             @default(true)
   allowDineIn        Boolean             @default(true)
   allowTakeaway      Boolean             @default(true)
   userId             String
@@ -95,6 +96,8 @@ model Order {
   restaurantId         String
   customerName         String
   customerCpf          String
+  customerEmail        String?
+  customerPhone        String?
   deliveryStreet       String?
   deliveryNumber       String?
   deliveryComplement   String?

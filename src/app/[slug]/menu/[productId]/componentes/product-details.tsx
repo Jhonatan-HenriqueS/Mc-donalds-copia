@@ -123,7 +123,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
           Adicionar ao carrinho
         </Button>
       </div>
-      <CartSheet />
+      <CartSheet isRestaurantOpen={product.restaurant.isOpen ?? true} />
     </>
   );
 };
