@@ -42,10 +42,7 @@ const baseFormSchema = z.object({
   name: z.string().trim().min(1, {
     message: "O nome é obrigatório!",
   }),
-  email: z
-    .string()
-    .trim()
-    .email({ message: "Digite um email válido!" }),
+  email: z.string().trim().email({ message: "Digite um email válido!" }),
   phone: z
     .string()
     .trim()
@@ -116,6 +113,16 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   } | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [editingProfile, setEditingProfile] = useState(true);
+  const [savedAddress, setSavedAddress] = useState<{
+    deliveryStreet: string;
+    deliveryNumber: string;
+    deliveryComplement?: string;
+    deliveryNeighborhood: string;
+    deliveryCity: string;
+    deliveryState: string;
+  } | null>(null);
+  const [editingAddress, setEditingAddress] = useState(true);
+  const [showAddressDetails, setShowAddressDetails] = useState(false);
 
   const formSchema = isTakeaway ? takeawayFormSchema : baseFormSchema;
   type FormSchema = typeof isTakeaway extends true
@@ -145,7 +152,8 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues as FormSchema,
-    shouldUnregister: true,
+    // Mantém os valores mesmo quando inputs são ocultados (resumo de perfil/endereço)
+    shouldUnregister: false,
   });
 
   // Buscar restaurantId para salvar perfil local
@@ -158,18 +166,15 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           const data = await response.json();
           if (data.success && data.restaurantId) {
             setRestaurantId(data.restaurantId);
+            let parsedProfile: Partial<FormSchema> | null = null;
             const saved = localStorage.getItem(
               `last_order_profile_${data.restaurantId}`
             );
             if (saved) {
               try {
                 const parsed = JSON.parse(saved);
-                if (
-                  parsed.name &&
-                  parsed.email &&
-                  parsed.phone &&
-                  parsed.cpf
-                ) {
+                if (parsed.name && parsed.email && parsed.phone && parsed.cpf) {
+                  parsedProfile = parsed;
                   setSavedProfile(parsed);
                   setEditingProfile(false);
                   form.reset({
@@ -182,6 +187,35 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                 }
               } catch (error) {
                 console.error("Erro ao ler perfil salvo:", error);
+              }
+            }
+
+            if (isTakeaway) {
+              const savedAddressRaw = localStorage.getItem(
+                `last_order_address_${data.restaurantId}`
+              );
+              if (savedAddressRaw) {
+                try {
+                  const parsedAddress = JSON.parse(savedAddressRaw);
+                  if (
+                    parsedAddress.deliveryStreet &&
+                    parsedAddress.deliveryNumber &&
+                    parsedAddress.deliveryNeighborhood &&
+                    parsedAddress.deliveryCity &&
+                    parsedAddress.deliveryState
+                  ) {
+                    setSavedAddress(parsedAddress);
+                    setEditingAddress(false);
+                    form.reset({
+                      ...(defaultValues as FormSchema),
+                      ...(parsedProfile ?? {}),
+                      ...parsedAddress,
+                    });
+                    setShowAddressDetails(false);
+                  }
+                } catch (error) {
+                  console.error("Erro ao ler endereço salvo:", error);
+                }
               }
             }
           }
@@ -237,6 +271,18 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         cpf: data.cpf,
       });
       setEditingProfile(false);
+      if (isTakeaway) {
+        const takeawayData = data as TakeawayFormSchema;
+        setSavedAddress({
+          deliveryStreet: takeawayData.deliveryStreet,
+          deliveryNumber: takeawayData.deliveryNumber,
+          deliveryComplement: takeawayData.deliveryComplement,
+          deliveryNeighborhood: takeawayData.deliveryNeighborhood,
+          deliveryCity: takeawayData.deliveryCity,
+          deliveryState: takeawayData.deliveryState,
+        });
+        setEditingAddress(false);
+      }
       clearCart();
       form.reset(data as FormSchema);
       onOpenChange(false);
@@ -261,6 +307,20 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                 cpf: data.cpf,
               })
             );
+            if (isTakeaway) {
+              const takeawayData = data as TakeawayFormSchema;
+              localStorage.setItem(
+                `last_order_address_${result.restaurantId}`,
+                JSON.stringify({
+                  deliveryStreet: takeawayData.deliveryStreet,
+                  deliveryNumber: takeawayData.deliveryNumber,
+                  deliveryComplement: takeawayData.deliveryComplement,
+                  deliveryNeighborhood: takeawayData.deliveryNeighborhood,
+                  deliveryCity: takeawayData.deliveryCity,
+                  deliveryState: takeawayData.deliveryState,
+                })
+              );
+            }
           }
         }
       } catch (error) {
@@ -423,8 +483,8 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                             <FormLabel>Telefone</FormLabel>
                             <FormControl>
                               <PatternFormat
-                                placeholder="(69) 9999-9999"
-                                format="(##) ####-####"
+                                placeholder="(69) 99999-9999"
+                                format="(##) #####-####"
                                 customInput={Input}
                                 {...field}
                               />
@@ -463,124 +523,219 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                         </h3>
                       </div>
 
-                      <FormField
-                        control={
-                          form.control as unknown as Control<TakeawayFormSchema>
-                        }
-                        name="deliveryStreet"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Rua</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Digite o nome da rua..."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage></FormMessage>
-                          </FormItem>
-                        )}
-                      />
+                      {isTakeaway && savedAddress && !editingAddress ? (
+                        <div className="space-y-3 rounded-md border p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-semibold">
+                                {savedAddress.deliveryStreet},{" "}
+                                {savedAddress.deliveryNumber}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {savedAddress.deliveryCity}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setEditingAddress(true)}
+                            >
+                              Atualizar endereço
+                            </Button>
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={
-                            form.control as unknown as Control<TakeawayFormSchema>
-                          }
-                          name="deliveryNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Número</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Número..." {...field} />
-                              </FormControl>
-                              <FormMessage></FormMessage>
-                            </FormItem>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="px-0"
+                              onClick={() =>
+                                setShowAddressDetails((prev) => !prev)
+                              }
+                            >
+                              {showAddressDetails ? (
+                                <>
+                                  <ChevronUpIcon className="h-4 w-4" />
+                                  <span className="text-xs">
+                                    Ocultar detalhes
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDownIcon className="h-4 w-4" />
+                                  <span className="text-xs">
+                                    Mostrar detalhes
+                                  </span>
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="px-0 text-red-500"
+                              onClick={() => {
+                                setSavedAddress(null);
+                                setEditingAddress(true);
+                                setShowAddressDetails(false);
+                                if (restaurantId) {
+                                  localStorage.removeItem(
+                                    `last_order_address_${restaurantId}`
+                                  );
+                                }
+                                form.reset({
+                                  ...(defaultValues as FormSchema),
+                                  ...(savedProfile ?? {}),
+                                });
+                              }}
+                            >
+                              Usar outro endereço
+                            </Button>
+                          </div>
+
+                          {showAddressDetails && (
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <p>
+                                {savedAddress.deliveryStreet},{" "}
+                                {savedAddress.deliveryNumber}
+                              </p>
+                              {savedAddress.deliveryComplement && (
+                                <p>Compl: {savedAddress.deliveryComplement}</p>
+                              )}
+                              <p>{savedAddress.deliveryNeighborhood}</p>
+                              <p>
+                                {savedAddress.deliveryCity}/
+                                {savedAddress.deliveryState}
+                              </p>
+                            </div>
                           )}
-                        />
+                        </div>
+                      ) : (
+                        <>
+                          <FormField
+                            control={
+                              form.control as unknown as Control<TakeawayFormSchema>
+                            }
+                            name="deliveryStreet"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Rua</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Digite o nome da rua..."
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage></FormMessage>
+                              </FormItem>
+                            )}
+                          />
 
-                        <FormField
-                          control={
-                            form.control as unknown as Control<TakeawayFormSchema>
-                          }
-                          name="deliveryComplement"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Complemento (opcional)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Apto, bloco..."
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage></FormMessage>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={
+                                form.control as unknown as Control<TakeawayFormSchema>
+                              }
+                              name="deliveryNumber"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Número</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Número..." {...field} />
+                                  </FormControl>
+                                  <FormMessage></FormMessage>
+                                </FormItem>
+                              )}
+                            />
 
-                      <FormField
-                        control={
-                          form.control as unknown as Control<TakeawayFormSchema>
-                        }
-                        name="deliveryNeighborhood"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Bairro</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Digite o bairro..."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage></FormMessage>
-                          </FormItem>
-                        )}
-                      />
+                            <FormField
+                              control={
+                                form.control as unknown as Control<TakeawayFormSchema>
+                              }
+                              name="deliveryComplement"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Complemento (opcional)</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Apto, bloco..."
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage></FormMessage>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={
-                            form.control as unknown as Control<TakeawayFormSchema>
-                          }
-                          name="deliveryCity"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Cidade</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Digite a cidade..."
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage></FormMessage>
-                            </FormItem>
-                          )}
-                        />
+                          <FormField
+                            control={
+                              form.control as unknown as Control<TakeawayFormSchema>
+                            }
+                            name="deliveryNeighborhood"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Bairro</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Digite o bairro..."
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage></FormMessage>
+                              </FormItem>
+                            )}
+                          />
 
-                        <FormField
-                          control={
-                            form.control as unknown as Control<TakeawayFormSchema>
-                          }
-                          name="deliveryState"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Estado</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="UF"
-                                  maxLength={2}
-                                  {...field}
-                                  onChange={(e) =>
-                                    field.onChange(e.target.value.toUpperCase())
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage></FormMessage>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={
+                                form.control as unknown as Control<TakeawayFormSchema>
+                              }
+                              name="deliveryCity"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Cidade</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Digite a cidade..."
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage></FormMessage>
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={
+                                form.control as unknown as Control<TakeawayFormSchema>
+                              }
+                              name="deliveryState"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Estado</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="UF"
+                                      maxLength={2}
+                                      {...field}
+                                      onChange={(e) =>
+                                        field.onChange(
+                                          e.target.value.toUpperCase()
+                                        )
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage></FormMessage>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                   <DrawerFooter>
