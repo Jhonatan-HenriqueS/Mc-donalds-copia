@@ -719,7 +719,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                                   <FormLabel>Estado</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="UF"
+                                      placeholder="RO"
                                       maxLength={2}
                                       {...field}
                                       onChange={(e) =>
