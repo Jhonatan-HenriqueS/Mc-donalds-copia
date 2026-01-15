@@ -3,8 +3,8 @@
 import { Prisma } from "@prisma/client";
 import { ClockIcon } from "lucide-react";
 import Image from "next/image";
-import { useContext, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useContext, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
