@@ -25,7 +25,6 @@ const CartProductItem = ({ product }: CartItemProps) => {
     removeProduct,
     updateProductSize,
     updateProductAdditionals,
-    updateProductRequiredAdditionals,
   } = useContext(CartContext);
 
   const availableAdditionals = product.availableAdditionals || [];
@@ -38,24 +37,6 @@ const CartProductItem = ({ product }: CartItemProps) => {
     availableAdditionals.length > 0
       ? availableAdditionals
       : selectedAdditionals;
-  const requiredGroups = product.availableRequiredAdditionals || [];
-  const requiredSelections = product.requiredAdditionals || [];
-
-  const requiredSummary = useMemo(() => {
-    if (requiredSelections.length === 0) return "";
-    const grouped = requiredSelections.reduce(
-      (acc, item) => {
-        const title = item.groupTitle || "Obrigatório";
-        acc[title] = acc[title] || [];
-        acc[title].push(`${item.quantity}x ${item.name}`);
-        return acc;
-      },
-      {} as Record<string, string[]>
-    );
-    return Object.entries(grouped)
-      .map(([title, items]) => `${title}: ${items.join(", ")}`)
-      .join(" • ");
-  }, [requiredSelections]);
 
   const selectedAdditionalsCount = useMemo(
     () =>
@@ -76,8 +57,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
   const itemTotal = unitTotal * product.quantity;
   const canEditDetails =
     (product.sizes && product.sizes.length > 0) ||
-    additionalsToDisplay.length > 0 ||
-    requiredGroups.length > 0;
+    additionalsToDisplay.length > 0;
 
   const handleAdditionalChange = (additionalId: string, delta: number) => {
     const option =
@@ -102,52 +82,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
       product.id,
       product.sizeId || null,
       nextAdditionals,
-      product.additionalsKey || null,
-      product.requiredAdditionalsKey || null
-    );
-  };
-
-  const handleRequiredChange = (
-    groupId: string,
-    groupTitle: string,
-    itemId: string,
-    itemName: string,
-    imageUrl: string | undefined,
-    delta: number,
-    requiredQuantity: number
-  ) => {
-    const groupSelected = requiredSelections
-      .filter((item) => item.groupId === groupId)
-      .reduce((acc, item) => acc + (item.quantity || 0), 0);
-    const currentQuantity =
-      requiredSelections.find((item) => item.id === itemId)?.quantity || 0;
-    const nextQuantity = Math.max(0, currentQuantity + delta);
-
-    if (delta < 0 && groupSelected <= requiredQuantity) {
-      return;
-    }
-
-    const nextSelections = requiredSelections
-      .filter((item) => item.id !== itemId)
-      .map((item) => ({ ...item }));
-
-    if (nextQuantity > 0) {
-      nextSelections.push({
-        id: itemId,
-        name: itemName,
-        imageUrl,
-        groupId,
-        groupTitle,
-        quantity: nextQuantity,
-      });
-    }
-
-    updateProductRequiredAdditionals(
-      product.id,
-      product.sizeId || null,
-      nextSelections,
-      product.additionalsKey || null,
-      product.requiredAdditionalsKey || null
+      product.additionalsKey || null
     );
   };
 
@@ -157,8 +92,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
       product.id,
       product.sizeId || null,
       newSize || null,
-      product.additionalsKey || null,
-      product.requiredAdditionalsKey || null
+      product.additionalsKey || null
     );
   };
 
@@ -187,14 +121,13 @@ const CartProductItem = ({ product }: CartItemProps) => {
                 className="w-7 h-7 rounded-lg"
                 variant="outline"
                 onClick={() =>
-                descreaseProductQuantity(
-                  product.id,
-                  product.sizeId || null,
-                  product.additionalsKey || null,
-                  product.requiredAdditionalsKey || null
-                )
-              }
-            >
+                  descreaseProductQuantity(
+                    product.id,
+                    product.sizeId || null,
+                    product.additionalsKey || null
+                  )
+                }
+              >
                 <ChevronLeftIcon size={14} />
               </Button>
               <p className="text-xs mx-[10px] ">{product.quantity}</p>
@@ -202,14 +135,13 @@ const CartProductItem = ({ product }: CartItemProps) => {
                 className="w-7 h-7 rounded-lg"
                 variant="destructive"
                 onClick={() =>
-                inCreaseProductQuantity(
-                  product.id,
-                  product.sizeId || null,
-                  product.additionalsKey || null,
-                  product.requiredAdditionalsKey || null
-                )
-              }
-            >
+                  inCreaseProductQuantity(
+                    product.id,
+                    product.sizeId || null,
+                    product.additionalsKey || null
+                  )
+                }
+              >
                 <ChevronRightIcon size={14} />
               </Button>
             </div>
@@ -222,15 +154,8 @@ const CartProductItem = ({ product }: CartItemProps) => {
               <p className="text-xs text-muted-foreground line-clamp-2">
                 Adicionais:{" "}
                 {selectedAdditionals
-                  .map(
-                    (additional) => `${additional.quantity}x ${additional.name}`
-                  )
+                  .map((additional) => `${additional.quantity}`)
                   .join(", ")}
-              </p>
-            )}
-            {requiredSummary && (
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                Obrigatórios: {requiredSummary}
               </p>
             )}
           </div>
@@ -243,8 +168,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
               removeProduct(
                 product.id,
                 product.sizeId || null,
-                product.additionalsKey || null,
-                product.requiredAdditionalsKey || null
+                product.additionalsKey || null
               )
             }
           >
@@ -287,104 +211,6 @@ const CartProductItem = ({ product }: CartItemProps) => {
                 </option>
               ))}
             </select>
-          )}
-
-          {requiredGroups.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-xs font-semibold">Obrigatórios</p>
-              {requiredGroups.map((group) => {
-                const groupSelected = requiredSelections
-                  .filter((item) => item.groupId === group.id)
-                  .reduce((acc, item) => acc + (item.quantity || 0), 0);
-                const isMissing = groupSelected < group.requiredQuantity;
-                return (
-                  <div key={group.id} className="space-y-2">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-semibold">{group.title}</span>
-                      <span
-                        className={
-                          isMissing
-                            ? "text-destructive"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        {groupSelected}/{group.requiredQuantity} obrigatório(s)
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {group.items.map((item) => {
-                        const quantity =
-                          requiredSelections.find(
-                            (selected) => selected.id === item.id
-                          )?.quantity || 0;
-                        const canDecrease = !(
-                          groupSelected <= group.requiredQuantity &&
-                          quantity <= 1
-                        );
-                        return (
-                          <div
-                            key={item.id}
-                            className="flex items-center justify-between rounded-lg border p-2"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="relative h-10 w-10 overflow-hidden rounded-md bg-muted">
-                                <Image
-                                  src={item.imageUrl ?? "/placeholder.png"}
-                                  alt={item.name}
-                                  fill
-                                  className="object-cover"
-                                />
-                              </div>
-                              <p className="text-xs font-medium">{item.name}</p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                className="w-6 h-6 rounded-md"
-                                variant="outline"
-                                onClick={() =>
-                                  handleRequiredChange(
-                                    group.id,
-                                    group.title,
-                                    item.id!,
-                                    item.name,
-                                    item.imageUrl,
-                                    -1,
-                                    group.requiredQuantity
-                                  )
-                                }
-                                disabled={!canDecrease}
-                              >
-                                <ChevronLeftIcon size={12} />
-                              </Button>
-                              <p className="text-xs w-4 text-center">
-                                {quantity}
-                              </p>
-                              <Button
-                                className="w-6 h-6 rounded-md"
-                                variant="destructive"
-                                onClick={() =>
-                                  handleRequiredChange(
-                                    group.id,
-                                    group.title,
-                                    item.id!,
-                                    item.name,
-                                    item.imageUrl,
-                                    1,
-                                    group.requiredQuantity
-                                  )
-                                }
-                              >
-                                <ChevronRightIcon size={12} />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           )}
 
           {additionalsToDisplay.length > 0 && (

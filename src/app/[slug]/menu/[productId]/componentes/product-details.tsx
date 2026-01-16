@@ -72,7 +72,10 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
   const hasSizes = (product.sizes?.length || 0) > 0;
   const availableAdditionals = product.menuCategory?.additionals || [];
   const hasAdditionals = availableAdditionals.length > 0;
-  const requiredGroups = product.menuCategory?.requiredAdditionalGroups || [];
+  const requiredGroups = useMemo(
+    () => product.menuCategory?.requiredAdditionalGroups || [],
+    [product.menuCategory?.requiredAdditionalGroups]
+  );
   const hasRequiredGroups = requiredGroups.length > 0;
 
   const selectedAdditionalsList = useMemo(
