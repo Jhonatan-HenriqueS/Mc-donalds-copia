@@ -4229,6 +4229,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                   </span>
                                 </>
                               )}
+                              {order.consumptionMethod === "TAKEANAY" && (
+                                <>
+                                  <span className="text-red-500">
+                                    Taxa de entrega
+                                  </span>
+                                  <span className="text-right font-semibold text-red-500">
+                                    {formatCurrency(order.deliveryFee ?? 0)}
+                                  </span>
+                                </>
+                              )}
                               <span className="font-semibold text-foreground">
                                 Total
                               </span>

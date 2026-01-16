@@ -25,6 +25,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
     removeProduct,
     updateProductSize,
     updateProductAdditionals,
+    updateProductRequiredAdditionals,
   } = useContext(CartContext);
 
   const availableAdditionals = product.availableAdditionals || [];
@@ -37,6 +38,27 @@ const CartProductItem = ({ product }: CartItemProps) => {
     availableAdditionals.length > 0
       ? availableAdditionals
       : selectedAdditionals;
+  const requiredGroups = product.availableRequiredAdditionals || [];
+  const requiredSelections = useMemo(
+    () => product.requiredAdditionals || [],
+    [product.requiredAdditionals]
+  );
+
+  const requiredSummary = useMemo(() => {
+    if (requiredSelections.length === 0) return "";
+    const grouped = requiredSelections.reduce(
+      (acc, item) => {
+        const title = item.groupTitle || "Obrigatorio";
+        acc[title] = acc[title] || [];
+        acc[title].push(`${item.quantity}x ${item.name}`);
+        return acc;
+      },
+      {} as Record<string, string[]>
+    );
+    return Object.entries(grouped)
+      .map(([title, items]) => `${title}: ${items.join(", ")}`)
+      .join(" • ");
+  }, [requiredSelections]);
 
   const selectedAdditionalsCount = useMemo(
     () =>
@@ -57,7 +79,8 @@ const CartProductItem = ({ product }: CartItemProps) => {
   const itemTotal = unitTotal * product.quantity;
   const canEditDetails =
     (product.sizes && product.sizes.length > 0) ||
-    additionalsToDisplay.length > 0;
+    additionalsToDisplay.length > 0 ||
+    requiredGroups.length > 0;
 
   const handleAdditionalChange = (additionalId: string, delta: number) => {
     const option =
@@ -82,7 +105,52 @@ const CartProductItem = ({ product }: CartItemProps) => {
       product.id,
       product.sizeId || null,
       nextAdditionals,
-      product.additionalsKey || null
+      product.additionalsKey || null,
+      product.requiredAdditionalsKey || null
+    );
+  };
+
+  const handleRequiredChange = (
+    groupId: string,
+    groupTitle: string,
+    itemId: string,
+    itemName: string,
+    imageUrl: string | undefined,
+    delta: number,
+    requiredQuantity: number
+  ) => {
+    const groupSelected = requiredSelections
+      .filter((item) => item.groupId === groupId)
+      .reduce((acc, item) => acc + (item.quantity || 0), 0);
+    if (delta > 0 && groupSelected >= requiredQuantity) {
+      return;
+    }
+
+    const currentQuantity =
+      requiredSelections.find((item) => item.id === itemId)?.quantity || 0;
+    const nextQuantity = Math.max(0, currentQuantity + delta);
+
+    const nextSelections = requiredSelections
+      .filter((item) => item.id !== itemId)
+      .map((item) => ({ ...item }));
+
+    if (nextQuantity > 0) {
+      nextSelections.push({
+        id: itemId,
+        name: itemName,
+        imageUrl,
+        groupId,
+        groupTitle,
+        quantity: nextQuantity,
+      });
+    }
+
+    updateProductRequiredAdditionals(
+      product.id,
+      product.sizeId || null,
+      nextSelections,
+      product.additionalsKey || null,
+      product.requiredAdditionalsKey || null
     );
   };
 
@@ -92,7 +160,8 @@ const CartProductItem = ({ product }: CartItemProps) => {
       product.id,
       product.sizeId || null,
       newSize || null,
-      product.additionalsKey || null
+      product.additionalsKey || null,
+      product.requiredAdditionalsKey || null
     );
   };
 
@@ -124,7 +193,8 @@ const CartProductItem = ({ product }: CartItemProps) => {
                   descreaseProductQuantity(
                     product.id,
                     product.sizeId || null,
-                    product.additionalsKey || null
+                    product.additionalsKey || null,
+                    product.requiredAdditionalsKey || null
                   )
                 }
               >
@@ -138,7 +208,8 @@ const CartProductItem = ({ product }: CartItemProps) => {
                   inCreaseProductQuantity(
                     product.id,
                     product.sizeId || null,
-                    product.additionalsKey || null
+                    product.additionalsKey || null,
+                    product.requiredAdditionalsKey || null
                   )
                 }
               >
@@ -158,6 +229,11 @@ const CartProductItem = ({ product }: CartItemProps) => {
                   .join(", ")}
               </p>
             )}
+            {requiredSummary && (
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                Obrigatorios: {requiredSummary}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -168,7 +244,8 @@ const CartProductItem = ({ product }: CartItemProps) => {
               removeProduct(
                 product.id,
                 product.sizeId || null,
-                product.additionalsKey || null
+                product.additionalsKey || null,
+                product.requiredAdditionalsKey || null
               )
             }
           >
@@ -211,6 +288,106 @@ const CartProductItem = ({ product }: CartItemProps) => {
                 </option>
               ))}
             </select>
+          )}
+
+          {requiredGroups.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold">Obrigatorios</p>
+              <div className="space-y-2">
+                {requiredGroups.map((group) => {
+                  const groupSelected = requiredSelections
+                    .filter((item) => item.groupId === group.id)
+                    .reduce((acc, item) => acc + (item.quantity || 0), 0);
+                  return (
+                    <div key={group.id} className="space-y-2">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span className="font-medium">{group.title}</span>
+                        <span>
+                          {groupSelected}/{group.requiredQuantity}{" "}
+                          obrigatorio(s)
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {group.items.map((item) => {
+                          const quantity =
+                            requiredSelections.find(
+                              (entry) => entry.id === item.id
+                            )?.quantity || 0;
+                          return (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between rounded-lg border p-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="relative h-10 w-10 overflow-hidden rounded-md bg-muted">
+                                  <Image
+                                    src={item.imageUrl ?? "/placeholder.png"}
+                                    alt={item.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-medium">
+                                    {item.name}
+                                  </p>
+                                  <p className="text-[11px] text-muted-foreground">
+                                    Gratuito
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  className="w-6 h-6 rounded-md"
+                                  variant="outline"
+                                  onClick={() =>
+                                    handleRequiredChange(
+                                      group.id,
+                                      group.title,
+                                      item.id!,
+                                      item.name,
+                                      item.imageUrl,
+                                      -1,
+                                      group.requiredQuantity
+                                    )
+                                  }
+                                  disabled={quantity === 0}
+                                >
+                                  <ChevronLeftIcon size={12} />
+                                </Button>
+                                <p className="text-xs w-4 text-center">
+                                  {quantity}
+                                </p>
+                                <Button
+                                  className="w-6 h-6 rounded-md"
+                                  variant="destructive"
+                                  onClick={() =>
+                                    handleRequiredChange(
+                                      group.id,
+                                      group.title,
+                                      item.id!,
+                                      item.name,
+                                      item.imageUrl,
+                                      1,
+                                      group.requiredQuantity
+                                    )
+                                  }
+                                  disabled={
+                                    groupSelected >= group.requiredQuantity
+                                  }
+                                >
+                                  <ChevronRightIcon size={12} />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           {additionalsToDisplay.length > 0 && (

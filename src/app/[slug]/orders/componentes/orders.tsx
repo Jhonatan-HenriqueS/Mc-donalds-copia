@@ -153,6 +153,14 @@ const OrderList = ({ orders }: OrdersPageProps) => {
                   </span>
                 </div>
               )}
+              {order.consumptionMethod === "TAKEANAY" && (
+                <div className="flex justify-between text-red-500">
+                  <span>Taxa de entrega</span>
+                  <span className="font-semibold">
+                    {formatCurrency(order.deliveryFee ?? 0)}
+                  </span>
+                </div>
+              )}
             </div>
             <Separator />
             <p className="text-sm font-semibold">

@@ -38,9 +38,9 @@ interface ProductDetailsProps {
           additionals: true;
           requiredAdditionalGroups: {
             include: {
-              items: true,
-            },
-          },
+              items: true;
+            };
+          };
         };
       };
     };
@@ -65,9 +65,8 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
   const [selectedAdditionals, setSelectedAdditionals] = useState<
     Record<string, CartAdditionalSelection>
   >({});
-  const [selectedRequiredAdditionals, setSelectedRequiredAdditionals] = useState<
-    Record<string, CartRequiredAdditionalSelection>
-  >({});
+  const [selectedRequiredAdditionals, setSelectedRequiredAdditionals] =
+    useState<Record<string, CartRequiredAdditionalSelection>>({});
 
   const hasSizes = (product.sizes?.length || 0) > 0;
   const availableAdditionals = product.menuCategory?.additionals || [];
@@ -185,9 +184,20 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
     itemId: string,
     itemName: string,
     imageUrl: string | undefined,
-    delta: number
+    delta: number,
+    requiredQuantity: number
   ) => {
     setSelectedRequiredAdditionals((prev) => {
+      const groupSelected = Object.values(prev).reduce((acc, item) => {
+        if (item.groupId === groupId) {
+          return acc + (item.quantity || 0);
+        }
+        return acc;
+      }, 0);
+      if (delta > 0 && groupSelected >= requiredQuantity) {
+        return prev;
+      }
+
       const current = prev[itemId] ?? {
         id: itemId,
         name: itemName,
@@ -297,19 +307,25 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
           <div className="flex items-center justify-between mb-2">
             <div className="text-right text-xs text-muted-foreground">
-              {selectedSize?.name && <p>Tamanho: {selectedSize.name}</p>}
+              {selectedSize?.name && (
+                <p className="flex justify-start">
+                  Tamanho: {selectedSize.name}
+                </p>
+              )}
               {hasRequiredGroups && (
                 <p>
-                  {requiredGroups.filter(
-                    (group) =>
-                      (requiredCounts[group.id] || 0) >=
-                      group.requiredQuantity
-                  ).length}
+                  {
+                    requiredGroups.filter(
+                      (group) =>
+                        (requiredCounts[group.id] || 0) >=
+                        group.requiredQuantity
+                    ).length
+                  }
                   /{requiredGroups.length} obrigatórios completos
                 </p>
               )}
               {hasAdditionals && (
-                <p>
+                <p className="flex justify-start">
                   {selectedAdditionalsList.reduce(
                     (acc, item) => acc + item.quantity,
                     0
@@ -347,11 +363,13 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold">Obrigatórios</h4>
                   <p className="text-xs text-muted-foreground">
-                    {requiredGroups.filter(
-                      (group) =>
-                        (requiredCounts[group.id] || 0) >=
-                        group.requiredQuantity
-                    ).length}
+                    {
+                      requiredGroups.filter(
+                        (group) =>
+                          (requiredCounts[group.id] || 0) >=
+                          group.requiredQuantity
+                      ).length
+                    }
                     /{requiredGroups.length} completos
                   </p>
                 </div>
@@ -370,7 +388,8 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                                 : "text-muted-foreground"
                             }
                           >
-                            {selectedCount}/{group.requiredQuantity} obrigatório(s)
+                            {selectedCount}/{group.requiredQuantity}{" "}
+                            obrigatório(s)
                           </span>
                         </div>
                         <div className="space-y-2">
@@ -408,7 +427,8 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                                         item.id,
                                         item.name,
                                         item.imageUrl,
-                                        -1
+                                        -1,
+                                        group.requiredQuantity
                                       )
                                     }
                                     disabled={quantity === 0}
@@ -429,8 +449,12 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                                         item.id,
                                         item.name,
                                         item.imageUrl,
-                                        1
+                                        1,
+                                        group.requiredQuantity
                                       )
+                                    }
+                                    disabled={
+                                      selectedCount >= group.requiredQuantity
                                     }
                                   >
                                     <ChevronRightIcon size={14} />

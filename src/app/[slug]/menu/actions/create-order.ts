@@ -158,9 +158,18 @@ export const createOrder = async (input: createOrderInput) => {
       (group) => (requiredCounts[group.id] || 0) < group.requiredQuantity
     );
 
+    const exceededRequired = requiredGroups.some(
+      (group) => (requiredCounts[group.id] || 0) > group.requiredQuantity
+    );
+
     if (missingRequired) {
       throw new Error(
         "Seleção obrigatória incompleta. Verifique os adicionais obrigatórios."
+      );
+    }
+    if (exceededRequired) {
+      throw new Error(
+        "Seleção obrigatória acima do limite. Ajuste os adicionais obrigatórios."
       );
     }
 
