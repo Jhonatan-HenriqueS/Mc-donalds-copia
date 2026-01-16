@@ -21,7 +21,11 @@ interface RestaurantsCategoriesProps {
     include: {
       menuCategorias: {
         //Pega o menuCategorias
-        include: { products: true };
+        include: {
+          products: true;
+          additionals: true;
+          requiredAdditionalGroups: { include: { items: true } };
+        };
         //E pega os produtos do menu de acordo com sua categoria
       };
     };
@@ -29,7 +33,11 @@ interface RestaurantsCategoriesProps {
 }
 
 type MenuCategoriesMithProducts = Prisma.MenuCategoryGetPayload<{
-  include: { products: true };
+  include: {
+    products: true;
+    additionals: true;
+    requiredAdditionalGroups: { include: { items: true } };
+  };
 }>;
 
 const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
@@ -41,7 +49,9 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
     useContext(CartContext);
   const searchParams = useSearchParams();
   const isTakeaway = useMemo(
-    () => (searchParams.get("consumptionMethod") || "").toUpperCase() === "TAKEANAY",
+    () =>
+      (searchParams.get("consumptionMethod") || "").toUpperCase() ===
+      "TAKEANAY",
     [searchParams]
   );
 

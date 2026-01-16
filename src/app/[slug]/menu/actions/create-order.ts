@@ -18,6 +18,19 @@ interface createOrderInput {
     price: number;
     quantity: number;
     sizeId?: string | null;
+    additionals?: Array<{
+      id?: string;
+      name: string;
+      price: number;
+      quantity: number;
+    }>;
+    requiredAdditionals?: Array<{
+      id?: string;
+      name: string;
+      groupId: string;
+      groupTitle: string;
+      quantity: number;
+    }>;
   }>;
   consumptionMethod: ConsumptionMethod;
   slug: string;
@@ -48,6 +61,16 @@ export const createOrder = async (input: createOrderInput) => {
     },
     include: {
       sizes: true,
+      menuCategory: {
+        include: {
+          additionals: true,
+          requiredAdditionalGroups: {
+            include: {
+              items: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -55,23 +78,123 @@ export const createOrder = async (input: createOrderInput) => {
     const dbProduct = productsWithPrices.find((p) => p.id === product.id);
     const selectedSize = dbProduct?.sizes.find((s) => s.id === product.sizeId);
 
-    const priceToUse =
-      selectedSize?.price ?? product.price ?? dbProduct?.price ?? 0;
+    const basePrice = dbProduct?.price ?? product.price ?? 0;
+    const sizePrice = selectedSize?.price ?? null;
+    const unitPrice = sizePrice ?? basePrice;
+    const sizeExtra = sizePrice ? sizePrice - basePrice : 0;
+
+    const additionals =
+      product.additionals
+        ?.map((additional) => {
+          const dbAdditional = dbProduct?.menuCategory.additionals.find(
+            (item) => item.id === additional.id
+          );
+          if (!dbAdditional) {
+            return null;
+          }
+          return {
+            name: dbAdditional.name,
+            price: dbAdditional.price,
+            quantity: additional.quantity ?? 0,
+            categoryAdditionalId: dbAdditional.id,
+          };
+        })
+        .filter(
+          (
+            item
+          ): item is {
+            name: string;
+            price: number;
+            quantity: number;
+            categoryAdditionalId: string;
+          } => !!item && item.quantity > 0
+        ) || [];
+
+    const additionalsUnitTotal = additionals.reduce(
+      (acc, current) => acc + current.price * current.quantity,
+      0
+    );
+
+    const requiredGroups = dbProduct?.menuCategory.requiredAdditionalGroups || [];
+    const requiredSelections =
+      product.requiredAdditionals
+        ?.map((required) => {
+          const group = requiredGroups.find(
+            (item) => item.id === required.groupId
+          );
+          const item = group?.items.find((option) => option.id === required.id);
+          if (!group || !item) {
+            return null;
+          }
+          return {
+            name: item.name,
+            groupTitle: group.title,
+            quantity: required.quantity ?? 0,
+            requiredAdditionalItemId: item.id,
+            groupId: group.id,
+          };
+        })
+        .filter(
+          (
+            item
+          ): item is {
+            name: string;
+            groupTitle: string;
+            quantity: number;
+            requiredAdditionalItemId: string;
+            groupId: string;
+          } => !!item && item.quantity > 0
+        ) || [];
+
+    const requiredCounts = requiredSelections.reduce(
+      (acc, item) => {
+        acc[item.groupId] = (acc[item.groupId] || 0) + item.quantity;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    const missingRequired = requiredGroups.some(
+      (group) => (requiredCounts[group.id] || 0) < group.requiredQuantity
+    );
+
+    if (missingRequired) {
+      throw new Error(
+        "Seleção obrigatória incompleta. Verifique os adicionais obrigatórios."
+      );
+    }
 
     return {
       productId: product.id,
       quantity: product.quantity,
-      price: priceToUse,
+      price: unitPrice,
+      basePrice,
+      sizeExtra,
       sizeId: product.sizeId,
       sizeName: selectedSize?.name || null,
-      sizePrice: selectedSize?.price || null,
+      sizePrice,
+      additionals,
+      additionalsUnitTotal,
+      requiredAdditionals: requiredSelections,
     };
   });
 
-  const subtotal = productsWithPricesQuantities.reduce(
-    (acc, product) => acc + product.price * product.quantity,
+  const productsSubtotal = productsWithPricesQuantities.reduce(
+    (acc, product) => acc + product.basePrice * product.quantity,
     0
   );
+
+  const sizesSubtotal = productsWithPricesQuantities.reduce(
+    (acc, product) => acc + product.sizeExtra * product.quantity,
+    0
+  );
+
+  const additionalsSubtotal = productsWithPricesQuantities.reduce(
+    (acc, product) => acc + product.additionalsUnitTotal * product.quantity,
+    0
+  );
+  const subtotal =
+    productsSubtotal + sizesSubtotal + additionalsSubtotal;
   const deliveryFee =
     input.consumptionMethod === "TAKEANAY" ? (restaurant.deliveryFee ?? 0) : 0;
 
@@ -82,18 +205,40 @@ export const createOrder = async (input: createOrderInput) => {
     customerEmail: input.customerEmail,
     customerPhone: input.customerPhone,
     orderProducts: {
-      createMany: {
-        data: productsWithPricesQuantities.map((p) => ({
-          productId: p.productId,
-          quantity: p.quantity,
-          price: p.price,
-          sizeId: p.sizeId || null,
-          sizeName: p.sizeName || null,
-          sizePrice: p.sizePrice || null,
-        })),
-      },
+      create: productsWithPricesQuantities.map((p) => ({
+        productId: p.productId,
+        quantity: p.quantity,
+        price: p.price,
+        basePrice: p.basePrice,
+        sizeId: p.sizeId || null,
+        sizeName: p.sizeName || null,
+        sizePrice: p.sizePrice || null,
+        additionals: p.additionals.length
+          ? {
+              create: p.additionals.map((additional) => ({
+                name: additional.name,
+                price: additional.price,
+                quantity: additional.quantity,
+                categoryAdditionalId: additional.categoryAdditionalId,
+              })),
+            }
+          : undefined,
+        requiredAdditionals: p.requiredAdditionals.length
+          ? {
+              create: p.requiredAdditionals.map((required) => ({
+                name: required.name,
+                groupTitle: required.groupTitle,
+                quantity: required.quantity,
+                requiredAdditionalItemId: required.requiredAdditionalItemId,
+              })),
+            }
+          : undefined,
+      })),
     },
     total: subtotal + deliveryFee,
+    productsSubtotal,
+    sizesSubtotal,
+    additionalsSubtotal,
     deliveryFee,
     consumptionMethod: input.consumptionMethod,
     restaurantId: restaurant.id,

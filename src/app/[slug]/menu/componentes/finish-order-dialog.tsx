@@ -257,6 +257,21 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
             price: p.price,
             quantity: p.quantity,
             sizeId: p.sizeId || undefined,
+            additionals:
+              p.additionals?.map((additional) => ({
+                id: additional.id,
+                name: additional.name,
+                price: additional.price,
+                quantity: additional.quantity,
+              })) || [],
+            requiredAdditionals:
+              p.requiredAdditionals?.map((required) => ({
+                id: required.id,
+                name: required.name,
+                groupId: required.groupId,
+                groupTitle: required.groupTitle,
+                quantity: required.quantity,
+              })) || [],
           })),
           deliveryStreet: takeawayData.deliveryStreet,
           deliveryNumber: takeawayData.deliveryNumber,
@@ -273,6 +288,21 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
             price: p.price,
             quantity: p.quantity,
             sizeId: p.sizeId || undefined,
+            additionals:
+              p.additionals?.map((additional) => ({
+                id: additional.id,
+                name: additional.name,
+                price: additional.price,
+                quantity: additional.quantity,
+              })) || [],
+            requiredAdditionals:
+              p.requiredAdditionals?.map((required) => ({
+                id: required.id,
+                name: required.name,
+                groupId: required.groupId,
+                groupTitle: required.groupTitle,
+                quantity: required.quantity,
+              })) || [],
           })),
         });
       }

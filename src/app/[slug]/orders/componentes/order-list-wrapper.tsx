@@ -19,6 +19,8 @@ interface OrderListWrapperProps {
         orderProducts: {
           include: {
             product: true;
+            additionals: true;
+            requiredAdditionals: true;
           };
         };
       };

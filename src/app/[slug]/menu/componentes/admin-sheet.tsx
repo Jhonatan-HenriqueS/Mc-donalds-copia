@@ -1,6 +1,13 @@
 "use client";
 
-import { OrderStatus, Prisma, Product } from "@prisma/client";
+import {
+  CategoryAdditional,
+  OrderStatus,
+  Prisma,
+  Product,
+  RequiredAdditionalGroup,
+  RequiredAdditionalItem,
+} from "@prisma/client";
 import {
   Bell,
   ClockIcon,
@@ -10,6 +17,7 @@ import {
   Package,
   Plus,
   Trash2,
+  Trash2Icon,
   Users,
   UtensilsCrossed,
   Wand2,
@@ -18,14 +26,23 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { createAdditional } from "@/app/[slug]/menu/actions/create-additional";
 import { createCategory } from "@/app/[slug]/menu/actions/create-category";
 import { createProduct } from "@/app/[slug]/menu/actions/create-product";
+import { createRequiredAdditionalGroup } from "@/app/[slug]/menu/actions/create-required-additional-group";
+import { createRequiredAdditionalItem } from "@/app/[slug]/menu/actions/create-required-additional-item";
+import { deleteAdditional } from "@/app/[slug]/menu/actions/delete-additional";
 import { deleteCategory } from "@/app/[slug]/menu/actions/delete-category";
 import { deleteProduct } from "@/app/[slug]/menu/actions/delete-product";
+import { deleteRequiredAdditionalGroup } from "@/app/[slug]/menu/actions/delete-required-additional-group";
+import { deleteRequiredAdditionalItem } from "@/app/[slug]/menu/actions/delete-required-additional-item";
 import { getCustomers } from "@/app/[slug]/menu/actions/get-customers";
 import { getOrders } from "@/app/[slug]/menu/actions/get-orders";
 import { getOrdersCount } from "@/app/[slug]/menu/actions/get-orders-count";
 import { getProducts } from "@/app/[slug]/menu/actions/get-products";
+import { updateAdditional } from "@/app/[slug]/menu/actions/update-additional";
+import { updateRequiredAdditionalGroup } from "@/app/[slug]/menu/actions/update-required-additional-group";
+import { updateRequiredAdditionalItem } from "@/app/[slug]/menu/actions/update-required-additional-item";
 import { updateConsumptionMethods } from "@/app/[slug]/menu/actions/update-consumption-methods";
 import { updateOrderStatus } from "@/app/[slug]/menu/actions/update-order-status";
 import { updateProduct } from "@/app/[slug]/menu/actions/update-product";
@@ -71,7 +88,16 @@ interface AdminSheetProps {
   onOpenChange: (open: boolean) => void;
   restaurant: Prisma.RestaurantGetPayload<{
     include: {
-      menuCategorias: true;
+      menuCategorias: {
+        include: {
+          additionals: true;
+          requiredAdditionalGroups: {
+            include: {
+              items: true;
+            };
+          };
+        };
+      };
     };
   }>;
 }
@@ -101,6 +127,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [showAddAdditional, setShowAddAdditional] = useState(false);
   const [showCustomers, setShowCustomers] = useState(false);
   const [showManageProducts, setShowManageProducts] = useState(false);
   const [showManageCategories, setShowManageCategories] = useState(false);
@@ -127,6 +154,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   imageUrl: true;
                 };
               };
+              additionals: true;
+              requiredAdditionals: true;
             };
           };
         };
@@ -145,6 +174,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [orderCount, setOrderCount] = useState(0);
   const [orderIds, setOrderIds] = useState<number[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const additionalFileInputRef = useRef<HTMLInputElement>(null);
+  const requiredItemFileInputRef = useRef<HTMLInputElement>(null);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const [allowDineIn, setAllowDineIn] = useState(
@@ -231,6 +262,58 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     sizes?: string;
   }>({});
   const [categoryError, setCategoryError] = useState<string | undefined>();
+  const [additionalCategoryId, setAdditionalCategoryId] = useState<
+    string | null
+  >(null);
+  const [additionalName, setAdditionalName] = useState("");
+  const [additionalPrice, setAdditionalPrice] = useState("");
+  const [additionalImageUrl, setAdditionalImageUrl] = useState("");
+  const [additionalImagePreview, setAdditionalImagePreview] = useState<
+    string | null
+  >(null);
+  const [isUploadingAdditional, setIsUploadingAdditional] = useState(false);
+  const [isSavingAdditional, setIsSavingAdditional] = useState(false);
+  const [editingAdditionalId, setEditingAdditionalId] = useState<string | null>(
+    null
+  );
+  const [isDeletingAdditional, setIsDeletingAdditional] = useState<
+    string | null
+  >(null);
+  const [additionalError, setAdditionalError] = useState<string | null>(null);
+  const [requiredCategoryId, setRequiredCategoryId] = useState<string | null>(
+    null
+  );
+  const [requiredGroupTitle, setRequiredGroupTitle] = useState("");
+  const [requiredGroupQuantity, setRequiredGroupQuantity] = useState("");
+  const [editingRequiredGroupId, setEditingRequiredGroupId] = useState<
+    string | null
+  >(null);
+  const [requiredGroupError, setRequiredGroupError] = useState<string | null>(
+    null
+  );
+  const [isSavingRequiredGroup, setIsSavingRequiredGroup] = useState(false);
+  const [isDeletingRequiredGroup, setIsDeletingRequiredGroup] = useState<
+    string | null
+  >(null);
+  const [requiredItemGroupId, setRequiredItemGroupId] = useState<
+    string | null
+  >(null);
+  const [requiredItemName, setRequiredItemName] = useState("");
+  const [requiredItemImageUrl, setRequiredItemImageUrl] = useState("");
+  const [requiredItemImagePreview, setRequiredItemImagePreview] = useState<
+    string | null
+  >(null);
+  const [editingRequiredItemId, setEditingRequiredItemId] = useState<
+    string | null
+  >(null);
+  const [requiredItemError, setRequiredItemError] = useState<string | null>(
+    null
+  );
+  const [isUploadingRequiredItem, setIsUploadingRequiredItem] = useState(false);
+  const [isSavingRequiredItem, setIsSavingRequiredItem] = useState(false);
+  const [isDeletingRequiredItem, setIsDeletingRequiredItem] = useState<
+    string | null
+  >(null);
   const [isSavingConsumptionMethods, setIsSavingConsumptionMethods] =
     useState(false);
   const [consumptionError, setConsumptionError] = useState<string | null>(null);
@@ -366,6 +449,94 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       );
     } finally {
       setIsUploadingCover(false);
+    }
+  };
+
+  const handleAdditionalImageSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("O arquivo deve ser uma imagem");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 5MB");
+      return;
+    }
+
+    setIsUploadingAdditional(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao fazer upload");
+      }
+
+      setAdditionalImageUrl(data.url);
+      setAdditionalImagePreview(data.url);
+      setAdditionalError(null);
+      toast.success("Imagem carregada com sucesso!");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao fazer upload"
+      );
+    } finally {
+      setIsUploadingAdditional(false);
+    }
+  };
+
+  const handleRequiredItemImageSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("O arquivo deve ser uma imagem");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 5MB");
+      return;
+    }
+
+    setIsUploadingRequiredItem(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao fazer upload");
+      }
+
+      setRequiredItemImageUrl(data.url);
+      setRequiredItemImagePreview(data.url);
+      setRequiredItemError(null);
+      toast.success("Imagem carregada com sucesso!");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao fazer upload"
+      );
+    } finally {
+      setIsUploadingRequiredItem(false);
     }
   };
 
@@ -782,7 +953,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       if (result.success && result.category) {
         toast.success("Categoria criada com sucesso!");
         // Adicionar nova categoria à lista local
-        setCategories((prev) => [...prev, result.category!]);
+        setCategories((prev) => [
+          ...prev,
+          {
+            ...result.category,
+            additionals: [],
+            requiredAdditionalGroups: [],
+          },
+        ]);
         setCategoryName("");
         setShowAddCategory(false);
       } else {
@@ -792,6 +970,489 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       toast.error("Erro ao processar solicitação");
     } finally {
       setIsLoadingCategory(false);
+    }
+  };
+
+  const resetRequiredGroupForm = () => {
+    setRequiredGroupTitle("");
+    setRequiredGroupQuantity("");
+    setEditingRequiredGroupId(null);
+    setRequiredGroupError(null);
+  };
+
+  const resetRequiredItemForm = () => {
+    setRequiredItemGroupId(null);
+    setRequiredItemName("");
+    setRequiredItemImageUrl("");
+    setRequiredItemImagePreview(null);
+    setEditingRequiredItemId(null);
+    setRequiredItemError(null);
+    if (requiredItemFileInputRef.current) {
+      requiredItemFileInputRef.current.value = "";
+    }
+  };
+
+  const resetRequiredForms = () => {
+    setRequiredCategoryId(null);
+    resetRequiredGroupForm();
+    resetRequiredItemForm();
+  };
+
+  const resetAdditionalForm = () => {
+    setAdditionalCategoryId(null);
+    setAdditionalName("");
+    setAdditionalPrice("");
+    setAdditionalImageUrl("");
+    setAdditionalImagePreview(null);
+    setEditingAdditionalId(null);
+    setAdditionalError(null);
+    if (additionalFileInputRef.current) {
+      additionalFileInputRef.current.value = "";
+    }
+  };
+
+  const handleStartAdditional = (
+    categoryId: string,
+    additional?: CategoryAdditional
+  ) => {
+    setAdditionalCategoryId(categoryId);
+    setEditingAdditionalId(additional?.id ?? null);
+    setAdditionalName(additional?.name ?? "");
+    setAdditionalPrice(additional ? String(additional.price) : "");
+    setAdditionalImageUrl(additional?.imageUrl ?? "");
+    setAdditionalImagePreview(additional?.imageUrl ?? null);
+    setAdditionalError(null);
+    if (additionalFileInputRef.current) {
+      additionalFileInputRef.current.value = "";
+    }
+  };
+
+  const handleSubmitAdditional = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+    setAdditionalError(null);
+
+    if (!additionalCategoryId) {
+      setAdditionalError("Selecione uma categoria.");
+      return;
+    }
+
+    if (
+      !additionalName.trim() ||
+      !additionalPrice.trim() ||
+      !additionalImageUrl.trim()
+    ) {
+      setAdditionalError("Nome, preço e imagem são obrigatórios.");
+      return;
+    }
+
+    const parsedPrice = Number(additionalPrice);
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      setAdditionalError("Informe um preço válido para o adicional.");
+      return;
+    }
+
+    setIsSavingAdditional(true);
+    try {
+      if (editingAdditionalId) {
+        const result = await updateAdditional({
+          additionalId: editingAdditionalId,
+          restaurantId: restaurant.id,
+          name: additionalName.trim(),
+          price: parsedPrice,
+          imageUrl: additionalImageUrl.trim(),
+        });
+        if (result.success && result.additional) {
+          toast.success("Adicional atualizado!");
+          setCategories((prev) =>
+            prev.map((category) =>
+              category.id === additionalCategoryId
+                ? {
+                    ...category,
+                    additionals: category.additionals.map((item) =>
+                      item.id === editingAdditionalId
+                        ? result.additional!
+                        : item
+                    ),
+                  }
+                : category
+            )
+          );
+          resetAdditionalForm();
+        } else {
+          toast.error(result.error || "Erro ao atualizar adicional");
+        }
+      } else {
+        const result = await createAdditional({
+          restaurantId: restaurant.id,
+          menuCategoryId: additionalCategoryId,
+          name: additionalName.trim(),
+          price: parsedPrice,
+          imageUrl: additionalImageUrl.trim(),
+        });
+        if (result.success && result.additional) {
+          toast.success("Adicional criado!");
+          setCategories((prev) =>
+            prev.map((category) =>
+              category.id === additionalCategoryId
+                ? {
+                    ...category,
+                    additionals: [
+                      ...(category.additionals || []),
+                      result.additional!,
+                    ],
+                  }
+                : category
+            )
+          );
+          resetAdditionalForm();
+        } else {
+          toast.error(result.error || "Erro ao criar adicional");
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao salvar adicional:", error);
+      toast.error("Erro ao salvar adicional");
+    } finally {
+      setIsSavingAdditional(false);
+    }
+  };
+
+  const handleDeleteAdditional = async (
+    additionalId: string,
+    categoryId: string
+  ) => {
+    setIsDeletingAdditional(additionalId);
+    try {
+      const result = await deleteAdditional(additionalId, restaurant.id);
+      if (result.success) {
+        toast.success("Adicional removido!");
+        setCategories((prev) =>
+          prev.map((category) =>
+            category.id === categoryId
+              ? {
+                  ...category,
+                  additionals: category.additionals.filter(
+                    (item) => item.id !== additionalId
+                  ),
+                }
+              : category
+          )
+        );
+        if (editingAdditionalId === additionalId) {
+          resetAdditionalForm();
+        }
+      } else {
+        toast.error(result.error || "Erro ao remover adicional");
+      }
+    } catch (error) {
+      console.error("Erro ao remover adicional:", error);
+      toast.error("Erro ao remover adicional");
+    } finally {
+      setIsDeletingAdditional(null);
+    }
+  };
+
+  const handleStartRequiredGroup = (
+    categoryId: string,
+    group?: RequiredAdditionalGroup
+  ) => {
+    setRequiredCategoryId(categoryId);
+    setEditingRequiredGroupId(group?.id ?? null);
+    setRequiredGroupTitle(group?.title ?? "");
+    setRequiredGroupQuantity(
+      group?.requiredQuantity ? String(group.requiredQuantity) : ""
+    );
+    setRequiredGroupError(null);
+  };
+
+  const handleSubmitRequiredGroup = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+    setRequiredGroupError(null);
+
+    if (!requiredCategoryId) {
+      setRequiredGroupError("Selecione uma categoria.");
+      return;
+    }
+
+    if (!requiredGroupTitle.trim() || !requiredGroupQuantity.trim()) {
+      setRequiredGroupError("Título e quantidade são obrigatórios.");
+      return;
+    }
+
+    const parsedQuantity = Number(requiredGroupQuantity);
+    if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setRequiredGroupError("Informe uma quantidade obrigatória válida.");
+      return;
+    }
+
+    setIsSavingRequiredGroup(true);
+    try {
+      if (editingRequiredGroupId) {
+        const result = await updateRequiredAdditionalGroup({
+          restaurantId: restaurant.id,
+          groupId: editingRequiredGroupId,
+          title: requiredGroupTitle.trim(),
+          requiredQuantity: parsedQuantity,
+        });
+        if (result.success && result.group) {
+          toast.success("Grupo obrigatório atualizado!");
+          setCategories((prev) =>
+            prev.map((category) =>
+              category.id === requiredCategoryId
+                ? {
+                    ...category,
+                    requiredAdditionalGroups:
+                      category.requiredAdditionalGroups.map((group) =>
+                        group.id === editingRequiredGroupId
+                          ? {
+                              ...group,
+                              title: result.group!.title,
+                              requiredQuantity: result.group!.requiredQuantity,
+                            }
+                          : group
+                      ),
+                  }
+                : category
+            )
+          );
+          resetRequiredGroupForm();
+        } else {
+          toast.error(result.error || "Erro ao atualizar grupo obrigatório");
+        }
+      } else {
+        const result = await createRequiredAdditionalGroup({
+          restaurantId: restaurant.id,
+          menuCategoryId: requiredCategoryId,
+          title: requiredGroupTitle.trim(),
+          requiredQuantity: parsedQuantity,
+        });
+        if (result.success && result.group) {
+          toast.success("Grupo obrigatório criado!");
+          setCategories((prev) =>
+            prev.map((category) =>
+              category.id === requiredCategoryId
+                ? {
+                    ...category,
+                    requiredAdditionalGroups: [
+                      ...(category.requiredAdditionalGroups || []),
+                      { ...result.group!, items: [] },
+                    ],
+                  }
+                : category
+            )
+          );
+          resetRequiredGroupForm();
+        } else {
+          toast.error(result.error || "Erro ao criar grupo obrigatório");
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao salvar grupo obrigatório:", error);
+      toast.error("Erro ao salvar grupo obrigatório");
+    } finally {
+      setIsSavingRequiredGroup(false);
+    }
+  };
+
+  const handleDeleteRequiredGroup = async (
+    groupId: string,
+    categoryId: string
+  ) => {
+    setIsDeletingRequiredGroup(groupId);
+    try {
+      const result = await deleteRequiredAdditionalGroup(groupId, restaurant.id);
+      if (result.success) {
+        toast.success("Grupo obrigatório removido!");
+        setCategories((prev) =>
+          prev.map((category) =>
+            category.id === categoryId
+              ? {
+                  ...category,
+                  requiredAdditionalGroups:
+                    category.requiredAdditionalGroups.filter(
+                      (group) => group.id !== groupId
+                    ),
+                }
+              : category
+          )
+        );
+        if (editingRequiredGroupId === groupId) {
+          resetRequiredGroupForm();
+        }
+        if (requiredItemGroupId === groupId) {
+          resetRequiredItemForm();
+        }
+      } else {
+        toast.error(result.error || "Erro ao remover grupo obrigatório");
+      }
+    } catch (error) {
+      console.error("Erro ao remover grupo obrigatório:", error);
+      toast.error("Erro ao remover grupo obrigatório");
+    } finally {
+      setIsDeletingRequiredGroup(null);
+    }
+  };
+
+  const handleStartRequiredItem = (
+    categoryId: string,
+    groupId: string,
+    item?: RequiredAdditionalItem
+  ) => {
+    setRequiredCategoryId(categoryId);
+    setRequiredItemGroupId(groupId);
+    setEditingRequiredItemId(item?.id ?? null);
+    setRequiredItemName(item?.name ?? "");
+    setRequiredItemImageUrl(item?.imageUrl ?? "");
+    setRequiredItemImagePreview(item?.imageUrl ?? null);
+    setRequiredItemError(null);
+    if (requiredItemFileInputRef.current) {
+      requiredItemFileInputRef.current.value = "";
+    }
+  };
+
+  const handleSubmitRequiredItem = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+    setRequiredItemError(null);
+
+    if (!requiredCategoryId) {
+      setRequiredItemError("Selecione uma categoria.");
+      return;
+    }
+
+    if (!requiredItemGroupId) {
+      setRequiredItemError("Selecione um grupo obrigatório.");
+      return;
+    }
+
+    if (!requiredItemName.trim() || !requiredItemImageUrl.trim()) {
+      setRequiredItemError("Nome e imagem são obrigatórios.");
+      return;
+    }
+
+    setIsSavingRequiredItem(true);
+    try {
+      if (editingRequiredItemId) {
+        const result = await updateRequiredAdditionalItem({
+          restaurantId: restaurant.id,
+          itemId: editingRequiredItemId,
+          name: requiredItemName.trim(),
+          imageUrl: requiredItemImageUrl.trim(),
+        });
+        if (result.success && result.item) {
+          toast.success("Item obrigatório atualizado!");
+          setCategories((prev) =>
+            prev.map((category) =>
+              category.id === requiredCategoryId
+                ? {
+                    ...category,
+                    requiredAdditionalGroups:
+                      category.requiredAdditionalGroups.map((group) =>
+                        group.id === requiredItemGroupId
+                          ? {
+                              ...group,
+                              items: group.items.map((item) =>
+                                item.id === editingRequiredItemId
+                                  ? result.item!
+                                  : item
+                              ),
+                            }
+                          : group
+                      ),
+                  }
+                : category
+            )
+          );
+          resetRequiredItemForm();
+        } else {
+          toast.error(result.error || "Erro ao atualizar item obrigatório");
+        }
+      } else {
+        const result = await createRequiredAdditionalItem({
+          restaurantId: restaurant.id,
+          groupId: requiredItemGroupId,
+          name: requiredItemName.trim(),
+          imageUrl: requiredItemImageUrl.trim(),
+        });
+        if (result.success && result.item) {
+          toast.success("Item obrigatório criado!");
+          setCategories((prev) =>
+            prev.map((category) =>
+              category.id === requiredCategoryId
+                ? {
+                    ...category,
+                    requiredAdditionalGroups:
+                      category.requiredAdditionalGroups.map((group) =>
+                        group.id === requiredItemGroupId
+                          ? {
+                              ...group,
+                              items: [...group.items, result.item!],
+                            }
+                          : group
+                      ),
+                  }
+                : category
+            )
+          );
+          resetRequiredItemForm();
+        } else {
+          toast.error(result.error || "Erro ao criar item obrigatório");
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao salvar item obrigatório:", error);
+      toast.error("Erro ao salvar item obrigatório");
+    } finally {
+      setIsSavingRequiredItem(false);
+    }
+  };
+
+  const handleDeleteRequiredItem = async (
+    itemId: string,
+    categoryId: string,
+    groupId: string
+  ) => {
+    setIsDeletingRequiredItem(itemId);
+    try {
+      const result = await deleteRequiredAdditionalItem(itemId, restaurant.id);
+      if (result.success) {
+        toast.success("Item obrigatório removido!");
+        setCategories((prev) =>
+          prev.map((category) =>
+            category.id === categoryId
+              ? {
+                  ...category,
+                  requiredAdditionalGroups:
+                    category.requiredAdditionalGroups.map((group) =>
+                      group.id === groupId
+                        ? {
+                            ...group,
+                            items: group.items.filter(
+                              (item) => item.id !== itemId
+                            ),
+                          }
+                        : group
+                    ),
+                }
+              : category
+          )
+        );
+        if (editingRequiredItemId === itemId) {
+          resetRequiredItemForm();
+        }
+      } else {
+        toast.error(result.error || "Erro ao remover item obrigatório");
+      }
+    } catch (error) {
+      console.error("Erro ao remover item obrigatório:", error);
+      toast.error("Erro ao remover item obrigatório");
+    } finally {
+      setIsDeletingRequiredItem(null);
     }
   };
 
@@ -953,6 +1614,19 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       d.getDate() === now.getDate()
     );
   };
+  const selectedAdditionalCategory = categories.find(
+    (category) => category.id === additionalCategoryId
+  );
+  const selectedAdditionals = selectedAdditionalCategory?.additionals ?? [];
+  const selectedRequiredCategory = categories.find(
+    (category) => category.id === requiredCategoryId
+  );
+  const selectedRequiredGroups =
+    selectedRequiredCategory?.requiredAdditionalGroups ?? [];
+  const selectedRequiredGroup = selectedRequiredGroups.find(
+    (group) => group.id === requiredItemGroupId
+  );
+  const selectedRequiredItems = selectedRequiredGroup?.items ?? [];
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -966,6 +1640,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         <div className="py-4 sm:py-5 flex flex-col h-full">
           {!showAddProduct &&
           !showAddCategory &&
+          !showAddAdditional &&
           !showCustomers &&
           !showManageProducts &&
           !showManageCategories &&
@@ -992,9 +1667,21 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 Adicionar Produto
               </Button>
               <Button
-                onClick={handleToggleRestaurantStatus}
+                onClick={() => {
+                  resetAdditionalForm();
+                  resetRequiredForms();
+                  setShowAddAdditional(true);
+                }}
                 className="w-full text-sm sm:text-base"
-                variant={isRestaurantOpen ? "default" : "destructive"}
+                size="lg"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Criar Adicional
+              </Button>
+              <Button
+                onClick={handleToggleRestaurantStatus}
+                className={`w-full text-sm sm:text-base ${isRestaurantOpen ? "bg-green-500 hover:bg-green-400" : ""}`}
+                variant={isRestaurantOpen ? "outline" : "destructive"}
                 size="lg"
                 disabled={isSavingStatus}
               >
@@ -1954,7 +2641,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 }
                                 disabled={isLoading}
                               >
-                                Remover
+                                <Trash2Icon />
                               </Button>
                             </div>
                           ))}
@@ -2075,6 +2762,772 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       </Button>
                     </div>
                   </form>
+                </CardContent>
+              </Card>
+            </div>
+          ) : showAddAdditional ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      {editingAdditionalId
+                        ? "Editar Adicional"
+                        : "Adicionar Adicional"}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      {editingAdditionalId && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs sm:text-sm"
+                          onClick={resetAdditionalForm}
+                        >
+                          Novo
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs sm:text-sm"
+                        onClick={() => {
+                          resetAdditionalForm();
+                          resetRequiredForms();
+                          setShowAddAdditional(false);
+                        }}
+                      >
+                        Voltar
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    className="space-y-3 sm:space-y-4"
+                    onSubmit={handleSubmitAdditional}
+                  >
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="additional-category"
+                        className="text-sm sm:text-base"
+                      >
+                        Categoria
+                      </Label>
+                      <Select
+                        value={additionalCategoryId ?? ""}
+                        onValueChange={(value) => {
+                          setAdditionalCategoryId(value);
+                          if (additionalError) {
+                            setAdditionalError(null);
+                          }
+                        }}
+                        disabled={isSavingAdditional || !!editingAdditionalId}
+                      >
+                        <SelectTrigger className="text-sm sm:text-base">
+                          <SelectValue placeholder="Selecione a categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="additional-name"
+                        className="text-sm sm:text-base"
+                      >
+                        Nome
+                      </Label>
+                      <Input
+                        id="additional-name"
+                        placeholder="Nome do adicional"
+                        value={additionalName}
+                        onChange={(e) => {
+                          setAdditionalName(e.target.value);
+                          if (additionalError) {
+                            setAdditionalError(null);
+                          }
+                        }}
+                        className="text-sm sm:text-base"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="additional-price"
+                          className="text-sm sm:text-base"
+                        >
+                          Preço
+                        </Label>
+                        <Input
+                          id="additional-price"
+                          placeholder="0,00"
+                          type="number"
+                          step="0.01"
+                          value={additionalPrice}
+                          onChange={(e) => {
+                            setAdditionalPrice(e.target.value);
+                            if (additionalError) {
+                              setAdditionalError(null);
+                            }
+                          }}
+                          className="text-sm sm:text-base"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="additional-image-file"
+                          className="text-sm sm:text-base"
+                        >
+                          Imagem
+                        </Label>
+                        <input
+                          ref={additionalFileInputRef}
+                          id="additional-image-file"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAdditionalImageSelect}
+                          className="hidden"
+                          disabled={isSavingAdditional || isUploadingAdditional}
+                        />
+                        <div className="space-y-2">
+                          {additionalImagePreview ? (
+                            <div className="relative">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={additionalImagePreview}
+                                alt="Preview"
+                                className="h-24 w-full rounded-md object-cover"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 w-full text-xs sm:text-sm"
+                                onClick={() => {
+                                  setAdditionalImageUrl("");
+                                  setAdditionalImagePreview(null);
+                                  if (additionalFileInputRef.current) {
+                                    additionalFileInputRef.current.value = "";
+                                  }
+                                }}
+                                disabled={
+                                  isSavingAdditional || isUploadingAdditional
+                                }
+                              >
+                                Remover Imagem
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full text-xs sm:text-sm"
+                              onClick={() =>
+                                additionalFileInputRef.current?.click()
+                              }
+                              disabled={
+                                isSavingAdditional || isUploadingAdditional
+                              }
+                            >
+                              <ImageIcon className="mr-2 h-4 w-4" />
+                              {isUploadingAdditional
+                                ? "Carregando..."
+                                : "Selecionar da Galeria"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {additionalError && (
+                      <p className="text-xs sm:text-sm text-destructive">
+                        {additionalError}
+                      </p>
+                    )}
+
+                    <Button
+                      type="submit"
+                      className="w-full rounded-full"
+                      disabled={isSavingAdditional || isUploadingAdditional}
+                    >
+                      {isSavingAdditional
+                        ? "Salvando..."
+                        : editingAdditionalId
+                          ? "Atualizar adicional"
+                          : "Adicionar adicional"}
+                    </Button>
+                  </form>
+
+                  <div className="mt-6 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm sm:text-base font-semibold">
+                        Gerenciar adicionais
+                      </p>
+                    </div>
+
+                    {!additionalCategoryId ? (
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Selecione uma categoria para visualizar os adicionais.
+                      </p>
+                    ) : selectedAdditionals.length > 0 &&
+                      selectedAdditionalCategory ? (
+                      <div className="space-y-2">
+                        {selectedAdditionals.map((additional) => (
+                          <div
+                            key={additional.id}
+                            className="flex items-center justify-between gap-3 rounded-md border p-2"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={additional.imageUrl}
+                                  alt={additional.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                              <div>
+                                <p className="text-xs sm:text-sm font-medium">
+                                  {additional.name}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {formatCurrency(additional.price)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="text-[11px]"
+                                onClick={() => {
+                                  if (!selectedAdditionalCategory) return;
+                                  handleStartAdditional(
+                                    selectedAdditionalCategory.id,
+                                    additional
+                                  );
+                                }}
+                              >
+                                Editar
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="text-[11px]"
+                                disabled={
+                                  isDeletingAdditional === additional.id
+                                }
+                                onClick={() => {
+                                  if (!selectedAdditionalCategory) return;
+                                  handleDeleteAdditional(
+                                    additional.id,
+                                    selectedAdditionalCategory.id
+                                  );
+                                }}
+                              >
+                                {isDeletingAdditional === additional.id
+                                  ? "Removendo..."
+                                  : "Remover"}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Nenhum adicional cadastrado nesta categoria.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-8 border-t pt-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm sm:text-base font-semibold">
+                        Adicionais obrigatórios
+                      </p>
+                      {editingRequiredGroupId && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs sm:text-sm"
+                          onClick={resetRequiredGroupForm}
+                        >
+                          Novo grupo
+                        </Button>
+                      )}
+                    </div>
+
+                    <form
+                      className="space-y-3 sm:space-y-4"
+                      onSubmit={handleSubmitRequiredGroup}
+                    >
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="required-group-category"
+                          className="text-sm sm:text-base"
+                        >
+                          Categoria
+                        </Label>
+                        <Select
+                          value={requiredCategoryId ?? ""}
+                          onValueChange={(value) => {
+                            setRequiredCategoryId(value);
+                            resetRequiredItemForm();
+                            if (requiredGroupError) {
+                              setRequiredGroupError(null);
+                            }
+                          }}
+                          disabled={
+                            isSavingRequiredGroup || !!editingRequiredGroupId
+                          }
+                        >
+                          <SelectTrigger className="text-sm sm:text-base">
+                            <SelectValue placeholder="Selecione a categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="required-group-title"
+                            className="text-sm sm:text-base"
+                          >
+                            Título do grupo
+                          </Label>
+                          <Input
+                            id="required-group-title"
+                            placeholder="Ex: Escolha o molho"
+                            value={requiredGroupTitle}
+                            onChange={(e) => {
+                              setRequiredGroupTitle(e.target.value);
+                              if (requiredGroupError) {
+                                setRequiredGroupError(null);
+                              }
+                            }}
+                            className="text-sm sm:text-base"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="required-group-quantity"
+                            className="text-sm sm:text-base"
+                          >
+                            Quantidade obrigatória
+                          </Label>
+                          <Input
+                            id="required-group-quantity"
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="1"
+                            value={requiredGroupQuantity}
+                            onChange={(e) => {
+                              setRequiredGroupQuantity(e.target.value);
+                              if (requiredGroupError) {
+                                setRequiredGroupError(null);
+                              }
+                            }}
+                            className="text-sm sm:text-base"
+                          />
+                        </div>
+                      </div>
+
+                      {requiredGroupError && (
+                        <p className="text-xs sm:text-sm text-destructive">
+                          {requiredGroupError}
+                        </p>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button
+                          type="submit"
+                          size="sm"
+                          className="text-xs sm:text-sm flex-1"
+                          disabled={isSavingRequiredGroup}
+                        >
+                          {isSavingRequiredGroup
+                            ? "Salvando..."
+                            : editingRequiredGroupId
+                              ? "Atualizar grupo"
+                              : "Adicionar grupo"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs sm:text-sm"
+                          onClick={resetRequiredGroupForm}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+
+                    <div className="space-y-2">
+                      <p className="text-sm sm:text-base font-semibold">
+                        Gerenciar grupos
+                      </p>
+                      {!requiredCategoryId ? (
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          Selecione uma categoria para visualizar os grupos.
+                        </p>
+                      ) : selectedRequiredGroups.length > 0 &&
+                        selectedRequiredCategory ? (
+                        <div className="space-y-2">
+                          {selectedRequiredGroups.map((group) => (
+                            <div
+                              key={group.id}
+                              className="flex items-center justify-between gap-3 rounded-md border p-2"
+                            >
+                              <div>
+                                <p className="text-xs sm:text-sm font-medium">
+                                  {group.title}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {group.requiredQuantity} obrigatório(s) •{" "}
+                                  {group.items.length} item(ns)
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-[11px]"
+                                  onClick={() => {
+                                    if (!selectedRequiredCategory) return;
+                                    handleStartRequiredGroup(
+                                      selectedRequiredCategory.id,
+                                      group
+                                    );
+                                  }}
+                                >
+                                  Editar
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="text-[11px]"
+                                  disabled={
+                                    isDeletingRequiredGroup === group.id
+                                  }
+                                  onClick={() => {
+                                    if (!selectedRequiredCategory) return;
+                                    handleDeleteRequiredGroup(
+                                      group.id,
+                                      selectedRequiredCategory.id
+                                    );
+                                  }}
+                                >
+                                  {isDeletingRequiredGroup === group.id
+                                    ? "Removendo..."
+                                    : "Remover"}
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          Nenhum grupo obrigatório cadastrado.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm sm:text-base font-semibold">
+                          Itens obrigatórios
+                        </p>
+                        {editingRequiredItemId && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs sm:text-sm"
+                            onClick={resetRequiredItemForm}
+                          >
+                            Novo item
+                          </Button>
+                        )}
+                      </div>
+
+                      <form
+                        className="space-y-3 sm:space-y-4"
+                        onSubmit={handleSubmitRequiredItem}
+                      >
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="required-item-group"
+                            className="text-sm sm:text-base"
+                          >
+                            Grupo obrigatório
+                          </Label>
+                          <Select
+                            value={requiredItemGroupId ?? ""}
+                            onValueChange={(value) => {
+                              setRequiredItemGroupId(value);
+                              setRequiredItemName("");
+                              setRequiredItemImageUrl("");
+                              setRequiredItemImagePreview(null);
+                              setEditingRequiredItemId(null);
+                              if (requiredItemFileInputRef.current) {
+                                requiredItemFileInputRef.current.value = "";
+                              }
+                              if (requiredItemError) {
+                                setRequiredItemError(null);
+                              }
+                            }}
+                            disabled={
+                              isSavingRequiredItem ||
+                              !!editingRequiredItemId ||
+                              selectedRequiredGroups.length === 0
+                            }
+                          >
+                            <SelectTrigger className="text-sm sm:text-base">
+                              <SelectValue
+                                placeholder={
+                                  selectedRequiredGroups.length > 0
+                                    ? "Selecione o grupo"
+                                    : "Cadastre um grupo primeiro"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {selectedRequiredGroups.map((group) => (
+                                <SelectItem key={group.id} value={group.id}>
+                                  {group.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="required-item-name"
+                            className="text-sm sm:text-base"
+                          >
+                            Nome do item
+                          </Label>
+                          <Input
+                            id="required-item-name"
+                            placeholder="Ex: Maionese verde"
+                            value={requiredItemName}
+                            onChange={(e) => {
+                              setRequiredItemName(e.target.value);
+                              if (requiredItemError) {
+                                setRequiredItemError(null);
+                              }
+                            }}
+                            className="text-sm sm:text-base"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="required-item-image"
+                            className="text-sm sm:text-base"
+                          >
+                            Imagem
+                          </Label>
+                          <input
+                            ref={requiredItemFileInputRef}
+                            id="required-item-image"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleRequiredItemImageSelect}
+                            className="hidden"
+                            disabled={
+                              isSavingRequiredItem || isUploadingRequiredItem
+                            }
+                          />
+                          <div className="space-y-2">
+                            {requiredItemImagePreview ? (
+                              <div className="relative">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={requiredItemImagePreview}
+                                  alt="Preview"
+                                  className="h-24 w-full rounded-md object-cover"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="mt-2 w-full text-xs sm:text-sm"
+                                  onClick={() => {
+                                    setRequiredItemImageUrl("");
+                                    setRequiredItemImagePreview(null);
+                                    if (requiredItemFileInputRef.current) {
+                                      requiredItemFileInputRef.current.value =
+                                        "";
+                                    }
+                                  }}
+                                  disabled={
+                                    isSavingRequiredItem ||
+                                    isUploadingRequiredItem
+                                  }
+                                >
+                                  Remover Imagem
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full text-xs sm:text-sm"
+                                onClick={() =>
+                                  requiredItemFileInputRef.current?.click()
+                                }
+                                disabled={
+                                  isSavingRequiredItem ||
+                                  isUploadingRequiredItem
+                                }
+                              >
+                                <ImageIcon className="mr-2 h-4 w-4" />
+                                {isUploadingRequiredItem
+                                  ? "Carregando..."
+                                  : "Selecionar da Galeria"}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {requiredItemError && (
+                          <p className="text-xs sm:text-sm text-destructive">
+                            {requiredItemError}
+                          </p>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Button
+                            type="submit"
+                            size="sm"
+                            className="text-xs sm:text-sm flex-1"
+                            disabled={
+                              isSavingRequiredItem || isUploadingRequiredItem
+                            }
+                          >
+                            {isSavingRequiredItem
+                              ? "Salvando..."
+                              : editingRequiredItemId
+                                ? "Atualizar item"
+                                : "Adicionar item"}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs sm:text-sm"
+                            onClick={resetRequiredItemForm}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </form>
+
+                      <div className="space-y-2">
+                        {!requiredItemGroupId ||
+                        !selectedRequiredGroup ||
+                        !selectedRequiredCategory ? (
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            Selecione um grupo para visualizar os itens.
+                          </p>
+                        ) : selectedRequiredItems.length > 0 ? (
+                          <div className="space-y-2">
+                            {selectedRequiredItems.map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center justify-between gap-3 rounded-md border p-2"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={item.imageUrl}
+                                      alt={item.name}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs sm:text-sm font-medium">
+                                      {item.name}
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                      Gratuito
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-[11px]"
+                                    onClick={() =>
+                                      handleStartRequiredItem(
+                                        selectedRequiredCategory.id,
+                                        selectedRequiredGroup.id,
+                                        item
+                                      )
+                                    }
+                                  >
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="text-[11px]"
+                                    disabled={
+                                      isDeletingRequiredItem === item.id
+                                    }
+                                    onClick={() =>
+                                      handleDeleteRequiredItem(
+                                        item.id,
+                                        selectedRequiredCategory.id,
+                                        selectedRequiredGroup.id
+                                      )
+                                    }
+                                  >
+                                    {isDeletingRequiredItem === item.id
+                                      ? "Removendo..."
+                                      : "Remover"}
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            Nenhum item obrigatório cadastrado neste grupo.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -2223,7 +3676,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       variant="ghost"
                       size="sm"
                       className="text-xs sm:text-sm"
-                      onClick={() => setShowManageCategories(false)}
+                      onClick={() => {
+                        resetAdditionalForm();
+                        setShowManageCategories(false);
+                      }}
                     >
                       Voltar
                     </Button>
@@ -2241,21 +3697,222 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       {categories.map((category) => (
                         <div
                           key={category.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
+                          className="space-y-3 p-3 border rounded-lg"
                         >
-                          <p className="font-medium text-sm sm:text-base">
-                            {category.name}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="text-xs sm:text-sm"
-                            onClick={() => setDeleteCategoryId(category.id)}
-                          >
-                            <Trash2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                            Excluir
-                          </Button>
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-sm sm:text-base">
+                              {category.name}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="text-xs sm:text-sm"
+                              onClick={() => setDeleteCategoryId(category.id)}
+                            >
+                              <Trash2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                              Excluir
+                            </Button>
+                          </div>
+
+                          <div className="space-y-2 rounded-md bg-muted/40 p-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs sm:text-sm font-semibold">
+                                Adicionais
+                              </p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="text-[11px]"
+                                onClick={() =>
+                                  handleStartAdditional(category.id)
+                                }
+                              >
+                                Novo
+                              </Button>
+                            </div>
+
+                            {category.additionals &&
+                            category.additionals.length > 0 ? (
+                              <div className="space-y-2">
+                                {category.additionals.map((additional) => (
+                                  <div
+                                    key={additional.id}
+                                    className="flex items-center justify-between rounded-md bg-background p-2"
+                                  >
+                                    <div>
+                                      <p className="text-xs sm:text-sm font-medium">
+                                        {additional.name}
+                                      </p>
+                                      <p className="text-[11px] text-muted-foreground">
+                                        {formatCurrency(additional.price)}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-[11px]"
+                                        onClick={() =>
+                                          handleStartAdditional(
+                                            category.id,
+                                            additional
+                                          )
+                                        }
+                                      >
+                                        Editar
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        className="text-[11px]"
+                                        disabled={
+                                          isDeletingAdditional === additional.id
+                                        }
+                                        onClick={() =>
+                                          handleDeleteAdditional(
+                                            additional.id,
+                                            category.id
+                                          )
+                                        }
+                                      >
+                                        {isDeletingAdditional === additional.id
+                                          ? "Removendo..."
+                                          : "Remover"}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground">
+                                Nenhum adicional cadastrado
+                              </p>
+                            )}
+
+                            {additionalCategoryId === category.id && (
+                              <form
+                                className="space-y-2 rounded-md border bg-background p-2"
+                                onSubmit={handleSubmitAdditional}
+                              >
+                                <Input
+                                  placeholder="Nome do adicional"
+                                  value={additionalName}
+                                  onChange={(e) =>
+                                    setAdditionalName(e.target.value)
+                                  }
+                                  className="text-xs sm:text-sm"
+                                />
+                                <Input
+                                  placeholder="Preço"
+                                  type="number"
+                                  step="0.01"
+                                  value={additionalPrice}
+                                  onChange={(e) =>
+                                    setAdditionalPrice(e.target.value)
+                                  }
+                                  className="text-xs sm:text-sm"
+                                />
+                                <div className="space-y-2">
+                                  <input
+                                    ref={additionalFileInputRef}
+                                    id="additional-image-inline"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleAdditionalImageSelect}
+                                    className="hidden"
+                                    disabled={
+                                      isSavingAdditional ||
+                                      isUploadingAdditional
+                                    }
+                                  />
+                                  {additionalImagePreview ? (
+                                    <div className="relative">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={additionalImagePreview}
+                                        alt="Preview"
+                                        className="h-20 w-full rounded-md object-cover"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="mt-2 w-full text-xs"
+                                        onClick={() => {
+                                          setAdditionalImageUrl("");
+                                          setAdditionalImagePreview(null);
+                                          if (additionalFileInputRef.current) {
+                                            additionalFileInputRef.current.value =
+                                              "";
+                                          }
+                                        }}
+                                        disabled={
+                                          isSavingAdditional ||
+                                          isUploadingAdditional
+                                        }
+                                      >
+                                        Remover Imagem
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full text-xs"
+                                      onClick={() =>
+                                        additionalFileInputRef.current?.click()
+                                      }
+                                      disabled={
+                                        isSavingAdditional ||
+                                        isUploadingAdditional
+                                      }
+                                    >
+                                      <ImageIcon className="mr-2 h-3 w-3" />
+                                      {isUploadingAdditional
+                                        ? "Carregando..."
+                                        : "Selecionar imagem"}
+                                    </Button>
+                                  )}
+                                </div>
+                                {additionalError && (
+                                  <p className="text-[11px] text-destructive">
+                                    {additionalError}
+                                  </p>
+                                )}
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="submit"
+                                    size="sm"
+                                    className="text-xs sm:text-sm flex-1"
+                                    disabled={
+                                      isSavingAdditional ||
+                                      isUploadingAdditional
+                                    }
+                                  >
+                                    {isSavingAdditional
+                                      ? "Salvando..."
+                                      : editingAdditionalId
+                                        ? "Atualizar"
+                                        : "Adicionar"}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs sm:text-sm"
+                                    onClick={resetAdditionalForm}
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </div>
+                              </form>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2459,40 +4116,125 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               Produtos
                             </p>
                             <div className="space-y-2">
-                              {order.orderProducts.map((orderProduct) => (
-                                <div
-                                  key={orderProduct.id}
-                                  className="flex items-center gap-2 sm:gap-3 p-2 bg-muted rounded"
-                                >
-                                  <div className="flex-1">
-                                    <p className="text-xs sm:text-sm font-medium">
-                                      {orderProduct.product.name} x
-                                      {orderProduct.quantity}
-                                    </p>
-                                    {orderProduct.sizeName && (
-                                      <p className="text-[11px] text-muted-foreground">
-                                        Tam: {orderProduct.sizeName}
+                              {order.orderProducts.map((orderProduct) => {
+                                const additionalsTotal = (
+                                  orderProduct.additionals || []
+                                ).reduce(
+                                  (acc, item) =>
+                                    acc + item.price * item.quantity,
+                                  0
+                                );
+                                const productTotal =
+                                  orderProduct.price * orderProduct.quantity +
+                                  additionalsTotal * orderProduct.quantity;
+                                return (
+                                  <div
+                                    key={orderProduct.id}
+                                    className="flex items-center gap-2 sm:gap-3 p-2 bg-muted rounded"
+                                  >
+                                    <div className="flex-1">
+                                      <p className="text-xs sm:text-sm font-medium">
+                                        {orderProduct.product.name} x
+                                        {orderProduct.quantity}
                                       </p>
-                                    )}
-                                    <p className="text-xs text-muted-foreground">
-                                      {formatCurrency(orderProduct.price)} cada
-                                    </p>
+                                      {orderProduct.sizeName && (
+                                        <p className="text-[11px] text-muted-foreground">
+                                          Tam: {orderProduct.sizeName}
+                                        </p>
+                                      )}
+                                      <p className="text-xs text-muted-foreground">
+                                        {formatCurrency(orderProduct.price)}{" "}
+                                        cada
+                                      </p>
+                                      {orderProduct.additionals &&
+                                        orderProduct.additionals.length > 0 && (
+                                          <div className="mt-1 space-y-0.5">
+                                            <p className="text-[11px] font-medium">
+                                              Adicionais
+                                            </p>
+                                            <ul className="text-[11px] text-muted-foreground space-y-0.5">
+                                              {orderProduct.additionals.map(
+                                                (additional) => (
+                                                  <li key={additional.id}>
+                                                    {additional.quantity}x{" "}
+                                                    {additional.name} (
+                                                    {formatCurrency(
+                                                      additional.price
+                                                    )}
+                                                    )
+                                                  </li>
+                                                )
+                                              )}
+                                            </ul>
+                                          </div>
+                                        )}
+                                      {orderProduct.requiredAdditionals &&
+                                        orderProduct.requiredAdditionals
+                                          .length > 0 && (
+                                          <div className="mt-1 space-y-0.5">
+                                            <p className="text-[11px] font-medium">
+                                              Obrigatórios
+                                            </p>
+                                            <ul className="text-[11px] text-muted-foreground space-y-0.5">
+                                              {orderProduct.requiredAdditionals.map(
+                                                (required) => (
+                                                  <li key={required.id}>
+                                                    {required.quantity}x{" "}
+                                                    {required.name} (
+                                                    {required.groupTitle})
+                                                  </li>
+                                                )
+                                              )}
+                                            </ul>
+                                          </div>
+                                        )}
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-xs sm:text-sm font-semibold">
+                                        {formatCurrency(productTotal)}
+                                      </p>
+                                      {additionalsTotal > 0 && (
+                                        <p className="text-[11px] text-muted-foreground">
+                                          +{" "}
+                                          {formatCurrency(
+                                            additionalsTotal *
+                                              orderProduct.quantity
+                                          )}{" "}
+                                          adicionais
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
-                                  <p className="text-xs sm:text-sm font-semibold">
-                                    {formatCurrency(
-                                      orderProduct.price * orderProduct.quantity
-                                    )}
-                                  </p>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
-                            <div className="flex items-center justify-between pt-2 border-t">
-                              <p className="text-sm sm:text-base font-semibold">
+                            <div className="grid grid-cols-2 gap-y-1 pt-2 border-t text-xs sm:text-sm">
+                              <span>Produtos</span>
+                              <span className="text-right font-semibold text-foreground">
+                                {formatCurrency(order.productsSubtotal)}
+                              </span>
+                              {order.sizesSubtotal !== 0 && (
+                                <>
+                                  <span>Tamanhos</span>
+                                  <span className="text-right font-semibold text-foreground">
+                                    {formatCurrency(order.sizesSubtotal)}
+                                  </span>
+                                </>
+                              )}
+                              {order.additionalsSubtotal > 0 && (
+                                <>
+                                  <span>Adicionais</span>
+                                  <span className="text-right font-semibold text-foreground">
+                                    {formatCurrency(order.additionalsSubtotal)}
+                                  </span>
+                                </>
+                              )}
+                              <span className="font-semibold text-foreground">
                                 Total
-                              </p>
-                              <p className="text-base sm:text-lg font-bold">
+                              </span>
+                              <span className="text-right font-bold text-base sm:text-lg">
                                 {formatCurrency(order.total)}
-                              </p>
+                              </span>
                             </div>
                           </div>
 

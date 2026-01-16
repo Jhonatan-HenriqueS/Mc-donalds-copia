@@ -68,6 +68,8 @@ model MenuCategory {
   //Pega o nome do model, relaciona com restaurantId daqui e pega com referecences o id de Restaurant
   restaurantId String
   products     Product[]
+  additionals  CategoryAdditional[]
+  requiredAdditionalGroups RequiredAdditionalGroup[]
   createdAt    DateTime   @default(now())
   updateAt     DateTime   @updatedAt
 }
@@ -103,6 +105,9 @@ model Order {
   id                   Int               @id @default(autoincrement())
   //Cada pedido vai ter uma ordem, caso o primeiro esteja com id 1, o segundo recebe 2, e assim por diante, vai se complementando  
   total                Float
+  productsSubtotal     Float              @default(0)
+  sizesSubtotal        Float              @default(0)
+  additionalsSubtotal  Float              @default(0)
   status               OrderStatus
   consumptionMethod    ConsumptionMethod
   orderProducts        OrderProduct[]
@@ -134,11 +139,74 @@ model OrderProduct {
   orderId   Int
   quantity  Int
   price     Float
+  basePrice Float    @default(0)
   sizeName  String?
   sizePrice Float?
   sizeId    String?
+  additionals OrderProductAdditional[]
+  requiredAdditionals OrderProductRequiredAdditional[]
   createdAt DateTime @default(now())
   updateAt  DateTime @updatedAt
+}
+
+model CategoryAdditional {
+  id             String        @id @default(uuid())
+  name           String
+  price          Float
+  imageUrl       String
+  menuCategory   MenuCategory  @relation(fields: [menuCategoryId], references: [id], onDelete: Cascade)
+  menuCategoryId String
+  orderProductAdditionals OrderProductAdditional[]
+  createdAt      DateTime      @default(now())
+  updateAt       DateTime      @updatedAt
+}
+
+model RequiredAdditionalGroup {
+  id             String                 @id @default(uuid())
+  title          String
+  requiredQuantity Int
+  menuCategory   MenuCategory           @relation(fields: [menuCategoryId], references: [id], onDelete: Cascade)
+  menuCategoryId String
+  items          RequiredAdditionalItem[]
+  createdAt      DateTime               @default(now())
+  updateAt       DateTime               @updatedAt
+}
+
+model RequiredAdditionalItem {
+  id        String   @id @default(uuid())
+  name      String
+  imageUrl  String
+  group     RequiredAdditionalGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String
+  orderProductRequireds OrderProductRequiredAdditional[]
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
+}
+
+model OrderProductAdditional {
+  id                     String             @id @default(uuid())
+  orderProduct           OrderProduct       @relation(fields: [orderProductId], references: [id], onDelete: Cascade)
+  orderProductId         String
+  name                   String
+  price                  Float
+  quantity               Int
+  categoryAdditional     CategoryAdditional? @relation(fields: [categoryAdditionalId], references: [id], onDelete: SetNull)
+  categoryAdditionalId   String?
+  createdAt              DateTime           @default(now())
+  updateAt               DateTime           @updatedAt
+}
+
+model OrderProductRequiredAdditional {
+  id                     String              @id @default(uuid())
+  orderProduct           OrderProduct        @relation(fields: [orderProductId], references: [id], onDelete: Cascade)
+  orderProductId         String
+  name                   String
+  groupTitle             String
+  quantity               Int
+  requiredAdditionalItem RequiredAdditionalItem? @relation(fields: [requiredAdditionalItemId], references: [id], onDelete: SetNull)
+  requiredAdditionalItemId String?
+  createdAt              DateTime            @default(now())
+  updateAt               DateTime            @updatedAt
 }
 
 enum OrderStatus {

@@ -29,6 +29,8 @@ export const getOrders = async (restaurantId: string) => {
                 imageUrl: true,
               },
             },
+            additionals: true,
+            requiredAdditionals: true,
           },
         },
       },
@@ -49,4 +51,3 @@ export const getOrders = async (restaurantId: string) => {
     return { success: false, error: 'Erro ao buscar pedidos', orders: [] };
   }
 };
-

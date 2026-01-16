@@ -24,6 +24,18 @@ const ProductPage = async ({ params }: ProductPageProps) => {
         },
       },
       sizes: true,
+      menuCategory: {
+        select: {
+          id: true,
+          name: true,
+          additionals: true,
+          requiredAdditionalGroups: {
+            include: {
+              items: true,
+            },
+          },
+        },
+      },
     },
   });
 

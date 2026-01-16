@@ -36,6 +36,12 @@ const RestaurantMenuPage = async ({
               sizes: true,
             },
           },
+          additionals: true,
+          requiredAdditionalGroups: {
+            include: {
+              items: true,
+            },
+          },
         },
       },
     },

@@ -28,14 +28,22 @@ const CartSheet = ({
   deliveryFee = 0,
 }: CartSheetProps) => {
   const [finishOnderDialogIsOPen, setFinishOnderDialogIsOPen] = useState(false);
-  const { isOpen, taggleCart, products, total } = useContext(CartContext);
+  const {
+    isOpen,
+    taggleCart,
+    products,
+    total,
+    subtotalProducts,
+    subtotalSizes,
+    subtotalAdditionals,
+  } = useContext(CartContext);
   const subtotal = total;
   const fee = isTakeaway ? deliveryFee : 0;
   const totalWithFee = subtotal + fee;
 
   return (
     <Sheet open={isOpen} onOpenChange={taggleCart}>
-      <SheetContent className="min-w-[88%]">
+      <SheetContent className="min-w-[94%]">
         <SheetHeader>
           <SheetTitle className="text-start">Carrinho</SheetTitle>
           <SheetDescription></SheetDescription>
@@ -49,7 +57,10 @@ const CartSheet = ({
             */}
 
               {products.map((product) => (
-                <CartProductItem key={product.id} product={product} />
+                <CartProductItem
+                  key={`${product.id}-${product.sizeId || "default"}-${product.additionalsKey || "plain"}-${product.requiredAdditionalsKey || "required"}`}
+                  product={product}
+                />
               ))}
             </div>
             <ScrollBar orientation="vertical" className="hidden"></ScrollBar>
@@ -58,11 +69,27 @@ const CartSheet = ({
           <Card className="mb-10">
             <CardContent className="p-5">
               <div className="flex justify-between">
-                <p className="text-sm ">Subtotal</p>
+                <p className="text-sm ">Produtos</p>
                 <p className="font-semibold text-sm">
-                  {formatCurrency(subtotal)}
+                  {formatCurrency(subtotalProducts)}
                 </p>
               </div>
+              {subtotalSizes !== 0 && (
+                <div className="flex justify-between">
+                  <p className="text-sm ">Tamanhos</p>
+                  <p className="font-semibold text-sm">
+                    {formatCurrency(subtotalSizes)}
+                  </p>
+                </div>
+              )}
+              {subtotalAdditionals > 0 && (
+                <div className="flex justify-between">
+                  <p className="text-sm ">Adicionais</p>
+                  <p className="font-semibold text-sm">
+                    {formatCurrency(subtotalAdditionals)}
+                  </p>
+                </div>
+              )}
               {isTakeaway && (
                 <div className="flex justify-between">
                   <p className="text-sm text-red-500">Taxa de entrega</p>

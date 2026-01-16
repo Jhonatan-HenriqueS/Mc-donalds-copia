@@ -64,6 +64,8 @@ const OrdersPage = async ({ params, searchParams }: OrdersPageProps) => {
         //vai pergar todos os produtos
         include: {
           product: true,
+          additionals: true,
+          requiredAdditionals: true,
         },
       },
     },
