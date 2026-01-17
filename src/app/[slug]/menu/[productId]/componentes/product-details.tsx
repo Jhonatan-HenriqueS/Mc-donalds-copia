@@ -1,13 +1,18 @@
 "use client";
 
 import { Prisma } from "@prisma/client";
-import { ChefHatIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import {
+  ChefHatIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+} from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useContext, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/helpers/format-currency";
 
 import CartSheet from "../../componentes/cart-sheet";
@@ -54,43 +59,46 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
     () =>
       (searchParams.get("consumptionMethod") || "").toUpperCase() ===
       "TAKEANAY",
-    [searchParams]
+    [searchParams],
   );
 
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null);
   const selectedSize = product.sizes?.find(
-    (size) => size.id === selectedSizeId
+    (size) => size.id === selectedSizeId,
   );
   const [selectedAdditionals, setSelectedAdditionals] = useState<
     Record<string, CartAdditionalSelection>
   >({});
   const [selectedRequiredAdditionals, setSelectedRequiredAdditionals] =
     useState<Record<string, CartRequiredAdditionalSelection>>({});
+  const [expandedRequiredGroups, setExpandedRequiredGroups] = useState<
+    Record<string, boolean>
+  >({});
 
   const hasSizes = (product.sizes?.length || 0) > 0;
   const availableAdditionals = product.menuCategory?.additionals || [];
   const hasAdditionals = availableAdditionals.length > 0;
   const requiredGroups = useMemo(
     () => product.menuCategory?.requiredAdditionalGroups || [],
-    [product.menuCategory?.requiredAdditionalGroups]
+    [product.menuCategory?.requiredAdditionalGroups],
   );
   const hasRequiredGroups = requiredGroups.length > 0;
 
   const selectedAdditionalsList = useMemo(
     () =>
       Object.values(selectedAdditionals).filter(
-        (item) => (item?.quantity || 0) > 0
+        (item) => (item?.quantity || 0) > 0,
       ),
-    [selectedAdditionals]
+    [selectedAdditionals],
   );
 
   const selectedRequiredList = useMemo(
     () =>
       Object.values(selectedRequiredAdditionals).filter(
-        (item) => (item?.quantity || 0) > 0
+        (item) => (item?.quantity || 0) > 0,
       ),
-    [selectedRequiredAdditionals]
+    [selectedRequiredAdditionals],
   );
 
   const requiredCounts = useMemo(
@@ -100,26 +108,26 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
           acc[item.groupId] = (acc[item.groupId] || 0) + item.quantity;
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       ),
-    [selectedRequiredList]
+    [selectedRequiredList],
   );
 
   const requiredComplete = useMemo(
     () =>
       requiredGroups.every(
-        (group) => (requiredCounts[group.id] || 0) >= group.requiredQuantity
+        (group) => (requiredCounts[group.id] || 0) >= group.requiredQuantity,
       ),
-    [requiredCounts, requiredGroups]
+    [requiredCounts, requiredGroups],
   );
 
   const additionalsUnitTotal = useMemo(
     () =>
       selectedAdditionalsList.reduce(
         (acc, current) => acc + current.price * current.quantity,
-        0
+        0,
       ),
-    [selectedAdditionalsList]
+    [selectedAdditionalsList],
   );
 
   const basePrice = product.price;
@@ -154,7 +162,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
   const handleAdditionalChange = (additionalId: string, delta: number) => {
     const option = availableAdditionals.find(
-      (item) => item.id === additionalId
+      (item) => item.id === additionalId,
     );
     if (!option) return;
 
@@ -185,7 +193,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
     itemName: string,
     imageUrl: string | undefined,
     delta: number,
-    requiredQuantity: number
+    requiredQuantity: number,
   ) => {
     setSelectedRequiredAdditionals((prev) => {
       const groupSelected = Object.values(prev).reduce((acc, item) => {
@@ -220,6 +228,13 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
         },
       };
     });
+  };
+
+  const toggleRequiredGroup = (groupId: string) => {
+    setExpandedRequiredGroups((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
   };
 
   const handleAddToCart = () => {
@@ -260,8 +275,8 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
   return (
     <>
-      <div className="relative z-50 rounded-t-3xl p-5 mt-[-2rem] flex flex-auto flex-col h-full bg-white ">
-        <ScrollArea className="flex-auto overflow-hidden">
+      <div className="relative z-50 rounded-t-3xl p-5 mt-[-2rem] flex flex-1 min-h-0 flex-col bg-white ">
+        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
           <div className="flex items-center gap-1.5">
             <Image
               src={product.restaurant.avatarImageUrl}
@@ -318,7 +333,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                     requiredGroups.filter(
                       (group) =>
                         (requiredCounts[group.id] || 0) >=
-                        group.requiredQuantity
+                        group.requiredQuantity,
                     ).length
                   }
                   /{requiredGroups.length} obrigatórios completos
@@ -328,7 +343,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                 <p className="flex justify-start">
                   {selectedAdditionalsList.reduce(
                     (acc, item) => acc + item.quantity,
-                    0
+                    0,
                   )}{" "}
                   adicionais
                 </p>
@@ -367,7 +382,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                       requiredGroups.filter(
                         (group) =>
                           (requiredCounts[group.id] || 0) >=
-                          group.requiredQuantity
+                          group.requiredQuantity,
                       ).length
                     }
                     /{requiredGroups.length} completos
@@ -377,6 +392,9 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                   {requiredGroups.map((group) => {
                     const selectedCount = requiredCounts[group.id] || 0;
                     const isMissing = selectedCount < group.requiredQuantity;
+                    const isComplete = selectedCount >= group.requiredQuantity;
+                    const isExpanded =
+                      expandedRequiredGroups[group.id] || false;
                     return (
                       <div key={group.id} className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
@@ -392,78 +410,104 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                             obrigatório(s)
                           </span>
                         </div>
-                        <div className="space-y-2">
-                          {group.items.map((item) => {
-                            const quantity =
-                              selectedRequiredAdditionals[item.id]?.quantity ||
-                              0;
-                            return (
-                              <div
-                                key={item.id}
-                                className="flex items-center justify-between rounded-xl border p-2"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-muted">
-                                    <Image
-                                      src={item.imageUrl}
-                                      alt={item.name}
-                                      fill
-                                      className="object-cover"
-                                    />
+                        {isComplete && !isExpanded ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => toggleRequiredGroup(group.id)}
+                          >
+                            <ChevronUpIcon size={14} /> Editar opcionais
+                          </Button>
+                        ) : (
+                          <>
+                            <div className="space-y-2">
+                              {group.items.map((item) => {
+                                const quantity =
+                                  selectedRequiredAdditionals[item.id]
+                                    ?.quantity || 0;
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className="flex items-center justify-between rounded-xl border p-2"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className="relative h-12 w-12 rounded-lg bg-muted">
+                                        <Image
+                                          src={item.imageUrl}
+                                          alt={item.name}
+                                          fill
+                                          className="object-cover"
+                                        />
+                                      </div>
+                                      <p className="text-sm font-medium">
+                                        {item.name}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-lg"
+                                        onClick={() =>
+                                          handleRequiredChange(
+                                            group.id,
+                                            group.title,
+                                            item.id,
+                                            item.name,
+                                            item.imageUrl,
+                                            -1,
+                                            group.requiredQuantity,
+                                          )
+                                        }
+                                        disabled={quantity === 0}
+                                      >
+                                        <ChevronLeftIcon size={14} />
+                                      </Button>
+                                      <span className="w-4 text-center text-xs">
+                                        {quantity}
+                                      </span>
+                                      <Button
+                                        variant="destructive"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-lg"
+                                        onClick={() =>
+                                          handleRequiredChange(
+                                            group.id,
+                                            group.title,
+                                            item.id,
+                                            item.name,
+                                            item.imageUrl,
+                                            1,
+                                            group.requiredQuantity,
+                                          )
+                                        }
+                                        disabled={
+                                          selectedCount >=
+                                          group.requiredQuantity
+                                        }
+                                      >
+                                        <ChevronRightIcon size={14} />
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <p className="text-sm font-medium">
-                                    {item.name}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-7 w-7 rounded-lg"
-                                    onClick={() =>
-                                      handleRequiredChange(
-                                        group.id,
-                                        group.title,
-                                        item.id,
-                                        item.name,
-                                        item.imageUrl,
-                                        -1,
-                                        group.requiredQuantity
-                                      )
-                                    }
-                                    disabled={quantity === 0}
-                                  >
-                                    <ChevronLeftIcon size={14} />
-                                  </Button>
-                                  <span className="w-4 text-center text-xs">
-                                    {quantity}
-                                  </span>
-                                  <Button
-                                    variant="destructive"
-                                    size="icon"
-                                    className="h-7 w-7 rounded-lg"
-                                    onClick={() =>
-                                      handleRequiredChange(
-                                        group.id,
-                                        group.title,
-                                        item.id,
-                                        item.name,
-                                        item.imageUrl,
-                                        1,
-                                        group.requiredQuantity
-                                      )
-                                    }
-                                    disabled={
-                                      selectedCount >= group.requiredQuantity
-                                    }
-                                  >
-                                    <ChevronRightIcon size={14} />
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                                );
+                              })}
+                            </div>
+                            {isComplete && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="w-full text-xs"
+                                onClick={() => toggleRequiredGroup(group.id)}
+                              >
+                                <ChevronDownIcon size={14} /> Ocultar opcionais
+                              </Button>
+                            )}
+                          </>
+                        )}
                       </div>
                     );
                   })}
@@ -479,7 +523,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                     {selectedAdditionalsList.length > 0
                       ? `${selectedAdditionalsList.reduce(
                           (acc, item) => acc + item.quantity,
-                          0
+                          0,
                         )} selecionado(s)`
                       : "Opcional"}
                   </p>
@@ -563,7 +607,8 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
               ))}
             </ul>
           </div>
-        </ScrollArea>
+        </div>
+
         {!canAddToCart && addToCartMessage && (
           <p className="mb-2 text-center text-xs text-destructive">
             {addToCartMessage}

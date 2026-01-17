@@ -33,6 +33,7 @@ interface OrdersPageProps {
 }
 
 const getStatusLabel = (status: OrderStatus) => {
+  if (status === "OUT_FOR_DELIVERY") return "Enviado para Entrega";
   if (status === "FINISHED") return "Finalizado";
   if (status === "IN_PREPARATION") return "Em preparo";
   if (status === "PENDING") return "Pendente";
@@ -63,9 +64,20 @@ const OrderList = ({ orders }: OrdersPageProps) => {
             <div
               className={`w-fit rounded-full px-2 py-1 text-xs text-white font-semibold
                     ${
-                      order.status === OrderStatus.FINISHED
-                        ? "bg-green-400 text-white"
-                        : "bg-gray-200 text-gray-500"
+                      order.status === OrderStatus.FINISHED &&
+                      "bg-green-400 text-white"
+                    }
+                    ${
+                      order.status === OrderStatus.IN_PREPARATION &&
+                      "bg-blue-400 text-white"
+                    }
+                    ${
+                      order.status === OrderStatus.PENDING &&
+                      "bg-yellow-400 text-white"
+                    }
+                    ${
+                      order.status === OrderStatus.OUT_FOR_DELIVERY &&
+                      "bg-purple-400 text-white"
                     }
                 `}
             >

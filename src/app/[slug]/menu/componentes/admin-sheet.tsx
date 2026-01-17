@@ -295,9 +295,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [isDeletingRequiredGroup, setIsDeletingRequiredGroup] = useState<
     string | null
   >(null);
-  const [requiredItemGroupId, setRequiredItemGroupId] = useState<
-    string | null
-  >(null);
+  const [requiredItemGroupId, setRequiredItemGroupId] = useState<string | null>(
+    null
+  );
   const [requiredItemName, setRequiredItemName] = useState("");
   const [requiredItemImageUrl, setRequiredItemImageUrl] = useState("");
   const [requiredItemImagePreview, setRequiredItemImagePreview] = useState<
@@ -1264,7 +1264,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   ) => {
     setIsDeletingRequiredGroup(groupId);
     try {
-      const result = await deleteRequiredAdditionalGroup(groupId, restaurant.id);
+      const result = await deleteRequiredAdditionalGroup(
+        groupId,
+        restaurant.id
+      );
       if (result.success) {
         toast.success("Grupo obrigatório removido!");
         setCategories((prev) =>
@@ -1649,7 +1652,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           !showUpdateAvatar &&
           !showUpdateCover &&
           !showUpdateDeliveryFee ? (
-            <div className="flex-auto flex flex-col gap-3 sm:gap-4">
+            <div className="flex-auto flex flex-col gap-3 sm:gap-4 overflow-y-auto pr-1">
               <Button
                 onClick={() => setShowAddCategory(true)}
                 className="w-full text-sm sm:text-base"
@@ -1774,7 +1777,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   </span>
                 )}
               </Button>
-              <div className="mt-auto pt-4 border-t">
+              <div className="sticky bottom-0 bg-white pt-4 border-t">
                 <Button
                   onClick={async () => {
                     const result = await logout();
@@ -2773,7 +2776,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                     <CardTitle className="text-base sm:text-lg">
                       {editingAdditionalId
                         ? "Editar Adicional"
-                        : "Adicionar Adicional"}
+                        : "Criar Adicional"}
                     </CardTitle>
                     <div className="flex items-center gap-2">
                       {editingAdditionalId && (
@@ -2941,7 +2944,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               <ImageIcon className="mr-2 h-4 w-4" />
                               {isUploadingAdditional
                                 ? "Carregando..."
-                                : "Selecionar da Galeria"}
+                                : "Selecionar"}
                             </Button>
                           )}
                         </div>

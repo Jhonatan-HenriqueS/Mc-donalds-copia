@@ -32,7 +32,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
   const selectedAdditionals = useMemo(
     //EDITADO
     () => product.additionals || [],
-    [product.additionals]
+    [product.additionals],
   );
   const additionalsToDisplay =
     availableAdditionals.length > 0
@@ -41,38 +41,38 @@ const CartProductItem = ({ product }: CartItemProps) => {
   const requiredGroups = product.availableRequiredAdditionals || [];
   const requiredSelections = useMemo(
     () => product.requiredAdditionals || [],
-    [product.requiredAdditionals]
+    [product.requiredAdditionals],
   );
 
-  const requiredSummary = useMemo(() => {
-    if (requiredSelections.length === 0) return "";
-    const grouped = requiredSelections.reduce(
-      (acc, item) => {
-        const title = item.groupTitle || "Obrigatorio";
-        acc[title] = acc[title] || [];
-        acc[title].push(`${item.quantity}x ${item.name}`);
-        return acc;
-      },
-      {} as Record<string, string[]>
-    );
-    return Object.entries(grouped)
-      .map(([title, items]) => `${title}: ${items.join(", ")}`)
-      .join(" • ");
-  }, [requiredSelections]);
+  // const requiredSummary = useMemo(() => {
+  //   if (requiredSelections.length === 0) return "";
+  //   const grouped = requiredSelections.reduce(
+  //     (acc, item) => {
+  //       const title = item.groupTitle || "Obrigatorio";
+  //       acc[title] = acc[title] || [];
+  //       acc[title].push(`${item.quantity}x ${item.name}`);
+  //       return acc;
+  //     },
+  //     {} as Record<string, string[]>,
+  //   );
+  //   return Object.entries(grouped)
+  //     .map(([title, items]) => `${title}: ${items.join(", ")}`)
+  //     .join(" • ");
+  // }, [requiredSelections]);
 
-  const selectedAdditionalsCount = useMemo(
-    () =>
-      selectedAdditionals.reduce((acc, item) => acc + (item.quantity || 0), 0),
-    [selectedAdditionals]
-  );
+  // const selectedAdditionalsCount = useMemo(
+  //   () =>
+  //     selectedAdditionals.reduce((acc, item) => acc + (item.quantity || 0), 0),
+  //   [selectedAdditionals],
+  // );
 
   const additionalsUnitTotal = useMemo(
     () =>
       selectedAdditionals.reduce(
         (acc, item) => acc + item.price * (item.quantity || 0),
-        0
+        0,
       ),
-    [selectedAdditionals]
+    [selectedAdditionals],
   );
 
   const unitTotal = product.price + additionalsUnitTotal;
@@ -106,7 +106,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
       product.sizeId || null,
       nextAdditionals,
       product.additionalsKey || null,
-      product.requiredAdditionalsKey || null
+      product.requiredAdditionalsKey || null,
     );
   };
 
@@ -117,7 +117,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
     itemName: string,
     imageUrl: string | undefined,
     delta: number,
-    requiredQuantity: number
+    requiredQuantity: number,
   ) => {
     const groupSelected = requiredSelections
       .filter((item) => item.groupId === groupId)
@@ -150,7 +150,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
       product.sizeId || null,
       nextSelections,
       product.additionalsKey || null,
-      product.requiredAdditionalsKey || null
+      product.requiredAdditionalsKey || null,
     );
   };
 
@@ -161,7 +161,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
       product.sizeId || null,
       newSize || null,
       product.additionalsKey || null,
-      product.requiredAdditionalsKey || null
+      product.requiredAdditionalsKey || null,
     );
   };
 
@@ -194,7 +194,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
                     product.id,
                     product.sizeId || null,
                     product.additionalsKey || null,
-                    product.requiredAdditionalsKey || null
+                    product.requiredAdditionalsKey || null,
                   )
                 }
               >
@@ -209,7 +209,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
                     product.id,
                     product.sizeId || null,
                     product.additionalsKey || null,
-                    product.requiredAdditionalsKey || null
+                    product.requiredAdditionalsKey || null,
                   )
                 }
               >
@@ -221,7 +221,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
                 Tam: {product.sizeName}
               </p>
             )}
-            {selectedAdditionalsCount > 0 && (
+            {/* {selectedAdditionalsCount > 0 && (
               <p className="text-xs text-muted-foreground line-clamp-2">
                 Adicionais:{" "}
                 {selectedAdditionals
@@ -233,7 +233,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
               <p className="text-xs text-muted-foreground line-clamp-2">
                 Obrigatorios: {requiredSummary}
               </p>
-            )}
+            )} */}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -245,7 +245,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
                 product.id,
                 product.sizeId || null,
                 product.additionalsKey || null,
-                product.requiredAdditionalsKey || null
+                product.requiredAdditionalsKey || null,
               )
             }
           >
@@ -311,7 +311,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
                         {group.items.map((item) => {
                           const quantity =
                             requiredSelections.find(
-                              (entry) => entry.id === item.id
+                              (entry) => entry.id === item.id,
                             )?.quantity || 0;
                           return (
                             <div
@@ -348,7 +348,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
                                       item.name,
                                       item.imageUrl,
                                       -1,
-                                      group.requiredQuantity
+                                      group.requiredQuantity,
                                     )
                                   }
                                   disabled={quantity === 0}
@@ -369,7 +369,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
                                       item.name,
                                       item.imageUrl,
                                       1,
-                                      group.requiredQuantity
+                                      group.requiredQuantity,
                                     )
                                   }
                                   disabled={
@@ -397,7 +397,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
                 {additionalsToDisplay.map((additional) => {
                   const quantity =
                     selectedAdditionals.find(
-                      (item) => item.id === additional.id
+                      (item) => item.id === additional.id,
                     )?.quantity || 0;
                   return (
                     <div

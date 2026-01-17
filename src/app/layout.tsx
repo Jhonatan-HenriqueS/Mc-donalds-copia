@@ -1,23 +1,23 @@
 //Este layout faz com que tudo que estiver aqui sirva para todas as páginas
 //Fiz alterações adicionadno o poppins e adicionadno no body meus desejos
 
-import './globals.css';
+import "./globals.css";
 
-import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
+import type { Metadata } from "next";
+import { Poppins } from "next/font/google";
 
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from "@/components/ui/sonner";
 
-import { CartProvider } from './[slug]/menu/context/cart';
+import { CartProvider } from "./[slug]/menu/context/cart";
 
 const poppins = Poppins({
-  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
-  subsets: ['latin'],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: 'Delivery Food',
-  description: 'Delivery ',
+  title: "Delivery Food",
+  description: "Delivery ",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt">
-      <body className={`${poppins.className} antialiased`}>
+      <body className={`overflow-hidden ${poppins.className} antialiased`}>
         <CartProvider>{children}</CartProvider>
         <Toaster />
       </body>

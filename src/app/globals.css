@@ -46,3 +46,11 @@
     /* html e @apply h full adicionado para ajustar o botão de adicionar ao carrinho */
   }
 }
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
