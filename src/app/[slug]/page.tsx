@@ -23,7 +23,7 @@ const RestaurantPage = async ({ params }: RestaurantPageProps) => {
   const hasAnyMethod = allowDineIn || allowTakeaway;
 
   return (
-    <div className="h-screen flex flex-col items-center justify-center px-6 pt-24">
+    <div className="h-screen flex flex-col items-center justify-center mt-[-80px] px-6 pt-24">
       <div className="flex flex-col items-center gap-2">
         <Image
           src={restaurant?.avatarImageUrl}
@@ -42,7 +42,7 @@ const RestaurantPage = async ({ params }: RestaurantPageProps) => {
         </p>
       </div>
       {hasAnyMethod ? (
-        <div className="pt-14 flex justify-center gap-4 ">
+        <div className="pt-14 flex justify-center gap-5 ">
           {allowDineIn && (
             <ConsumptionMethodOPtion
               option="DINE_IN"

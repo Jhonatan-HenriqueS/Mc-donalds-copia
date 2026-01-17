@@ -52,7 +52,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
     () =>
       (searchParams.get("consumptionMethod") || "").toUpperCase() ===
       "TAKEANAY",
-    [searchParams]
+    [searchParams],
   );
 
   const handlesCategoryClick = (category: MenuCategoriesMithProducts) => {
@@ -125,6 +125,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
           </p>
         </div>
       )}
+
       <div className={`${products.length > 0 ? "pb-14" : ""}`}>
         <Products products={selectedCategory?.products || []} />
       </div>
@@ -135,7 +136,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
             <p className="text-ms text-muted-foreground">Total do pedido</p>
             <p className="text-sm font-semibold">
               {formatCurrency(
-                isTakeaway ? total + (restaurant.deliveryFee ?? 0) : total
+                isTakeaway ? total + (restaurant.deliveryFee ?? 0) : total,
               )}
               <span className="text-xs font-normal text-muted-foreground ">
                 /{totalQuantity}
