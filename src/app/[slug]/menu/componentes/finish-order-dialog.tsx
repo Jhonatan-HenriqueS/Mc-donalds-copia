@@ -156,6 +156,67 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     shouldUnregister: false,
   });
 
+  const profileCompleted = Boolean(savedProfile) && !editingProfile;
+  const addressCompleted =
+    !isTakeaway || (Boolean(savedAddress) && !editingAddress);
+  const needsProfileSave = !profileCompleted;
+  const needsAddressSave = isTakeaway && profileCompleted && !addressCompleted;
+  const canFinalize = !needsProfileSave && !needsAddressSave;
+
+  const profileFieldNames = ["name", "email", "phone", "cpf"] as const;
+  const addressFieldNames = [
+    "deliveryStreet",
+    "deliveryNumber",
+    "deliveryNeighborhood",
+    "deliveryCity",
+    "deliveryState",
+  ] as const;
+
+  const handleSaveProfile = async () => {
+    const isValid = await form.trigger(
+      profileFieldNames as unknown as Array<keyof FormSchema>
+    );
+    if (!isValid) return;
+    const values = form.getValues() as BaseFormSchema;
+    setSavedProfile({
+      name: values.name,
+      email: values.email,
+      phone: values.phone,
+      cpf: values.cpf,
+    });
+    setEditingProfile(false);
+    setShowDetails(false);
+  };
+
+  const handleSaveAddress = async () => {
+    if (!isTakeaway) return;
+    const isValid = await form.trigger(
+      addressFieldNames as unknown as Array<keyof FormSchema>
+    );
+    if (!isValid) return;
+    const values = form.getValues() as TakeawayFormSchema;
+    setSavedAddress({
+      deliveryStreet: values.deliveryStreet,
+      deliveryNumber: values.deliveryNumber,
+      deliveryComplement: values.deliveryComplement,
+      deliveryNeighborhood: values.deliveryNeighborhood,
+      deliveryCity: values.deliveryCity,
+      deliveryState: values.deliveryState,
+    });
+    setEditingAddress(false);
+    setShowAddressDetails(false);
+  };
+
+  const handleSaveStep = async () => {
+    if (needsProfileSave) {
+      await handleSaveProfile();
+      return;
+    }
+    if (needsAddressSave) {
+      await handleSaveAddress();
+    }
+  };
+
   // Buscar restaurantId para salvar perfil local
   useEffect(() => {
     const fetchRestaurantId = async () => {
@@ -232,6 +293,10 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   const onSubmit = async (data: FormSchema) => {
     if (products.length === 0) {
       toast.error("O carrinho está vazio");
+      return;
+    }
+    if (!canFinalize) {
+      toast.error("Salve seus dados antes de finalizar o pedido.");
       return;
     }
 
@@ -460,10 +525,16 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                             setSavedProfile(null);
                             setEditingProfile(true);
                             setShowDetails(false);
+                            setSavedAddress(null);
+                            setEditingAddress(true);
+                            setShowAddressDetails(false);
                             form.reset(defaultValues as FormSchema);
                             if (restaurantId) {
                               localStorage.removeItem(
                                 `last_order_profile_${restaurantId}`
+                              );
+                              localStorage.removeItem(
+                                `last_order_address_${restaurantId}`
                               );
                             }
                           }}
@@ -559,7 +630,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                     </>
                   )}
 
-                  {isTakeaway && (
+                  {isTakeaway && profileCompleted && (
                     <>
                       <div className="border-t pt-4">
                         <h3 className="font-semibold mb-4">
@@ -783,13 +854,24 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                     </>
                   )}
                   <DrawerFooter>
-                    <Button
-                      type="submit"
-                      className="rounded-full"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Criando pedido..." : "Finalizar"}
-                    </Button>
+                    {canFinalize ? (
+                      <Button
+                        type="submit"
+                        className="rounded-full"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Criando pedido..." : "Finalizar"}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        className="rounded-full"
+                        disabled={isLoading}
+                        onClick={handleSaveStep}
+                      >
+                        Salvar
+                      </Button>
+                    )}
 
                     <DrawerClose asChild>
                       <Button className="w-full rounded-full" variant="outline">

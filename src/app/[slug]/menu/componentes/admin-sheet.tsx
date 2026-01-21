@@ -50,7 +50,6 @@ import { updateRestaurantAvatar } from "@/app/[slug]/menu/actions/update-restaur
 import { updateRestaurantCover } from "@/app/[slug]/menu/actions/update-restaurant-cover";
 import { updateRestaurantDeliveryFee } from "@/app/[slug]/menu/actions/update-restaurant-delivery-fee";
 import { updateRestaurantStatus } from "@/app/[slug]/menu/actions/update-restaurant-status";
-import { formatCpf } from "@/app/[slug]/menu/helpers/format-cpf";
 import { useOrderNotifications } from "@/app/[slug]/menu/hooks/use-order-notifications";
 import { logout } from "@/app/actions/logout";
 import {
@@ -104,7 +103,8 @@ interface AdminSheetProps {
 
 interface Customer {
   name: string;
-  cpf: string;
+  email: string | null;
+  phone: string | null;
   lastOrderDate: Date;
   totalSpent: number;
   totalSpentThisMonth: number;
@@ -2344,7 +2344,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       <div className="space-y-2 sm:space-y-3">
                         {customers.map((customer, index) => (
                           <div
-                            key={`${customer.cpf}-${index}`}
+                            key={`${customer.email ?? "sem-email"}-${
+                              customer.phone ?? "sem-telefone"
+                            }-${index}`}
                             className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 p-3 border rounded-lg"
                           >
                             <div className="flex-1 min-w-0">
@@ -2352,7 +2354,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 {customer.name}
                               </p>
                               <p className="text-xs sm:text-sm text-muted-foreground">
-                                {formatCpf(customer.cpf)}
+                                Email: {customer.email ?? "Não informado"}
+                              </p>
+                              <p className="text-xs sm:text-sm text-muted-foreground">
+                                Telefone: {customer.phone ?? "Não informado"}
                               </p>
                             </div>
                             <div className="text-left sm:text-right w-full sm:w-auto">
@@ -4075,7 +4080,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 {order.customerName}
                               </p>
                               <p className="text-xs sm:text-sm text-muted-foreground">
-                                CPF: {formatCpf(order.customerCpf)}
+                                Email:{" "}
+                                {order.customerEmail ?? "Não informado"}
+                              </p>
+                              <p className="text-xs sm:text-sm text-muted-foreground">
+                                Telefone:{" "}
+                                {order.customerPhone ?? "Não informado"}
                               </p>
                             </div>
                             <div>

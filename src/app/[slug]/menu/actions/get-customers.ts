@@ -24,6 +24,8 @@ export const getCustomers = async (restaurantId: string) => {
       select: {
         customerCpf: true,
         customerName: true,
+        customerEmail: true,
+        customerPhone: true,
         createdAt: true,
         total: true,
       },
@@ -42,7 +44,8 @@ export const getCustomers = async (restaurantId: string) => {
       string,
       {
         name: string;
-        cpf: string;
+        email: string | null;
+        phone: string | null;
         lastOrderDate: Date;
         totalSpent: number;
         totalSpentThisMonth: number;
@@ -64,7 +67,8 @@ export const getCustomers = async (restaurantId: string) => {
       if (!customersMap.has(cpf)) {
         customersMap.set(cpf, {
           name: order.customerName,
-          cpf: cpf,
+          email: order.customerEmail ?? null,
+          phone: order.customerPhone ?? null,
           lastOrderDate: order.createdAt,
           totalSpent: order.total,
           totalSpentThisMonth: isThisMonth ? order.total : 0,
@@ -75,6 +79,14 @@ export const getCustomers = async (restaurantId: string) => {
         if (order.createdAt > existing.lastOrderDate) {
           existing.name = order.customerName;
           existing.lastOrderDate = order.createdAt;
+          existing.email = order.customerEmail ?? existing.email;
+          existing.phone = order.customerPhone ?? existing.phone;
+        }
+        if (!existing.email && order.customerEmail) {
+          existing.email = order.customerEmail;
+        }
+        if (!existing.phone && order.customerPhone) {
+          existing.phone = order.customerPhone;
         }
         // Somar totais
         existing.totalSpent += order.total;
