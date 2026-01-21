@@ -107,7 +107,7 @@ export interface IcartContext {
     additionalsKey?: string | null,
     requiredAdditionalsKey?: string | null
   ) => void;
-  clearCart: () => void;
+  clearCart: (closeCart?: boolean) => void;
 }
 
 export const CartContext = createContext<IcartContext>({
@@ -475,9 +475,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  const clearCart = () => {
+  const clearCart = (closeCart: boolean = true) => {
     setProducts([]);
-    setIsOPen(false);
+    if (closeCart) {
+      setIsOPen(false);
+    }
   };
 
   return (

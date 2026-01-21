@@ -13,6 +13,16 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Drawer,
   DrawerClose,
   DrawerContent,
@@ -95,7 +105,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
 
-  const { products, clearCart } = useContext(CartContext);
+  const { products, clearCart, isOpen, taggleCart } = useContext(CartContext);
 
   const searchParams = useSearchParams();
   const consumptionMethod = searchParams.get(
@@ -111,6 +121,8 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     phone: string;
     cpf: string;
   } | null>(null);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [successOrderUrl, setSuccessOrderUrl] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [editingProfile, setEditingProfile] = useState(true);
   const [savedAddress, setSavedAddress] = useState<{
@@ -373,6 +385,9 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       }
 
       toast.success("Pedido criado com sucesso!");
+      const cpfWithoutPunctuation = data.cpf.replace(/\D/g, "");
+      setSuccessOrderUrl(`/${slug}/orders?cpf=${cpfWithoutPunctuation}`);
+      setSuccessDialogOpen(true);
       setSavedProfile({
         name: data.name,
         email: data.email,
@@ -392,7 +407,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         });
         setEditingAddress(false);
       }
-      clearCart();
+      clearCart(false);
       form.reset(data as FormSchema);
       onOpenChange(false);
 
@@ -402,7 +417,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.restaurantId) {
-            const cpfWithoutPunctuation = data.cpf.replace(/\D/g, "");
             localStorage.setItem(
               `last_order_cpf_${result.restaurantId}`,
               cpfWithoutPunctuation
@@ -435,9 +449,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       } catch (error) {
         console.error("Erro ao salvar CPF:", error);
       }
-
-      // Redirecionar para a página de pedidos
-      router.push(`/${slug}/orders?cpf=${data.cpf.replace(/\D/g, "")}`);
     } catch (error) {
       console.error("Error creating order:", error);
       toast.error(
@@ -886,6 +897,45 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           </ScrollArea>
         </DrawerContent>
       </Drawer>
+      <AlertDialog
+        open={successDialogOpen}
+        onOpenChange={setSuccessDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader className="text-center">
+            <AlertDialogTitle>Pedido finalizado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Produto finalizado com sucesso! Para acompanhar cada detalhes de
+              seu pedido veja na aba meus pedidos
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center">
+            <AlertDialogAction
+              className="bg-red-500 text-white hover:bg-red-600"
+              onClick={() => {
+                if (successOrderUrl) {
+                  router.push(successOrderUrl);
+                }
+                if (isOpen) {
+                  taggleCart();
+                }
+              }}
+            >
+              Ver pedido
+            </AlertDialogAction>
+            <AlertDialogCancel
+              className="bg-white"
+              onClick={() => {
+                if (isOpen) {
+                  taggleCart();
+                }
+              }}
+            >
+              Continuar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
