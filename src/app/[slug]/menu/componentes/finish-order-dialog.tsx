@@ -2,7 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ConsumptionMethod } from "@prisma/client";
-import { ChevronDownIcon, ChevronUpIcon, Loader2Icon } from "lucide-react";
+import {
+  Check,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  Loader2Icon,
+} from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useContext, useEffect, useState } from "react";
 import type { Control } from "react-hook-form";
@@ -61,7 +66,7 @@ const baseFormSchema = z.object({
         const digits = value.replace(/\D/g, "");
         return digits.length === 10;
       },
-      { message: "Digite um telefone válido (ex: (69) 9999-9999)" }
+      { message: "Digite um telefone válido (ex: (69) 9999-9999)" },
     ),
   cpf: z
     .string()
@@ -109,7 +114,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
 
   const searchParams = useSearchParams();
   const consumptionMethod = searchParams.get(
-    "consumptionMethod"
+    "consumptionMethod",
   ) as ConsumptionMethod;
   const isTakeaway = consumptionMethod === "TAKEANAY";
 
@@ -186,7 +191,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
 
   const handleSaveProfile = async () => {
     const isValid = await form.trigger(
-      profileFieldNames as unknown as Array<keyof FormSchema>
+      profileFieldNames as unknown as Array<keyof FormSchema>,
     );
     if (!isValid) return;
     const values = form.getValues() as BaseFormSchema;
@@ -203,7 +208,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   const handleSaveAddress = async () => {
     if (!isTakeaway) return;
     const isValid = await form.trigger(
-      addressFieldNames as unknown as Array<keyof FormSchema>
+      addressFieldNames as unknown as Array<keyof FormSchema>,
     );
     if (!isValid) return;
     const values = form.getValues() as TakeawayFormSchema;
@@ -241,7 +246,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
             setRestaurantId(data.restaurantId);
             let parsedProfile: Partial<FormSchema> | null = null;
             const saved = localStorage.getItem(
-              `last_order_profile_${data.restaurantId}`
+              `last_order_profile_${data.restaurantId}`,
             );
             if (saved) {
               try {
@@ -265,7 +270,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
 
             if (isTakeaway) {
               const savedAddressRaw = localStorage.getItem(
-                `last_order_address_${data.restaurantId}`
+                `last_order_address_${data.restaurantId}`,
               );
               if (savedAddressRaw) {
                 try {
@@ -419,7 +424,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           if (result.success && result.restaurantId) {
             localStorage.setItem(
               `last_order_cpf_${result.restaurantId}`,
-              cpfWithoutPunctuation
+              cpfWithoutPunctuation,
             );
             localStorage.setItem(
               `last_order_profile_${result.restaurantId}`,
@@ -428,7 +433,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                 email: data.email,
                 phone: data.phone,
                 cpf: data.cpf,
-              })
+              }),
             );
             if (isTakeaway) {
               const takeawayData = data as TakeawayFormSchema;
@@ -441,7 +446,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                   deliveryNeighborhood: takeawayData.deliveryNeighborhood,
                   deliveryCity: takeawayData.deliveryCity,
                   deliveryState: takeawayData.deliveryState,
-                })
+                }),
               );
             }
           }
@@ -454,7 +459,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Erro ao criar pedido. Tente novamente."
+          : "Erro ao criar pedido. Tente novamente.",
       );
     } finally {
       setIsLoading(false);
@@ -542,10 +547,10 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                             form.reset(defaultValues as FormSchema);
                             if (restaurantId) {
                               localStorage.removeItem(
-                                `last_order_profile_${restaurantId}`
+                                `last_order_profile_${restaurantId}`,
                               );
                               localStorage.removeItem(
-                                `last_order_address_${restaurantId}`
+                                `last_order_address_${restaurantId}`,
                               );
                             }
                           }}
@@ -708,7 +713,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                                 setShowAddressDetails(false);
                                 if (restaurantId) {
                                   localStorage.removeItem(
-                                    `last_order_address_${restaurantId}`
+                                    `last_order_address_${restaurantId}`,
                                   );
                                 }
                                 form.reset({
@@ -850,7 +855,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                                       {...field}
                                       onChange={(e) =>
                                         field.onChange(
-                                          e.target.value.toUpperCase()
+                                          e.target.value.toUpperCase(),
                                         )
                                       }
                                     />
@@ -897,21 +902,21 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           </ScrollArea>
         </DrawerContent>
       </Drawer>
-      <AlertDialog
-        open={successDialogOpen}
-        onOpenChange={setSuccessDialogOpen}
-      >
+      <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader className="text-center">
-            <AlertDialogTitle>Pedido finalizado</AlertDialogTitle>
-            <AlertDialogDescription>
-              Produto finalizado com sucesso! Para acompanhar cada detalhes de
-              seu pedido veja na aba meus pedidos
+          <AlertDialogHeader className="text-center items-center">
+            <AlertDialogTitle>Pedido finalizado!</AlertDialogTitle>
+            <AlertDialogDescription className="text-center justify-center">
+              Produto finalizado com sucesso! <br /> Para acompanhar cada
+              detalhes de seu pedido veja na aba meus pedidos
             </AlertDialogDescription>
+            <div className="bg-red-600 rounded-full p-5 ">
+              <Check className="text-white" height={55} width={55} />
+            </div>
           </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-center">
+          <AlertDialogFooter className="justify-center flex flex-col gap-6">
             <AlertDialogAction
-              className="bg-red-500 text-white hover:bg-red-600"
+              className="bg-red-500 text-white hover:bg-red-600 w-full"
               onClick={() => {
                 if (successOrderUrl) {
                   router.push(successOrderUrl);
@@ -924,7 +929,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
               Ver pedido
             </AlertDialogAction>
             <AlertDialogCancel
-              className="bg-white"
+              className="bg-white w-full"
               onClick={() => {
                 if (isOpen) {
                   taggleCart();
