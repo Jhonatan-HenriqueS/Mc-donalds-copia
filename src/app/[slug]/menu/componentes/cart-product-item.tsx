@@ -238,7 +238,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            className="h-7 w-7 absolute right-0 rounded-lg border-none"
+            className="h-7 w-7 rounded-lg border-none"
             variant="outline"
             onClick={() =>
               removeProduct(
