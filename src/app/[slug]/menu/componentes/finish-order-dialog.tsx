@@ -903,18 +903,18 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         </DrawerContent>
       </Drawer>
       <AlertDialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[90%] rounded-lg ">
           <AlertDialogHeader className="text-center items-center">
             <AlertDialogTitle>Pedido finalizado!</AlertDialogTitle>
             <AlertDialogDescription className="text-center justify-center">
               Produto finalizado com sucesso! <br /> Para acompanhar cada
               detalhes de seu pedido veja na aba meus pedidos
             </AlertDialogDescription>
-            <div className="bg-red-600 rounded-full p-5 ">
+            <div className="bg-red-600 rounded-full p-4 ">
               <Check className="text-white" height={55} width={55} />
             </div>
           </AlertDialogHeader>
-          <AlertDialogFooter className="justify-center flex flex-col gap-6">
+          <AlertDialogFooter className="justify-center flex flex-col gap-1">
             <AlertDialogAction
               className="bg-red-500 text-white hover:bg-red-600 w-full"
               onClick={() => {

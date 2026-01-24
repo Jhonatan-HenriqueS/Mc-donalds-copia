@@ -607,27 +607,28 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
               ))}
             </ul>
           </div>
+          <div className="fixed bottom-0 left-0 right-0 z-50 w-full bg-white p-2 ">
+            {!canAddToCart && addToCartMessage && (
+              <p className="mb-2 text-center text-xs text-destructive">
+                {addToCartMessage}
+              </p>
+            )}
+            <Button
+              className="rounded-full w-full z-50 "
+              onClick={handleAddToCart}
+              disabled={!canAddToCart}
+            >
+              Adicionar
+              {quantity > 1 && <p>({formatCurrency(totalWithQuantity)})</p>}
+            </Button>
+            <CartSheet
+              isRestaurantOpen={product.restaurant.isOpen ?? true}
+              isTakeaway={isTakeaway}
+              deliveryFee={product.restaurant.deliveryFee ?? 0}
+            />
+          </div>
         </div>
-
-        {!canAddToCart && addToCartMessage && (
-          <p className="mb-2 text-center text-xs text-destructive">
-            {addToCartMessage}
-          </p>
-        )}
-        <Button
-          className="rounded-full w-full z-50 "
-          onClick={handleAddToCart}
-          disabled={!canAddToCart}
-        >
-          Adicionar
-          {quantity > 1 && <p>({formatCurrency(totalWithQuantity)})</p>}
-        </Button>
       </div>
-      <CartSheet
-        isRestaurantOpen={product.restaurant.isOpen ?? true}
-        isTakeaway={isTakeaway}
-        deliveryFee={product.restaurant.deliveryFee ?? 0}
-      />
     </>
   );
 };
