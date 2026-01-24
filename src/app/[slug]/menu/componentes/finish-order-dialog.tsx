@@ -18,7 +18,6 @@ import { z } from "zod";
 
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -128,6 +127,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   } | null>(null);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [successOrderUrl, setSuccessOrderUrl] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [editingProfile, setEditingProfile] = useState(true);
   const [savedAddress, setSavedAddress] = useState<{
@@ -306,6 +306,12 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     fetchRestaurantId();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  useEffect(() => {
+    if (!successDialogOpen) {
+      setIsRedirecting(false);
+    }
+  }, [successDialogOpen]);
 
   const onSubmit = async (data: FormSchema) => {
     if (products.length === 0) {
@@ -915,21 +921,28 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter className="justify-center flex flex-col gap-1">
-            <AlertDialogAction
+            <Button
+              type="button"
               className="bg-red-500 text-white hover:bg-red-600 w-full"
+              disabled={isRedirecting}
               onClick={() => {
-                if (successOrderUrl) {
-                  router.push(successOrderUrl);
-                }
-                if (isOpen) {
-                  taggleCart();
-                }
+                if (!successOrderUrl) return;
+                setIsRedirecting(true);
+                router.push(successOrderUrl);
               }}
             >
-              Ver pedido
-            </AlertDialogAction>
+              {isRedirecting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2Icon className="h-4 w-4 animate-spin" />
+                  Carregando...
+                </span>
+              ) : (
+                "Ver pedido"
+              )}
+            </Button>
             <AlertDialogCancel
               className="bg-white w-full"
+              disabled={isRedirecting}
               onClick={() => {
                 if (isOpen) {
                   taggleCart();
