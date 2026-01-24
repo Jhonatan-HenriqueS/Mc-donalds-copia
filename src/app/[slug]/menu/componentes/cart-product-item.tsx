@@ -179,9 +179,9 @@ const CartProductItem = ({ product }: CartItemProps) => {
               />
             </div>
           </div>
-          <div className="space-y-1 ">
+          <div className="space-y-1">
             <p className="text-sm font-semibold max-w-[60%] truncate text-ellipsis">
-              {/* Essa combinação faz com que o nome do produto não quebre linha, e se quebrar adiciona ... no final */}
+              {/* Essa combinação faz com que o nome do produto não quebre linha, e se quebrar adiciona ... no finall*/}
               {product.name}
             </p>
             <p className="text-sm font-semibold">{formatCurrency(itemTotal)}</p>
