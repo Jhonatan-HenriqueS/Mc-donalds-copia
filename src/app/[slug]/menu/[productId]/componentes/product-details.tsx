@@ -354,7 +354,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
             {hasSizes && (
               <div className="space-y-2">
                 <h4 className="font-semibold">Tamanhos</h4>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex gap-2">
                   {product.sizes?.map((size) => (
                     <Button
                       key={size.id}
@@ -363,7 +363,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                         selectedSizeId === size.id ? "default" : "outline"
                       }
                       size="sm"
-                      className="rounded-full"
+                      className="rounded-full text-xs "
                       onClick={() => setSelectedSizeId(size.id)}
                     >
                       {size.name} - {formatCurrency(size.price)}
