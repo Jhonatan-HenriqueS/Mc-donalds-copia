@@ -168,7 +168,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
   return (
     <div className="space-y-2 p-3">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <div>
             <div className="relative h-20 w-20 mr-1">
               <Image
@@ -179,8 +179,8 @@ const CartProductItem = ({ product }: CartItemProps) => {
               />
             </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-sm font-semibold max-w-[60%] truncate text-ellipsis">
+          <div className="space-y-1 min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate text-ellipsis">
               {/* Essa combinação faz com que o nome do produto não quebre linha, e se quebrar adiciona ... no finall*/}
               {product.name}
             </p>
@@ -236,7 +236,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
             )} */}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             className="h-7 w-7 rounded-lg border-none"
             variant="outline"
