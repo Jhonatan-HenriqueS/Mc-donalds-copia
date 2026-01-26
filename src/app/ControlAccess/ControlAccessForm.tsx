@@ -28,7 +28,11 @@ const ControlAccessForm = () => {
 
   const handleInvalidAccess = () => {
     toast.error('Email ou senha inválidos');
-    router.back();
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push('/');
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -96,6 +100,9 @@ const ControlAccessForm = () => {
                     setErrors((prev) => ({ ...prev, email: undefined }));
                   }
                 }}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 disabled={isLoading}
               />
               {errors.email && (
@@ -119,6 +126,9 @@ const ControlAccessForm = () => {
                       setErrors((prev) => ({ ...prev, password: undefined }));
                     }
                   }}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   disabled={isLoading}
                 />
                 <button

@@ -17,8 +17,13 @@ export const controlAccessLogin = async (input: ControlAccessInput) => {
 
   const normalizedEmail = input.email.trim().toLowerCase();
   const normalizedEnvEmail = envEmail.trim().toLowerCase();
+  const normalizedPassword = input.password.trim();
+  const normalizedEnvPassword = envPassword.trim();
 
-  if (normalizedEmail !== normalizedEnvEmail || input.password !== envPassword) {
+  if (
+    normalizedEmail !== normalizedEnvEmail ||
+    normalizedPassword !== normalizedEnvPassword
+  ) {
     return { success: false, error: 'Email ou senha inválidos' };
   }
 
