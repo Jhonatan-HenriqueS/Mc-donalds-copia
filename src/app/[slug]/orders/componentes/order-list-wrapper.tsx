@@ -27,17 +27,17 @@ interface OrderListWrapperProps {
     }>
   >;
   restaurantId: string;
-  cpf: string;
+  email: string;
 }
 
 const OrderListWrapper = ({
   orders,
   restaurantId,
-  cpf,
+  email,
 }: OrderListWrapperProps) => {
   const { markAsSeen } = useCustomerOrderNotifications({
     restaurantId,
-    cpf,
+    email,
     orders: orders.map((order) => ({
       id: order.id,
       status: order.status,
@@ -46,17 +46,17 @@ const OrderListWrapper = ({
     enabled: true,
   });
 
-  // Salvar CPF no localStorage e marcar como visto quando os pedidos forem exibidos
+  // Salvar email no localStorage e marcar como visto quando os pedidos forem exibidos
   useEffect(() => {
-    if (orders.length > 0 && cpf) {
-      localStorage.setItem(`last_order_cpf_${restaurantId}`, cpf);
+    if (orders.length > 0 && email) {
+      localStorage.setItem(`last_order_email_${restaurantId}`, email);
       // Marcar como visto após um pequeno delay para garantir que o componente foi renderizado
       const timer = setTimeout(() => {
         markAsSeen();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [orders.length, cpf, restaurantId, markAsSeen]);
+  }, [orders.length, email, restaurantId, markAsSeen]);
 
   return <OrderList orders={orders} />;
 };

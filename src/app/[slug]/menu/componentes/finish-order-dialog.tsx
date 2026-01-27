@@ -50,7 +50,6 @@ import { ScrollBar } from "@/components/ui/scroll-area";
 
 import { createOrder } from "../actions/create-order";
 import { CartContext } from "../context/cart";
-import { isValidCpf } from "../helpers/cpf";
 
 const baseFormSchema = z.object({
   name: z.string().trim().min(1, {
@@ -67,15 +66,6 @@ const baseFormSchema = z.object({
       },
       { message: "Digite um telefone válido (ex: (69) 9999-9999)" },
     ),
-  cpf: z
-    .string()
-    .trim()
-    .min(11, {
-      message: "O CPF é obrigatório!",
-    })
-    .refine((value) => isValidCpf(value), {
-      message: "CPF inválido!",
-    }),
 });
 
 const takeawayFormSchema = baseFormSchema.extend({
@@ -123,7 +113,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     name: string;
     email: string;
     phone: string;
-    cpf: string;
   } | null>(null);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [successOrderUrl, setSuccessOrderUrl] = useState<string | null>(null);
@@ -151,7 +140,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         name: "",
         email: "",
         phone: "",
-        cpf: "",
         deliveryStreet: "",
         deliveryNumber: "",
         deliveryComplement: "",
@@ -163,7 +151,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         name: "",
         email: "",
         phone: "",
-        cpf: "",
       } satisfies BaseFormSchema);
 
   const form = useForm<FormSchema>({
@@ -180,7 +167,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   const needsAddressSave = isTakeaway && profileCompleted && !addressCompleted;
   const canFinalize = !needsProfileSave && !needsAddressSave;
 
-  const profileFieldNames = ["name", "email", "phone", "cpf"] as const;
+  const profileFieldNames = ["name", "email", "phone"] as const;
   const addressFieldNames = [
     "deliveryStreet",
     "deliveryNumber",
@@ -199,7 +186,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       name: values.name,
       email: values.email,
       phone: values.phone,
-      cpf: values.cpf,
     });
     setEditingProfile(false);
     setShowDetails(false);
@@ -251,7 +237,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
             if (saved) {
               try {
                 const parsed = JSON.parse(saved);
-                if (parsed.name && parsed.email && parsed.phone && parsed.cpf) {
+                if (parsed.name && parsed.email && parsed.phone) {
                   parsedProfile = parsed;
                   setSavedProfile(parsed);
                   setEditingProfile(false);
@@ -260,7 +246,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                     name: parsed.name,
                     email: parsed.email,
                     phone: parsed.phone,
-                    cpf: parsed.cpf,
                   });
                 }
               } catch (error) {
@@ -326,11 +311,11 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     setIsLoading(true);
 
     try {
+      const normalizedEmail = data.email.trim().toLowerCase();
       const payloadBase = {
         consumptionMethod,
-        customerCpf: data.cpf,
         customerName: data.name,
-        customerEmail: data.email,
+        customerEmail: normalizedEmail,
         customerPhone: data.phone,
         products,
         slug,
@@ -396,14 +381,14 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       }
 
       toast.success("Pedido criado com sucesso!");
-      const cpfWithoutPunctuation = data.cpf.replace(/\D/g, "");
-      setSuccessOrderUrl(`/${slug}/orders?cpf=${cpfWithoutPunctuation}`);
+      setSuccessOrderUrl(
+        `/${slug}/orders?email=${encodeURIComponent(normalizedEmail)}`,
+      );
       setSuccessDialogOpen(true);
       setSavedProfile({
         name: data.name,
-        email: data.email,
+        email: normalizedEmail,
         phone: data.phone,
-        cpf: data.cpf,
       });
       setEditingProfile(false);
       if (isTakeaway) {
@@ -422,23 +407,22 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       form.reset(data as FormSchema);
       onOpenChange(false);
 
-      // Buscar restaurantId e salvar CPF no localStorage
+      // Buscar restaurantId e salvar email no localStorage
       try {
         const response = await fetch(`/api/restaurant-by-slug?slug=${slug}`);
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.restaurantId) {
             localStorage.setItem(
-              `last_order_cpf_${result.restaurantId}`,
-              cpfWithoutPunctuation,
+              `last_order_email_${result.restaurantId}`,
+              normalizedEmail,
             );
             localStorage.setItem(
               `last_order_profile_${result.restaurantId}`,
               JSON.stringify({
                 name: data.name,
-                email: data.email,
+                email: normalizedEmail,
                 phone: data.phone,
-                cpf: data.cpf,
               }),
             );
             if (isTakeaway) {
@@ -458,7 +442,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           }
         }
       } catch (error) {
-        console.error("Erro ao salvar CPF:", error);
+        console.error("Erro ao salvar email:", error);
       }
     } catch (error) {
       console.error("Error creating order:", error);
@@ -556,6 +540,9 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                                 `last_order_profile_${restaurantId}`,
                               );
                               localStorage.removeItem(
+                                `last_order_email_${restaurantId}`,
+                              );
+                              localStorage.removeItem(
                                 `last_order_address_${restaurantId}`,
                               );
                             }
@@ -568,10 +555,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                       {showDetails && (
                         <div className="space-y-1 text-xs text-muted-foreground">
                           <p>Telefone: {savedProfile.phone}</p>
-                          <p>
-                            CPF:{" "}
-                            {`${savedProfile.cpf.slice(0, 3)}***.***-${savedProfile.cpf.slice(-2)}`}
-                          </p>
                         </div>
                       )}
                     </div>
@@ -631,24 +614,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="cpf"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Seu cpf</FormLabel>
-                            <FormControl>
-                              <PatternFormat
-                                placeholder="Digite seu CPF..."
-                                format="###.###.###-##"
-                                customInput={Input}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage></FormMessage>
-                          </FormItem>
-                        )}
-                      />
                     </>
                   )}
 

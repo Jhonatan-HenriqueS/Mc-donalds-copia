@@ -6,11 +6,8 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/prisma";
 
-import { removeCpfPunctuation } from "../helpers/cpf";
-
 interface createOrderInput {
   customerName: string;
-  customerCpf: string;
   customerEmail: string;
   customerPhone: string;
   products: Array<{
@@ -210,8 +207,8 @@ export const createOrder = async (input: createOrderInput) => {
   const baseOrderData = {
     status: "PENDING" as OrderStatus,
     customerName: input.customerName,
-    customerCpf: removeCpfPunctuation(input.customerCpf),
-    customerEmail: input.customerEmail,
+    customerCpf: "SEM_CPF",
+    customerEmail: input.customerEmail.trim().toLowerCase(),
     customerPhone: input.customerPhone,
     orderProducts: {
       create: productsWithPricesQuantities.map((p) => ({
@@ -281,8 +278,6 @@ export const createOrder = async (input: createOrderInput) => {
     data: baseOrderData,
   });
   revalidatePath(`/${input.slug}/orders`); //Sempre esse pedido vai ser guardado no servidor
-  // redirect(
-  //   `/${input.slug}/orders?cpf=${removeCpfPunctuation(input.customerCpf)}`
-  // );
+  // redirect(`/${input.slug}/orders?email=${input.customerEmail}`);
   return order;
 };

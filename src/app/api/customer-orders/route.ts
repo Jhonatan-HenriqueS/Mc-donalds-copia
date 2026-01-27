@@ -2,17 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/prisma';
 
-import { removeCpfPunctuation } from '../../[slug]/menu/helpers/cpf';
-
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const restaurantId = searchParams.get('restaurantId');
-    const cpf = searchParams.get('cpf');
+    const email = searchParams.get('email');
 
-    if (!restaurantId || !cpf) {
+    if (!restaurantId || !email) {
       return NextResponse.json(
-        { success: false, error: 'Restaurant ID e CPF são obrigatórios' },
+        { success: false, error: 'Restaurant ID e email são obrigatórios' },
         { status: 400 }
       );
     }
@@ -20,7 +18,10 @@ export async function GET(request: NextRequest) {
     const orders = await db.order.findMany({
       where: {
         restaurantId,
-        customerCpf: removeCpfPunctuation(cpf),
+        customerEmail: {
+          equals: email.trim().toLowerCase(),
+          mode: 'insensitive',
+        },
       },
       select: {
         id: true,

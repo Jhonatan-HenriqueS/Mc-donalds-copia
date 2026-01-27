@@ -29,8 +29,8 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
   const handleBackClick = () => router.back();
   const handleOrdersClick = () => router.push(`/${slug}/orders`);
 
-  // Buscar CPF do localStorage se existir algum pedido
-  const [cpf, setCpf] = useState<string | null>(null);
+  // Buscar email do localStorage se existir algum pedido
+  const [email, setEmail] = useState<string | null>(null);
   const [orders, setOrders] = useState<
     Array<{
       id: number;
@@ -39,17 +39,19 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
     }>
   >([]);
 
-  // Buscar CPF salvo do último pedido feito
+  // Buscar email salvo do último pedido feito
   useEffect(() => {
-    const savedCpf = localStorage.getItem(`last_order_cpf_${restaurant.id}`);
-    if (savedCpf) {
-      setCpf(savedCpf);
+    const savedEmail = localStorage.getItem(
+      `last_order_email_${restaurant.id}`
+    );
+    if (savedEmail) {
+      setEmail(savedEmail);
     }
   }, [restaurant.id]);
 
-  // Buscar pedidos do cliente quando tiver CPF
+  // Buscar pedidos do cliente quando tiver email
   useEffect(() => {
-    if (!cpf) {
+    if (!email) {
       setOrders([]);
       return;
     }
@@ -57,7 +59,9 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
     const fetchOrders = async () => {
       try {
         const response = await fetch(
-          `/api/customer-orders?restaurantId=${restaurant.id}&cpf=${cpf}`
+          `/api/customer-orders?restaurantId=${restaurant.id}&email=${encodeURIComponent(
+            email
+          )}`
         );
         if (response.ok) {
           const data = await response.json();
@@ -82,13 +86,13 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
     const interval = setInterval(fetchOrders, 30000);
 
     return () => clearInterval(interval);
-  }, [cpf, restaurant.id]);
+  }, [email, restaurant.id]);
 
   const { hasStatusChanged } = useCustomerOrderNotifications({
     restaurantId: restaurant.id,
-    cpf: cpf || undefined,
+    email: email || undefined,
     orders,
-    enabled: !!cpf,
+    enabled: !!email,
   });
 
   return (

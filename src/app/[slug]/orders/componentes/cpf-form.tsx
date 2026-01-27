@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Loader2Icon } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { PatternFormat } from "react-number-format";
 import z from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -27,35 +27,24 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-import { isValidCpf, removeCpfPunctuation } from "../../menu/helpers/cpf";
-
 const formSchema = z.object({
-  //z é um formulário já pronto e seguro
-
-  cpf: z
+  email: z
     .string()
     .trim()
-    .min(11, {
-      message: "O CPF é obrigatório!",
-      //trim tira os espaços se houve e min determina qual o minimo de caractere necessário para ser aceito
-      //Message é o erro que será exibido caso estiver inválido
-    })
-    .refine((value) => isValidCpf(value), {
-      //refine eu uso para adicionar mais regrass
-      message: "CPF inválido!",
-    }),
+    .email({ message: "Digite um email válido!" }),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
 
-interface CpfFormProps {
+interface EmailFormProps {
   restaurantId?: string;
 }
 
-const CpfForm = ({ restaurantId }: CpfFormProps) => {
+const EmailForm = ({ restaurantId }: EmailFormProps) => {
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
   const { slug } = useParams<{ slug: string }>();
@@ -88,15 +77,16 @@ const CpfForm = ({ restaurantId }: CpfFormProps) => {
   }, [slug, resolvedRestaurantId]);
 
   const onSubmit = (data: FormSchema) => {
-    const cpfWithoutPunctuation = removeCpfPunctuation(data.cpf);
-    router.replace(`${pathname}?cpf=${cpfWithoutPunctuation}`);
-    //transforma a rota para o nome do restaurant junto com o cpf informado
+    const normalizedEmail = data.email.trim().toLowerCase();
+    setIsLoading(true);
+    router.replace(`${pathname}?email=${encodeURIComponent(normalizedEmail)}`);
+    //transforma a rota para o nome do restaurant junto com o email informado
 
-    // Salvar CPF no localStorage se tiver restaurantId
+    // Salvar email no localStorage se tiver restaurantId
     if (resolvedRestaurantId) {
       localStorage.setItem(
-        `last_order_cpf_${resolvedRestaurantId}`,
-        cpfWithoutPunctuation
+        `last_order_email_${resolvedRestaurantId}`,
+        normalizedEmail
       );
     }
   };
@@ -111,7 +101,7 @@ const CpfForm = ({ restaurantId }: CpfFormProps) => {
         <DrawerHeader>
           <DrawerTitle>Visualizar Pedidos</DrawerTitle>
           <DrawerDescription>
-            Insira seu CPF abaixo para visualizar seus pedidos.
+            Insira seu email abaixo para visualizar seus pedidos.
           </DrawerDescription>
         </DrawerHeader>
 
@@ -122,15 +112,14 @@ const CpfForm = ({ restaurantId }: CpfFormProps) => {
           >
             <FormField
               control={form.control}
-              name="cpf"
+              name="email"
               render={({ field }) => (
                 <FormItem className="p-5">
-                  <FormLabel>Seu cpf</FormLabel>
+                  <FormLabel>Seu email</FormLabel>
                   <FormControl>
-                    <PatternFormat
-                      placeholder="Digite seu CPF..."
-                      format="###.###.###-##"
-                      customInput={Input} //Vai ter a customização do Input normal
+                    <Input
+                      type="email"
+                      placeholder="Digite seu email..."
                       {...field}
                     />
                   </FormControl>
@@ -139,12 +128,22 @@ const CpfForm = ({ restaurantId }: CpfFormProps) => {
               )}
             />
             <DrawerFooter>
-              <Button className="w-full rounded-full">Confirmar</Button>
+              <Button className="w-full rounded-full" disabled={isLoading}>
+                {isLoading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2Icon className="h-4 w-4 animate-spin" />
+                    Carregando...
+                  </span>
+                ) : (
+                  "Confirmar"
+                )}
+              </Button>
               <DrawerClose asChild>
                 <Button
                   variant="outline"
                   className="w-full rounded-full"
                   onClick={handleCancel}
+                  disabled={isLoading}
                 >
                   Cancelar
                 </Button>
@@ -157,4 +156,4 @@ const CpfForm = ({ restaurantId }: CpfFormProps) => {
   );
 };
 
-export default CpfForm;
+export default EmailForm;

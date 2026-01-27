@@ -11,7 +11,7 @@ interface UseOrderNotificationsProps {
 
 interface UseCustomerOrderNotificationsProps {
   restaurantId: string;
-  cpf?: string;
+  email?: string;
   orders?: Array<{
     id: number;
     status: string;
@@ -72,12 +72,14 @@ export const useOrderNotifications = ({
 // Hook para notificações do cliente
 export const useCustomerOrderNotifications = ({
   restaurantId,
-  cpf,
+  email,
   orders = [],
   enabled = true,
 }: UseCustomerOrderNotificationsProps) => {
   const [hasStatusChanged, setHasStatusChanged] = useState(false);
-  const storageKey = cpf ? `customer_last_status_${restaurantId}_${cpf}` : null;
+  const storageKey = email
+    ? `customer_last_status_${restaurantId}_${email}`
+    : null;
 
   // Criar uma string serializada dos pedidos para usar como dependência
   const ordersSignature = orders
@@ -85,7 +87,7 @@ export const useCustomerOrderNotifications = ({
     .join("|");
 
   useEffect(() => {
-    if (!enabled || !storageKey || !cpf || orders.length === 0) {
+    if (!enabled || !storageKey || !email || orders.length === 0) {
       setHasStatusChanged(false);
       return;
     }
@@ -124,10 +126,10 @@ export const useCustomerOrderNotifications = ({
       // Primeira vez - considerar como mudança
       setHasStatusChanged(true);
     }
-  }, [restaurantId, cpf, ordersSignature, storageKey, enabled, orders]);
+  }, [restaurantId, email, ordersSignature, storageKey, enabled, orders]);
 
   const markAsSeen = () => {
-    if (!storageKey || !cpf || orders.length === 0) return;
+    if (!storageKey || !email || orders.length === 0) return;
 
     // Salvar status atual de todos os pedidos
     const statuses: Record<number, string> = {};

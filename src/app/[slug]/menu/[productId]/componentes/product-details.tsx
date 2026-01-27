@@ -363,10 +363,11 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                         selectedSizeId === size.id ? "default" : "outline"
                       }
                       size="sm"
-                      className="rounded-full text-xs "
+                      className="rounded-full "
                       onClick={() => setSelectedSizeId(size.id)}
                     >
-                      {size.name} - {formatCurrency(size.price)}
+                      {size.name} -{" "}
+                      <p className="text-xs">{formatCurrency(size.price)}</p>
                     </Button>
                   ))}
                 </div>

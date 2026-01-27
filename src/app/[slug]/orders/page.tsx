@@ -1,33 +1,26 @@
 import { db } from '@/lib/prisma';
 
-import { isValidCpf, removeCpfPunctuation } from '../menu/helpers/cpf';
-import CpfForm from './componentes/cpf-form';
+import EmailForm from './componentes/cpf-form';
 import OrderListWrapper from './componentes/order-list-wrapper';
 
 interface OrdersPageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ cpf: string }>;
+  searchParams: Promise<{ email: string }>;
 }
 
 const OrdersPage = async ({ params, searchParams }: OrdersPageProps) => {
   const { slug } = await params;
-  const { cpf } = await searchParams;
+  const { email } = await searchParams;
 
-  if (!cpf) {
+  if (!email) {
     const restaurant = await db.restaurant.findUnique({
       where: { slug },
       select: { id: true },
     });
-    return <CpfForm restaurantId={restaurant?.id} />;
+    return <EmailForm restaurantId={restaurant?.id} />;
   }
 
-  if (!isValidCpf(cpf)) {
-    const restaurant = await db.restaurant.findUnique({
-      where: { slug },
-      select: { id: true },
-    });
-    return <CpfForm restaurantId={restaurant?.id} />;
-  }
+  const normalizedEmail = email.trim().toLowerCase();
 
   // Buscar o restaurante pelo slug para garantir que estamos no restaurante correto
   const restaurant = await db.restaurant.findUnique({
@@ -40,7 +33,7 @@ const OrdersPage = async ({ params, searchParams }: OrdersPageProps) => {
   });
 
   if (!restaurant) {
-    return <CpfForm restaurantId={undefined} />;
+    return <EmailForm restaurantId={undefined} />;
   }
 
   const orders = await db.order.findMany({
@@ -48,9 +41,12 @@ const OrdersPage = async ({ params, searchParams }: OrdersPageProps) => {
       createdAt: 'desc',
       //Mostra o mais recente do banco primeiro
     },
-    //Busca no banco por ordem do cpf informado E do restaurante atual
+    //Busca no banco por ordem do email informado E do restaurante atual
     where: {
-      customerCpf: removeCpfPunctuation(cpf),
+      customerEmail: {
+        equals: normalizedEmail,
+        mode: 'insensitive',
+      },
       restaurantId: restaurant.id, // Filtra apenas pedidos deste restaurante
     },
     include: {
@@ -74,7 +70,7 @@ const OrdersPage = async ({ params, searchParams }: OrdersPageProps) => {
     <OrderListWrapper
       orders={orders}
       restaurantId={restaurant.id}
-      cpf={removeCpfPunctuation(cpf)}
+      email={normalizedEmail}
     />
   );
 };

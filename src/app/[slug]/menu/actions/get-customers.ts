@@ -22,6 +22,7 @@ export const getCustomers = async (restaurantId: string) => {
         restaurantId,
       },
       select: {
+        id: true,
         customerCpf: true,
         customerName: true,
         customerEmail: true,
@@ -39,7 +40,7 @@ export const getCustomers = async (restaurantId: string) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    // Agrupar por CPF e calcular totais
+    // Agrupar por contato (email/telefone) e calcular totais
     const customersMap = new Map<
       string,
       {
@@ -55,7 +56,11 @@ export const getCustomers = async (restaurantId: string) => {
     let totalMonthRevenue = 0;
 
     orders.forEach((order) => {
-      const cpf = order.customerCpf;
+      const customerKey =
+        order.customerEmail?.toLowerCase() ||
+        order.customerPhone ||
+        order.customerCpf ||
+        `order-${order.id}`;
       const orderDate = new Date(order.createdAt);
       const isThisMonth = orderDate >= startOfMonth;
 
@@ -64,8 +69,8 @@ export const getCustomers = async (restaurantId: string) => {
         totalMonthRevenue += order.total;
       }
 
-      if (!customersMap.has(cpf)) {
-        customersMap.set(cpf, {
+      if (!customersMap.has(customerKey)) {
+        customersMap.set(customerKey, {
           name: order.customerName,
           email: order.customerEmail ?? null,
           phone: order.customerPhone ?? null,
@@ -74,7 +79,7 @@ export const getCustomers = async (restaurantId: string) => {
           totalSpentThisMonth: isThisMonth ? order.total : 0,
         });
       } else {
-        const existing = customersMap.get(cpf)!;
+        const existing = customersMap.get(customerKey)!;
         // Atualizar nome e data se for mais recente
         if (order.createdAt > existing.lastOrderDate) {
           existing.name = order.customerName;

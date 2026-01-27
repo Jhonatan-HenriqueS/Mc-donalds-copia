@@ -180,7 +180,7 @@ const CartProductItem = ({ product }: CartItemProps) => {
             </div>
           </div>
           <div className="space-y-1 min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate text-ellipsis">
+            <p className="w-28 text-sm font-semibold truncate">
               {/* Essa combinação faz com que o nome do produto não quebre linha, e se quebrar adiciona ... no finall*/}
               {product.name}
             </p>
