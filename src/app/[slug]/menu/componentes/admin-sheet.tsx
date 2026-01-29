@@ -1574,6 +1574,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         return "Pendente";
       case "IN_PREPARATION":
         return "Em Preparo";
+      case "ACCEPTED":
+        return "Aceito";
       case "FINISHED":
         return "Finalizado";
       case "OUT_FOR_DELIVERY":
@@ -1591,6 +1593,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         return "bg-yellow-100 text-yellow-800 border-yellow-300";
       case "IN_PREPARATION":
         return "bg-blue-100 text-blue-800 border-blue-300";
+      case "ACCEPTED":
+        return "bg-emerald-100 text-emerald-800 border-emerald-300";
       case "FINISHED":
         return "bg-green-100 text-green-800 border-green-300";
       case "OUT_FOR_DELIVERY":
@@ -3990,6 +3994,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       [
                         "ALL",
                         "PENDING",
+                        "ACCEPTED",
                         "IN_PREPARATION",
                         "OUT_FOR_DELIVERY",
                         "FINISHED",
@@ -4271,109 +4276,138 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               Atualizar Status
                             </p>
                             <div className="flex flex-wrap gap-2">
-                              <Button
-                                type="button"
-                                variant={
-                                  order.status === "PENDING"
-                                    ? "default"
-                                    : "outline"
-                                }
-                                size="sm"
-                                className="text-xs sm:text-sm"
-                                onClick={() =>
-                                  handleUpdateOrderStatus(order.id, "PENDING")
-                                }
-                                disabled={
-                                  isUpdatingStatus === order.id ||
-                                  order.status === "PENDING"
-                                }
-                              >
-                                Pendente
-                              </Button>
-                              <Button
-                                type="button"
-                                variant={
-                                  order.status === "IN_PREPARATION"
-                                    ? "default"
-                                    : "outline"
-                                }
-                                size="sm"
-                                className="text-xs sm:text-sm"
-                                onClick={() =>
-                                  handleUpdateOrderStatus(
-                                    order.id,
-                                    "IN_PREPARATION"
-                                  )
-                                }
-                                disabled={
-                                  isUpdatingStatus === order.id ||
-                                  order.status === "IN_PREPARATION"
-                                }
-                              >
-                                Em Preparo
-                              </Button>
-                              {order.consumptionMethod === "TAKEANAY" && (
-                                <Button
-                                  type="button"
-                                  variant={
-                                    order.status === "OUT_FOR_DELIVERY"
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  size="sm"
-                                  className="text-xs sm:text-sm"
-                                  onClick={() =>
-                                    handleUpdateOrderStatus(
-                                      order.id,
-                                      "OUT_FOR_DELIVERY"
-                                    )
-                                  }
-                                  disabled={
-                                    isUpdatingStatus === order.id ||
-                                    order.status === "OUT_FOR_DELIVERY"
-                                  }
-                                >
-                                  Enviado para Entrega
-                                </Button>
+                              {order.status === "PENDING" ? (
+                                <>
+                                  <Button
+                                    type="button"
+                                    variant="default"
+                                    size="sm"
+                                    className="text-xs sm:text-sm"
+                                    onClick={() =>
+                                      handleUpdateOrderStatus(
+                                        order.id,
+                                        "ACCEPTED"
+                                      )
+                                    }
+                                    disabled={isUpdatingStatus === order.id}
+                                  >
+                                    Aceitar
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs sm:text-sm"
+                                    onClick={() =>
+                                      handleUpdateOrderStatus(
+                                        order.id,
+                                        "CANCELLED"
+                                      )
+                                    }
+                                    disabled={isUpdatingStatus === order.id}
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  {order.status !== "CANCELLED" && (
+                                    <>
+                                      <Button
+                                        type="button"
+                                        variant={
+                                          order.status === "IN_PREPARATION"
+                                            ? "default"
+                                            : "outline"
+                                        }
+                                        size="sm"
+                                        className="text-xs sm:text-sm"
+                                        onClick={() =>
+                                          handleUpdateOrderStatus(
+                                            order.id,
+                                            "IN_PREPARATION"
+                                          )
+                                        }
+                                        disabled={
+                                          isUpdatingStatus === order.id ||
+                                          order.status === "IN_PREPARATION"
+                                        }
+                                      >
+                                        Em Preparo
+                                      </Button>
+                                      {order.consumptionMethod ===
+                                        "TAKEANAY" && (
+                                        <Button
+                                          type="button"
+                                          variant={
+                                            order.status === "OUT_FOR_DELIVERY"
+                                              ? "default"
+                                              : "outline"
+                                          }
+                                          size="sm"
+                                          className="text-xs sm:text-sm"
+                                          onClick={() =>
+                                            handleUpdateOrderStatus(
+                                              order.id,
+                                              "OUT_FOR_DELIVERY"
+                                            )
+                                          }
+                                          disabled={
+                                            isUpdatingStatus === order.id ||
+                                            order.status === "OUT_FOR_DELIVERY"
+                                          }
+                                        >
+                                          Enviado para Entrega
+                                        </Button>
+                                      )}
+                                      <Button
+                                        type="button"
+                                        variant={
+                                          order.status === "FINISHED"
+                                            ? "default"
+                                            : "outline"
+                                        }
+                                        size="sm"
+                                        className="text-xs sm:text-sm"
+                                        onClick={() =>
+                                          handleUpdateOrderStatus(
+                                            order.id,
+                                            "FINISHED"
+                                          )
+                                        }
+                                        disabled={
+                                          isUpdatingStatus === order.id ||
+                                          order.status === "FINISHED"
+                                        }
+                                      >
+                                        Finalizado
+                                      </Button>
+                                    </>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    variant={
+                                      order.status === "CANCELLED"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    size="sm"
+                                    className="text-xs sm:text-sm"
+                                    onClick={() =>
+                                      handleUpdateOrderStatus(
+                                        order.id,
+                                        "CANCELLED"
+                                      )
+                                    }
+                                    disabled={
+                                      isUpdatingStatus === order.id ||
+                                      order.status === "CANCELLED"
+                                    }
+                                  >
+                                    Cancelado
+                                  </Button>
+                                </>
                               )}
-                              <Button
-                                type="button"
-                                variant={
-                                  order.status === "FINISHED"
-                                    ? "default"
-                                    : "outline"
-                                }
-                                size="sm"
-                                className="text-xs sm:text-sm"
-                                onClick={() =>
-                                  handleUpdateOrderStatus(order.id, "FINISHED")
-                                }
-                                disabled={
-                                  isUpdatingStatus === order.id ||
-                                  order.status === "FINISHED"
-                                }
-                              >
-                                Finalizado
-                              </Button>
-                              <Button
-                                type="button"
-                                variant={
-                                  order.status === "CANCELLED"
-                                    ? "default"
-                                    : "outline"
-                                }
-                                size="sm"
-                                className="text-xs sm:text-sm"
-                                onClick={() =>
-                                  handleUpdateOrderStatus(order.id, "CANCELLED")
-                                }
-                                disabled={
-                                  isUpdatingStatus === order.id ||
-                                  order.status === "CANCELLED"
-                                }
-                              >
-                                Cancelado
-                              </Button>
                             </div>
                           </div>
                         </div>

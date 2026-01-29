@@ -35,6 +35,7 @@ interface OrdersPageProps {
 const getStatusLabel = (status: OrderStatus) => {
   if (status === "OUT_FOR_DELIVERY") return "Enviado para Entrega";
   if (status === "FINISHED") return "Finalizado";
+  if (status === "ACCEPTED") return "Aceito";
   if (status === "IN_PREPARATION") return "Em preparo";
   if (status === "PENDING") return "Pendente";
   if (status === "CANCELLED") return "Cancelado";
@@ -82,6 +83,10 @@ const OrderList = ({ orders }: OrdersPageProps) => {
                     ${
                       order.status === OrderStatus.OUT_FOR_DELIVERY &&
                       "bg-purple-400 text-white"
+                    }
+                    ${
+                      order.status === OrderStatus.ACCEPTED &&
+                      "bg-emerald-500 text-white"
                     }
                     ${
                       order.status === OrderStatus.CANCELLED &&

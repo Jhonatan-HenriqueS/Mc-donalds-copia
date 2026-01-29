@@ -211,6 +211,7 @@ model OrderProductRequiredAdditional {
 
 enum OrderStatus {
   PENDING
+  ACCEPTED
   IN_PREPARATION
   FINISHED
   OUT_FOR_DELIVERY
