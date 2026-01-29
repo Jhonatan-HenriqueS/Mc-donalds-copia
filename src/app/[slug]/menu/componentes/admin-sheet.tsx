@@ -1578,6 +1578,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         return "Finalizado";
       case "OUT_FOR_DELIVERY":
         return "Enviado para Entrega";
+      case "CANCELLED":
+        return "Cancelado";
       default:
         return status;
     }
@@ -1593,6 +1595,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         return "bg-green-100 text-green-800 border-green-300";
       case "OUT_FOR_DELIVERY":
         return "bg-purple-100 text-purple-800 border-purple-300";
+      case "CANCELLED":
+        return "bg-red-100 text-red-700 border-red-300";
       default:
         return "bg-gray-100 text-gray-800 border-gray-300";
     }
@@ -3989,6 +3993,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         "IN_PREPARATION",
                         "OUT_FOR_DELIVERY",
                         "FINISHED",
+                        "CANCELLED",
                       ] as const
                     ).map((status) => (
                       <Button
@@ -4349,6 +4354,25 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 }
                               >
                                 Finalizado
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={
+                                  order.status === "CANCELLED"
+                                    ? "default"
+                                    : "outline"
+                                }
+                                size="sm"
+                                className="text-xs sm:text-sm"
+                                onClick={() =>
+                                  handleUpdateOrderStatus(order.id, "CANCELLED")
+                                }
+                                disabled={
+                                  isUpdatingStatus === order.id ||
+                                  order.status === "CANCELLED"
+                                }
+                              >
+                                Cancelado
                               </Button>
                             </div>
                           </div>

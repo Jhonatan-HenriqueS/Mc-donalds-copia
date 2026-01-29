@@ -37,6 +37,7 @@ const getStatusLabel = (status: OrderStatus) => {
   if (status === "FINISHED") return "Finalizado";
   if (status === "IN_PREPARATION") return "Em preparo";
   if (status === "PENDING") return "Pendente";
+  if (status === "CANCELLED") return "Cancelado";
   return "";
 };
 
@@ -82,8 +83,12 @@ const OrderList = ({ orders }: OrdersPageProps) => {
                       order.status === OrderStatus.OUT_FOR_DELIVERY &&
                       "bg-purple-400 text-white"
                     }
+                    ${
+                      order.status === OrderStatus.CANCELLED &&
+                      "bg-red-500 text-white"
+                    }
                 `}
-              >
+            >
                 {getStatusLabel(order.status)}
               </div>
               <div className="flex items-center gap-2 ">
