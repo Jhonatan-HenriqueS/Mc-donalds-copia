@@ -100,7 +100,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
         )}
       </div>
 
-      <ScrollArea className="w-full ">
+      <ScrollArea className="w-full">
         <div className="flex w-max space-x-4 p-4 pt-0">
           {restaurant.menuCategorias.map((category) => (
             <Button
