@@ -47,6 +47,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ScrollBar } from "@/components/ui/scroll-area";
+import { isPushSupported, subscribeToPush } from "@/lib/push-client";
 
 import { createOrder } from "../actions/create-order";
 import { CartContext } from "../context/cart";
@@ -116,6 +117,9 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   } | null>(null);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [successOrderUrl, setSuccessOrderUrl] = useState<string | null>(null);
+  const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
+  const [isSubscribingPush, setIsSubscribingPush] = useState(false);
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [editingProfile, setEditingProfile] = useState(true);
@@ -220,6 +224,49 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     }
   };
 
+  const handleSubscribePush = async () => {
+    if (!createdOrderId) {
+      toast.error("Pedido não encontrado para ativar notificações.");
+      return;
+    }
+    if (!isPushSupported()) {
+      toast.error("Seu navegador não suporta notificações push.");
+      return;
+    }
+    try {
+      setIsSubscribingPush(true);
+      const subscription = await subscribeToPush();
+      const subscriptionJson = subscription.toJSON();
+      const response = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "CUSTOMER",
+          orderId: createdOrderId,
+          subscription: {
+            endpoint: subscription.endpoint,
+            keys: subscriptionJson.keys,
+          },
+        }),
+      });
+      const data = await response.json();
+      if (!data?.success) {
+        throw new Error(data?.error || "Erro ao salvar subscription");
+      }
+      setIsPushSubscribed(true);
+      toast.success("Notificações do pedido ativadas!");
+    } catch (error) {
+      console.error("Erro ao ativar push do pedido:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erro ao ativar notificações"
+      );
+    } finally {
+      setIsSubscribingPush(false);
+    }
+  };
+
   // Buscar restaurantId para salvar perfil local
   useEffect(() => {
     const fetchRestaurantId = async () => {
@@ -295,6 +342,9 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   useEffect(() => {
     if (!successDialogOpen) {
       setIsRedirecting(false);
+      setIsSubscribingPush(false);
+      setIsPushSubscribed(false);
+      setCreatedOrderId(null);
     }
   }, [successDialogOpen]);
 
@@ -321,9 +371,11 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         slug,
       };
 
+      let createdOrderIdLocal: number | null = null;
+
       if (isTakeaway) {
         const takeawayData = data as TakeawayFormSchema;
-        await createOrder({
+        const createdOrder = await createOrder({
           ...payloadBase,
           products: products.map((p) => ({
             id: p.id,
@@ -353,8 +405,9 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           deliveryCity: takeawayData.deliveryCity,
           deliveryState: takeawayData.deliveryState,
         });
+        createdOrderIdLocal = createdOrder?.id ?? null;
       } else {
-        await createOrder({
+        const createdOrder = await createOrder({
           ...payloadBase,
           products: products.map((p) => ({
             id: p.id,
@@ -378,12 +431,14 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
               })) || [],
           })),
         });
+        createdOrderIdLocal = createdOrder?.id ?? null;
       }
 
       toast.success("Pedido criado com sucesso!");
       setSuccessOrderUrl(
         `/${slug}/orders?email=${encodeURIComponent(normalizedEmail)}`,
       );
+      setCreatedOrderId(createdOrderIdLocal);
       setSuccessDialogOpen(true);
       setSavedProfile({
         name: data.name,
@@ -886,6 +941,26 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter className="justify-center flex flex-col gap-1">
+            {createdOrderId && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleSubscribePush}
+                disabled={isSubscribingPush || isPushSubscribed}
+              >
+                {isSubscribingPush ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2Icon className="h-4 w-4 animate-spin" />
+                    Ativando...
+                  </span>
+                ) : isPushSubscribed ? (
+                  "Notificações ativadas"
+                ) : (
+                  "Ativar notificações do pedido"
+                )}
+              </Button>
+            )}
             <Button
               type="button"
               className="bg-red-500 text-white hover:bg-red-600 w-full"

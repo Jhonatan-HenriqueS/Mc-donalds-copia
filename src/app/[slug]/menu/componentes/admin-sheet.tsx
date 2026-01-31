@@ -81,6 +81,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatCurrency } from "@/helpers/format-currency";
+import { isPushSupported, subscribeToPush } from "@/lib/push-client";
 
 interface AdminSheetProps {
   isOpen: boolean;
@@ -166,6 +167,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<number | null>(null);
+  const [isSubscribingPush, setIsSubscribingPush] = useState(false);
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
   const [totalMonthRevenue, setTotalMonthRevenue] = useState(0);
   const [viewMode, setViewMode] = useState<"total" | "month">("total");
   const [categories, setCategories] = useState(restaurant.menuCategorias);
@@ -1508,6 +1511,45 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       toast.error("Erro ao atualizar status do pedido");
     } finally {
       setIsUpdatingStatus(null);
+    }
+  };
+
+  const handleSubscribeAdminPush = async () => {
+    if (!isPushSupported()) {
+      toast.error("Seu navegador não suporta notificações push.");
+      return;
+    }
+    try {
+      setIsSubscribingPush(true);
+      const subscription = await subscribeToPush();
+      const subscriptionJson = subscription.toJSON();
+      const response = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "ADMIN",
+          restaurantId: restaurant.id,
+          subscription: {
+            endpoint: subscription.endpoint,
+            keys: subscriptionJson.keys,
+          },
+        }),
+      });
+      const data = await response.json();
+      if (!data?.success) {
+        throw new Error(data?.error || "Erro ao salvar subscription");
+      }
+      setIsPushSubscribed(true);
+      toast.success("Notificações do painel ativadas!");
+    } catch (error) {
+      console.error("Erro ao ativar push do admin:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erro ao ativar notificações"
+      );
+    } finally {
+      setIsSubscribingPush(false);
     }
   };
 
@@ -3964,6 +4006,21 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
+                    <Button
+                      type="button"
+                      variant={isPushSubscribed ? "secondary" : "default"}
+                      size="sm"
+                      onClick={handleSubscribeAdminPush}
+                      disabled={isSubscribingPush || isPushSubscribed}
+                    >
+                      {isSubscribingPush
+                        ? "Ativando notificações..."
+                        : isPushSubscribed
+                          ? "Notificações ativadas"
+                          : "Ativar notificações"}
+                    </Button>
+                  </div>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
                     <Button
                       type="button"

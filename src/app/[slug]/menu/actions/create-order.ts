@@ -4,7 +4,9 @@
 import { ConsumptionMethod, OrderStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
+import { formatCurrency } from "@/helpers/format-currency";
 import { db } from "@/lib/prisma";
+import { sendPushToSubscriptions } from "@/lib/push";
 
 interface createOrderInput {
   customerName: string;
@@ -251,6 +253,8 @@ export const createOrder = async (input: createOrderInput) => {
   };
 
   // Criar dados da ordem com campos de endereço se for TAKEANAY
+  let order = null;
+
   if (
     input.consumptionMethod === "TAKEANAY" &&
     input.deliveryStreet &&
@@ -259,7 +263,7 @@ export const createOrder = async (input: createOrderInput) => {
     input.deliveryCity &&
     input.deliveryState
   ) {
-    const order = await db.order.create({
+    order = await db.order.create({
       data: {
         ...baseOrderData,
         deliveryStreet: input.deliveryStreet,
@@ -270,14 +274,40 @@ export const createOrder = async (input: createOrderInput) => {
         deliveryState: input.deliveryState,
       },
     });
-    revalidatePath(`/${input.slug}/orders`);
-    return order;
+  } else {
+    order = await db.order.create({
+      data: baseOrderData,
+    });
   }
 
-  const order = await db.order.create({
-    data: baseOrderData,
-  });
   revalidatePath(`/${input.slug}/orders`); //Sempre esse pedido vai ser guardado no servidor
   // redirect(`/${input.slug}/orders?email=${input.customerEmail}`);
+
+  if (order) {
+    const adminSubscriptions = await db.pushSubscription.findMany({
+      where: {
+        type: "ADMIN",
+        restaurantId: restaurant.id,
+      },
+      select: {
+        id: true,
+        endpoint: true,
+        p256dh: true,
+        auth: true,
+      },
+    });
+
+    if (adminSubscriptions.length > 0) {
+      await sendPushToSubscriptions(adminSubscriptions, {
+        title: "Novo pedido criado!",
+        body: `Pedido #${order.id} • Cliente: ${input.customerName} • Total: ${formatCurrency(
+          order.total
+        )}`,
+        url: `/${input.slug}/menu`,
+        tag: `order-${order.id}`,
+      });
+    }
+  }
+
   return order;
 };

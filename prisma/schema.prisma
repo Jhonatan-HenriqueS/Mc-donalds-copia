@@ -55,6 +55,7 @@ model Restaurant {
   menuCategorias     MenuCategory[] //Não salva no bd, mas referencia
   products           Product[]
   orders             Order[]
+  pushSubscriptions  PushSubscription[]
   createdAt          DateTime            @default(now())
   updateAt           DateTime            @updatedAt
   paymentRestaurants PaymentRestaurant[]
@@ -113,6 +114,7 @@ model Order {
   orderProducts        OrderProduct[]
   restaurant           Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId         String
+  pushSubscriptions    PushSubscription[]
   customerName         String
   customerCpf          String
   customerEmail        String?
@@ -209,6 +211,24 @@ model OrderProductRequiredAdditional {
   updateAt               DateTime            @updatedAt
 }
 
+model PushSubscription {
+  id           String               @id @default(uuid())
+  endpoint     String               @unique
+  p256dh       String
+  auth         String
+  type         PushSubscriptionType
+  restaurant   Restaurant?          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId String?
+  order        Order?               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      Int?
+  createdAt    DateTime             @default(now())
+  updateAt     DateTime             @updatedAt
+
+  @@index([restaurantId])
+  @@index([orderId])
+  @@index([type])
+}
+
 enum OrderStatus {
   PENDING
   ACCEPTED
@@ -221,6 +241,11 @@ enum OrderStatus {
 enum ConsumptionMethod {
   TAKEANAY
   DINE_IN
+}
+
+enum PushSubscriptionType {
+  ADMIN
+  CUSTOMER
 }
 
 enum PaymentRestaurantStatus {

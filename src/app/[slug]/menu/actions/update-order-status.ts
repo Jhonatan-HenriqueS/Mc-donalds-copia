@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 import { verifyRestaurantOwner } from '@/app/actions/session';
 import { db } from '@/lib/prisma';
+import { sendPushToSubscriptions } from '@/lib/push';
 
 export const updateOrderStatus = async (
   orderId: number,
@@ -71,6 +72,56 @@ export const updateOrderStatus = async (
       revalidatePath(`/${restaurant.slug}/orders`);
     }
 
+    if (restaurant) {
+      const customerSubscriptions = await db.pushSubscription.findMany({
+        where: {
+          type: 'CUSTOMER',
+          orderId: updatedOrder.id,
+        },
+        select: {
+          id: true,
+          endpoint: true,
+          p256dh: true,
+          auth: true,
+        },
+      });
+
+      if (customerSubscriptions.length > 0) {
+        const slug = restaurant.slug;
+        const orderId = updatedOrder.id;
+        let body = '';
+
+        switch (newStatus) {
+          case 'ACCEPTED':
+            body = `O ${slug} aceitou seu pedido #${orderId}. Acompanhe em “Meus pedidos”.`;
+            break;
+          case 'CANCELLED':
+            body = `O ${slug} não aceitou o pedido #${orderId}. Entre em contato com a loja para mais informações.`;
+            break;
+          case 'IN_PREPARATION':
+            body = `Seu pedido #${orderId} está em preparo. Aguarde a finalização.`;
+            break;
+          case 'OUT_FOR_DELIVERY':
+            body = `Seu pedido #${orderId} saiu para entrega. Prepare-se para receber.`;
+            break;
+          case 'FINISHED':
+            body = `${updatedOrder.customerName}, seu pedido #${orderId} foi finalizado. Obrigado pela preferência!`;
+            break;
+          default:
+            body = '';
+        }
+
+        if (body) {
+          await sendPushToSubscriptions(customerSubscriptions, {
+            title: 'Atualização do pedido',
+            body,
+            url: `/${slug}/orders`,
+            tag: `order-${orderId}`,
+          });
+        }
+      }
+    }
+
     return { success: true, order: updatedOrder };
   } catch (error) {
     console.error('Erro ao atualizar status do pedido:', error);
@@ -80,4 +131,3 @@ export const updateOrderStatus = async (
     return { success: false, error: 'Erro ao atualizar status do pedido' };
   }
 };
-

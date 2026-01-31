@@ -55,7 +55,7 @@ const ConsumptionMethodOPtion = ({
           disabled={isPending}
         >
           {isPending && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-          {isPending ? "Carregando..." : buttonText}
+          {isPending ? "Entrando..." : buttonText}
         </Button>
       </CardContent>
     </Card>
