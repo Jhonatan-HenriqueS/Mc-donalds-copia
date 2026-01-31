@@ -118,8 +118,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [successOrderUrl, setSuccessOrderUrl] = useState<string | null>(null);
   const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
-  const [isSubscribingPush, setIsSubscribingPush] = useState(false);
-  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [editingProfile, setEditingProfile] = useState(true);
@@ -234,7 +232,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       return;
     }
     try {
-      setIsSubscribingPush(true);
       const subscription = await subscribeToPush();
       const subscriptionJson = subscription.toJSON();
       const response = await fetch("/api/push/subscribe", {
@@ -253,8 +250,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
       if (!data?.success) {
         throw new Error(data?.error || "Erro ao salvar subscription");
       }
-      setIsPushSubscribed(true);
-      toast.success("Notificações do pedido ativadas!");
     } catch (error) {
       console.error("Erro ao ativar push do pedido:", error);
       toast.error(
@@ -262,8 +257,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
           ? error.message
           : "Erro ao ativar notificações"
       );
-    } finally {
-      setIsSubscribingPush(false);
     }
   };
 
@@ -342,8 +335,6 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
   useEffect(() => {
     if (!successDialogOpen) {
       setIsRedirecting(false);
-      setIsSubscribingPush(false);
-      setIsPushSubscribed(false);
       setCreatedOrderId(null);
     }
   }, [successDialogOpen]);
@@ -941,32 +932,15 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter className="justify-center flex flex-col gap-1">
-            {createdOrderId && (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleSubscribePush}
-                disabled={isSubscribingPush || isPushSubscribed}
-              >
-                {isSubscribingPush ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2Icon className="h-4 w-4 animate-spin" />
-                    Ativando...
-                  </span>
-                ) : isPushSubscribed ? (
-                  "Notificações ativadas"
-                ) : (
-                  "Ativar notificações do pedido"
-                )}
-              </Button>
-            )}
             <Button
               type="button"
               className="bg-red-500 text-white hover:bg-red-600 w-full"
               disabled={isRedirecting}
               onClick={() => {
                 if (!successOrderUrl) return;
+                if (createdOrderId) {
+                  void handleSubscribePush();
+                }
                 setIsRedirecting(true);
                 router.push(successOrderUrl);
               }}
@@ -984,6 +958,9 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
               className="bg-white w-full"
               disabled={isRedirecting}
               onClick={() => {
+                if (createdOrderId) {
+                  void handleSubscribePush();
+                }
                 if (isOpen) {
                   taggleCart();
                 }
