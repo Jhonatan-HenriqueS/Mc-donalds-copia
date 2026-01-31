@@ -436,14 +436,16 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                                     className="flex items-center justify-between rounded-xl border p-2"
                                   >
                                     <div className="flex items-center gap-3">
-                                      <div className="relative h-12 w-12 rounded-lg bg-muted">
-                                        <Image
-                                          src={item.imageUrl}
-                                          alt={item.name}
-                                          fill
-                                          className="object-cover"
-                                        />
-                                      </div>
+                                      {item.imageUrl && (
+                                        <div className="relative h-12 w-12 rounded-lg bg-muted">
+                                          <Image
+                                            src={item.imageUrl}
+                                            alt={item.name}
+                                            fill
+                                            className="object-cover"
+                                          />
+                                        </div>
+                                      )}
                                       <p className="text-sm font-medium">
                                         {item.name}
                                       </p>
@@ -459,7 +461,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                                             group.title,
                                             item.id,
                                             item.name,
-                                            item.imageUrl,
+                                            item.imageUrl ?? undefined,
                                             -1,
                                             group.requiredQuantity,
                                           )
@@ -481,7 +483,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                                             group.title,
                                             item.id,
                                             item.name,
-                                            item.imageUrl,
+                                            item.imageUrl ?? undefined,
                                             1,
                                             group.requiredQuantity,
                                           )
@@ -541,14 +543,16 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                         className="flex items-center justify-between rounded-xl border p-2"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-muted">
-                            <Image
-                              src={additional.imageUrl}
-                              alt={additional.name}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
+                          {additional.imageUrl && (
+                            <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-muted">
+                              <Image
+                                src={additional.imageUrl}
+                                alt={additional.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
                           <div>
                             <p className="text-sm font-medium">
                               {additional.name}

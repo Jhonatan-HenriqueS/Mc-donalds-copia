@@ -9,7 +9,7 @@ interface UpdateRequiredAdditionalItemInput {
   restaurantId: string;
   itemId: string;
   name: string;
-  imageUrl: string;
+  imageUrl?: string | null;
 }
 
 export const updateRequiredAdditionalItem = async (
@@ -55,7 +55,10 @@ export const updateRequiredAdditionalItem = async (
       where: { id: input.itemId },
       data: {
         name: input.name,
-        imageUrl: input.imageUrl,
+        imageUrl:
+          input.imageUrl === undefined
+            ? undefined
+            : input.imageUrl || null,
       },
     });
 

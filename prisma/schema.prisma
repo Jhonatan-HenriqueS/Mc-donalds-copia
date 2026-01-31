@@ -171,7 +171,7 @@ model CategoryAdditional {
   id             String        @id @default(uuid())
   name           String
   price          Float
-  imageUrl       String
+  imageUrl       String?
   menuCategory   MenuCategory  @relation(fields: [menuCategoryId], references: [id], onDelete: Cascade)
   menuCategoryId String
   orderProductAdditionals OrderProductAdditional[]
@@ -193,7 +193,7 @@ model RequiredAdditionalGroup {
 model RequiredAdditionalItem {
   id        String   @id @default(uuid())
   name      String
-  imageUrl  String
+  imageUrl  String?
   group     RequiredAdditionalGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId   String
   orderProductRequireds OrderProductRequiredAdditional[]

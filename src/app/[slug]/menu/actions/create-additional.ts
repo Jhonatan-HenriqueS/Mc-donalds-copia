@@ -10,7 +10,7 @@ interface CreateAdditionalInput {
   menuCategoryId: string;
   name: string;
   price: number;
-  imageUrl: string;
+  imageUrl?: string;
 }
 
 export const createAdditional = async (input: CreateAdditionalInput) => {
@@ -44,7 +44,7 @@ export const createAdditional = async (input: CreateAdditionalInput) => {
       data: {
         name: input.name,
         price: input.price,
-        imageUrl: input.imageUrl,
+        imageUrl: input.imageUrl ?? null,
         menuCategoryId: input.menuCategoryId,
       },
     });

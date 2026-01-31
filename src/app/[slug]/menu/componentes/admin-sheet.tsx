@@ -1057,12 +1057,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       return;
     }
 
-    if (
-      !additionalName.trim() ||
-      !additionalPrice.trim() ||
-      !additionalImageUrl.trim()
-    ) {
-      setAdditionalError("Nome, preço e imagem são obrigatórios.");
+    if (!additionalName.trim() || !additionalPrice.trim()) {
+      setAdditionalError("Nome e preço são obrigatórios.");
       return;
     }
 
@@ -1074,13 +1070,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
     setIsSavingAdditional(true);
     try {
+      const trimmedAdditionalImage = additionalImageUrl.trim();
       if (editingAdditionalId) {
         const result = await updateAdditional({
           additionalId: editingAdditionalId,
           restaurantId: restaurant.id,
           name: additionalName.trim(),
           price: parsedPrice,
-          imageUrl: additionalImageUrl.trim(),
+          imageUrl: trimmedAdditionalImage ? trimmedAdditionalImage : null,
         });
         if (result.success && result.additional) {
           toast.success("Adicional atualizado!");
@@ -1108,7 +1105,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           menuCategoryId: additionalCategoryId,
           name: additionalName.trim(),
           price: parsedPrice,
-          imageUrl: additionalImageUrl.trim(),
+          imageUrl: trimmedAdditionalImage || undefined,
         });
         if (result.success && result.additional) {
           toast.success("Adicional criado!");
@@ -1352,19 +1349,20 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       return;
     }
 
-    if (!requiredItemName.trim() || !requiredItemImageUrl.trim()) {
-      setRequiredItemError("Nome e imagem são obrigatórios.");
+    if (!requiredItemName.trim()) {
+      setRequiredItemError("Nome é obrigatório.");
       return;
     }
 
     setIsSavingRequiredItem(true);
     try {
+      const trimmedRequiredImage = requiredItemImageUrl.trim();
       if (editingRequiredItemId) {
         const result = await updateRequiredAdditionalItem({
           restaurantId: restaurant.id,
           itemId: editingRequiredItemId,
           name: requiredItemName.trim(),
-          imageUrl: requiredItemImageUrl.trim(),
+          imageUrl: trimmedRequiredImage ? trimmedRequiredImage : null,
         });
         if (result.success && result.item) {
           toast.success("Item obrigatório atualizado!");
@@ -1399,7 +1397,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           restaurantId: restaurant.id,
           groupId: requiredItemGroupId,
           name: requiredItemName.trim(),
-          imageUrl: requiredItemImageUrl.trim(),
+          imageUrl: trimmedRequiredImage || undefined,
         });
         if (result.success && result.item) {
           toast.success("Item obrigatório criado!");
@@ -3260,14 +3258,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                             className="flex items-center justify-between gap-3 rounded-md border p-2"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={additional.imageUrl}
-                                  alt={additional.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
+                              {additional.imageUrl && (
+                                <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={additional.imageUrl}
+                                    alt={additional.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                              )}
                               <div>
                                 <p className="text-xs sm:text-sm font-medium">
                                   {additional.name}
@@ -3736,14 +3736,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 className="flex items-center justify-between gap-3 rounded-md border p-2"
                               >
                                 <div className="flex items-center gap-3">
-                                  <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                      src={item.imageUrl}
-                                      alt={item.name}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  </div>
+                                  {item.imageUrl && (
+                                    <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={item.imageUrl}
+                                        alt={item.name}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    </div>
+                                  )}
                                   <div>
                                     <p className="text-xs sm:text-sm font-medium">
                                       {item.name}

@@ -9,7 +9,7 @@ interface CreateRequiredAdditionalItemInput {
   restaurantId: string;
   groupId: string;
   name: string;
-  imageUrl: string;
+  imageUrl?: string;
 }
 
 export const createRequiredAdditionalItem = async (
@@ -44,7 +44,7 @@ export const createRequiredAdditionalItem = async (
     const item = await db.requiredAdditionalItem.create({
       data: {
         name: input.name,
-        imageUrl: input.imageUrl,
+        imageUrl: input.imageUrl ?? null,
         groupId: input.groupId,
       },
     });

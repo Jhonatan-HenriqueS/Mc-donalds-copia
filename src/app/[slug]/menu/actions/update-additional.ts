@@ -10,7 +10,7 @@ interface UpdateAdditionalInput {
   additionalId: string;
   name?: string;
   price?: number;
-  imageUrl?: string;
+  imageUrl?: string | null;
 }
 
 export const updateAdditional = async (input: UpdateAdditionalInput) => {
@@ -47,7 +47,10 @@ export const updateAdditional = async (input: UpdateAdditionalInput) => {
       data: {
         name: input.name,
         price: input.price,
-        imageUrl: input.imageUrl,
+        imageUrl:
+          input.imageUrl === undefined
+            ? undefined
+            : input.imageUrl || null,
       },
     });
 
