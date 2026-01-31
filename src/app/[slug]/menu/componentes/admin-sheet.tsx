@@ -29,10 +29,12 @@ import { toast } from "sonner";
 import { createAdditional } from "@/app/[slug]/menu/actions/create-additional";
 import { createCategory } from "@/app/[slug]/menu/actions/create-category";
 import { createProduct } from "@/app/[slug]/menu/actions/create-product";
+import { createPaymentMethod } from "@/app/[slug]/menu/actions/create-payment-method";
 import { createRequiredAdditionalGroup } from "@/app/[slug]/menu/actions/create-required-additional-group";
 import { createRequiredAdditionalItem } from "@/app/[slug]/menu/actions/create-required-additional-item";
 import { deleteAdditional } from "@/app/[slug]/menu/actions/delete-additional";
 import { deleteCategory } from "@/app/[slug]/menu/actions/delete-category";
+import { deletePaymentMethod } from "@/app/[slug]/menu/actions/delete-payment-method";
 import { deleteProduct } from "@/app/[slug]/menu/actions/delete-product";
 import { deleteRequiredAdditionalGroup } from "@/app/[slug]/menu/actions/delete-required-additional-group";
 import { deleteRequiredAdditionalItem } from "@/app/[slug]/menu/actions/delete-required-additional-item";
@@ -44,6 +46,7 @@ import { updateAdditional } from "@/app/[slug]/menu/actions/update-additional";
 import { updateConsumptionMethods } from "@/app/[slug]/menu/actions/update-consumption-methods";
 import { updateOrderStatus } from "@/app/[slug]/menu/actions/update-order-status";
 import { updateProduct } from "@/app/[slug]/menu/actions/update-product";
+import { updatePaymentMethod } from "@/app/[slug]/menu/actions/update-payment-method";
 import { updateRequiredAdditionalGroup } from "@/app/[slug]/menu/actions/update-required-additional-group";
 import { updateRequiredAdditionalItem } from "@/app/[slug]/menu/actions/update-required-additional-item";
 import { updateRestaurantAvatar } from "@/app/[slug]/menu/actions/update-restaurant-avatar";
@@ -88,6 +91,7 @@ interface AdminSheetProps {
   onOpenChange: (open: boolean) => void;
   restaurant: Prisma.RestaurantGetPayload<{
     include: {
+      paymentMethods: true;
       menuCategorias: {
         include: {
           additionals: true;
@@ -134,6 +138,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [showManageCategories, setShowManageCategories] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
   const [showConsumptionMethods, setShowConsumptionMethods] = useState(false);
+  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const [showUpdateAvatar, setShowUpdateAvatar] = useState(false);
   const [showUpdateCover, setShowUpdateCover] = useState(false);
   const [showUpdateDeliveryFee, setShowUpdateDeliveryFee] = useState(false);
@@ -172,6 +177,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [totalMonthRevenue, setTotalMonthRevenue] = useState(0);
   const [viewMode, setViewMode] = useState<"total" | "month">("total");
   const [categories, setCategories] = useState(restaurant.menuCategorias);
+  const [paymentMethods, setPaymentMethods] = useState(
+    restaurant.paymentMethods || []
+  );
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const [hasNewOrders, setHasNewOrders] = useState(false);
   const [orderCount, setOrderCount] = useState(0);
@@ -193,6 +201,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [lastSavedAllowTakeaway, setLastSavedAllowTakeaway] = useState(
     restaurant.allowTakeaway ?? true
   );
+
+  const [paymentMethodName, setPaymentMethodName] = useState("");
+  const [editingPaymentMethodId, setEditingPaymentMethodId] = useState<
+    string | null
+  >(null);
+  const [isSavingPaymentMethod, setIsSavingPaymentMethod] = useState(false);
+  const [isDeletingPaymentMethodId, setIsDeletingPaymentMethodId] =
+    useState<string | null>(null);
 
   // Hook de notificações para o painel admin
   const {
@@ -1514,6 +1530,80 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     }
   };
 
+  const resetPaymentMethodForm = () => {
+    setPaymentMethodName("");
+    setEditingPaymentMethodId(null);
+  };
+
+  const handlePaymentMethodSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+    const trimmed = paymentMethodName.trim();
+    if (!trimmed) {
+      toast.error("Informe o nome da forma de pagamento.");
+      return;
+    }
+    try {
+      setIsSavingPaymentMethod(true);
+      if (editingPaymentMethodId) {
+        const result = await updatePaymentMethod(
+          editingPaymentMethodId,
+          restaurant.id,
+          trimmed
+        );
+        if (!result.success || !result.paymentMethod) {
+          throw new Error(result.error || "Erro ao atualizar");
+        }
+        setPaymentMethods((prev) =>
+          prev.map((method) =>
+            method.id === editingPaymentMethodId ? result.paymentMethod : method
+          )
+        );
+        toast.success("Forma de pagamento atualizada!");
+      } else {
+        const result = await createPaymentMethod(restaurant.id, trimmed);
+        if (!result.success || !result.paymentMethod) {
+          throw new Error(result.error || "Erro ao criar");
+        }
+        setPaymentMethods((prev) => [result.paymentMethod, ...prev]);
+        toast.success("Forma de pagamento adicionada!");
+      }
+      resetPaymentMethodForm();
+    } catch (error) {
+      console.error("Erro ao salvar forma de pagamento:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao salvar forma de pagamento"
+      );
+    } finally {
+      setIsSavingPaymentMethod(false);
+    }
+  };
+
+  const handleDeletePaymentMethod = async (paymentMethodId: string) => {
+    try {
+      setIsDeletingPaymentMethodId(paymentMethodId);
+      const result = await deletePaymentMethod(paymentMethodId, restaurant.id);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao remover");
+      }
+      setPaymentMethods((prev) =>
+        prev.filter((method) => method.id !== paymentMethodId)
+      );
+      if (editingPaymentMethodId === paymentMethodId) {
+        resetPaymentMethodForm();
+      }
+      toast.success("Forma de pagamento removida!");
+    } catch (error) {
+      console.error("Erro ao remover forma de pagamento:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao remover forma de pagamento"
+      );
+    } finally {
+      setIsDeletingPaymentMethodId(null);
+    }
+  };
+
   const handleSubscribeAdminPush = async () => {
     if (!isPushSupported()) {
       toast.error("Seu navegador não suporta notificações push.");
@@ -1699,6 +1789,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           !showManageCategories &&
           !showOrders &&
           !showConsumptionMethods &&
+          !showPaymentMethods &&
           !showUpdateAvatar &&
           !showUpdateCover &&
           !showUpdateDeliveryFee ? (
@@ -1774,6 +1865,15 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               >
                 <UtensilsCrossed className="mr-2 h-4 w-4" />
                 Métodos de Consumo
+              </Button>
+              <Button
+                onClick={() => setShowPaymentMethods(true)}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
+              >
+                <Package className="mr-2 h-4 w-4" />
+                Formas de Pagamento
               </Button>
               <Button
                 onClick={() => setShowUpdateAvatar(true)}
@@ -2820,6 +2920,121 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       </Button>
                     </div>
                   </form>
+                </CardContent>
+              </Card>
+            </div>
+          ) : showPaymentMethods ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Formas de Pagamento
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                      onClick={() => setShowPaymentMethods(false)}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    className="space-y-3"
+                    onSubmit={handlePaymentMethodSubmit}
+                  >
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentMethodName">
+                        Nome da forma de pagamento
+                      </Label>
+                      <Input
+                        id="paymentMethodName"
+                        value={paymentMethodName}
+                        onChange={(event) =>
+                          setPaymentMethodName(event.target.value)
+                        }
+                        placeholder="Ex: Dinheiro, Pix, Cartão"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        className="text-xs sm:text-sm"
+                        disabled={isSavingPaymentMethod}
+                      >
+                        {isSavingPaymentMethod
+                          ? "Salvando..."
+                          : editingPaymentMethodId
+                            ? "Atualizar"
+                            : "Adicionar"}
+                      </Button>
+                      {editingPaymentMethodId && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs sm:text-sm"
+                          onClick={resetPaymentMethodForm}
+                          disabled={isSavingPaymentMethod}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+
+                  <div className="mt-6 space-y-3">
+                    {paymentMethods.length === 0 ? (
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        Nenhuma forma de pagamento cadastrada.
+                      </p>
+                    ) : (
+                      paymentMethods.map((method) => (
+                        <div
+                          key={method.id}
+                          className="flex items-center justify-between gap-3 p-3 border rounded-lg"
+                        >
+                          <p className="text-sm font-medium">{method.name}</p>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="text-xs sm:text-sm"
+                              onClick={() => {
+                                setEditingPaymentMethodId(method.id);
+                                setPaymentMethodName(method.name);
+                              }}
+                              disabled={isSavingPaymentMethod}
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              className="text-xs sm:text-sm"
+                              onClick={() =>
+                                handleDeletePaymentMethod(method.id)
+                              }
+                              disabled={
+                                isDeletingPaymentMethodId === method.id
+                              }
+                            >
+                              {isDeletingPaymentMethodId === method.id
+                                ? "Removendo..."
+                                : "Remover"}
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -4163,6 +4378,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 {order.consumptionMethod === "TAKEANAY"
                                   ? "Entrega"
                                   : "Comer no Local"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium">
+                                Forma de Pagamento
+                              </p>
+                              <p className="text-sm sm:text-base">
+                                {order.paymentMethodName || "Não informado"}
                               </p>
                             </div>
                           </div>

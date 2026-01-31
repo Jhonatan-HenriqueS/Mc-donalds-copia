@@ -13,6 +13,7 @@ import AdminSheet from './admin-sheet';
 interface AdminButtonProps {
   restaurant: Prisma.RestaurantGetPayload<{
     include: {
+      paymentMethods: true;
       menuCategorias: {
         include: {
           products: true;

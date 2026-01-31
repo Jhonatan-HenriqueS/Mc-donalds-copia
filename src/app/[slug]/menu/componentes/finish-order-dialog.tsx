@@ -67,6 +67,9 @@ const baseFormSchema = z.object({
       },
       { message: "Digite um telefone válido (ex: (69) 9999-9999)" },
     ),
+  paymentMethodId: z.string().min(1, {
+    message: "Selecione uma forma de pagamento.",
+  }),
 });
 
 const takeawayFormSchema = baseFormSchema.extend({
@@ -94,9 +97,14 @@ type TakeawayFormSchema = z.infer<typeof takeawayFormSchema>;
 interface FinishOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  paymentMethods: Array<{ id: string; name: string }>;
 }
 
-const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
+const FinishOrderDialog = ({
+  open,
+  onOpenChange,
+  paymentMethods,
+}: FinishOrderDialogProps) => {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
 
@@ -142,6 +150,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         name: "",
         email: "",
         phone: "",
+        paymentMethodId: "",
         deliveryStreet: "",
         deliveryNumber: "",
         deliveryComplement: "",
@@ -153,6 +162,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         name: "",
         email: "",
         phone: "",
+        paymentMethodId: "",
       } satisfies BaseFormSchema);
 
   const form = useForm<FormSchema>({
@@ -167,7 +177,10 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
     !isTakeaway || (Boolean(savedAddress) && !editingAddress);
   const needsProfileSave = !profileCompleted;
   const needsAddressSave = isTakeaway && profileCompleted && !addressCompleted;
-  const canFinalize = !needsProfileSave && !needsAddressSave;
+  const canSelectPayment = profileCompleted && addressCompleted;
+  const selectedPaymentMethodId = form.watch("paymentMethodId");
+  const isPaymentSelected = Boolean(selectedPaymentMethodId);
+  const canFinalize = !needsProfileSave && !needsAddressSave && isPaymentSelected;
 
   const profileFieldNames = ["name", "email", "phone"] as const;
   const addressFieldNames = [
@@ -358,6 +371,7 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
         customerName: data.name,
         customerEmail: normalizedEmail,
         customerPhone: data.phone,
+        paymentMethodId: data.paymentMethodId,
         products,
         slug,
       };
@@ -886,16 +900,46 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                       )}
                     </>
                   )}
+                  {canSelectPayment && (
+                    <div className="border-t pt-4">
+                      <h3 className="font-semibold mb-3">
+                        Forma de Pagamento
+                      </h3>
+                      {paymentMethods.length === 0 ? (
+                        <p className="text-xs text-destructive">
+                          Nenhuma forma de pagamento disponível. Contate o
+                          restaurante.
+                        </p>
+                      ) : (
+                        <FormField
+                          control={form.control}
+                          name="paymentMethodId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Selecione uma opção</FormLabel>
+                              <FormControl>
+                                <select
+                                  className="text-sm border rounded-md px-3 py-2 w-full bg-background"
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                >
+                                  <option value="">Selecione...</option>
+                                  {paymentMethods.map((method) => (
+                                    <option key={method.id} value={method.id}>
+                                      {method.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </FormControl>
+                              <FormMessage></FormMessage>
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
+                  )}
                   <DrawerFooter>
-                    {canFinalize ? (
-                      <Button
-                        type="submit"
-                        className="rounded-full"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? "Criando pedido..." : "Finalizar"}
-                      </Button>
-                    ) : (
+                    {needsProfileSave || needsAddressSave ? (
                       <Button
                         type="button"
                         className="rounded-full"
@@ -903,6 +947,14 @@ const FinishOrderDialog = ({ open, onOpenChange }: FinishOrderDialogProps) => {
                         onClick={handleSaveStep}
                       >
                         Salvar
+                      </Button>
+                    ) : (
+                      <Button
+                        type="submit"
+                        className="rounded-full"
+                        disabled={isLoading || !isPaymentSelected}
+                      >
+                        {isLoading ? "Criando pedido..." : "Finalizar"}
                       </Button>
                     )}
 

@@ -20,12 +20,14 @@ interface CartSheetProps {
   isRestaurantOpen?: boolean;
   isTakeaway?: boolean;
   deliveryFee?: number;
+  paymentMethods: Array<{ id: string; name: string }>;
 }
 
 const CartSheet = ({
   isRestaurantOpen = true,
   isTakeaway = false,
   deliveryFee = 0,
+  paymentMethods,
 }: CartSheetProps) => {
   const [finishOnderDialogIsOPen, setFinishOnderDialogIsOPen] = useState(false);
   const {
@@ -117,6 +119,7 @@ const CartSheet = ({
               <FinishOrderDialog
                 open={finishOnderDialogIsOPen}
                 onOpenChange={setFinishOnderDialogIsOPen}
+                paymentMethods={paymentMethods}
               />
             </>
           ) : (

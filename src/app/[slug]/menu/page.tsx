@@ -27,6 +27,7 @@ const RestaurantMenuPage = async ({
   const restaurant = await db.restaurant.findUnique({
     where: { slug },
     include: {
+      paymentMethods: true,
       //Vai trazer todas as categorias deste restaurante
       menuCategorias: {
         //Vai pegar todas categorias e seus produtos

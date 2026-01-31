@@ -157,11 +157,17 @@ const OrderList = ({ orders }: OrdersPageProps) => {
                   </div>
                 ))}
               </div>
-              <Separator />
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Produtos</span>
-                  <span className="text-foreground font-semibold">
+            <Separator />
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <div className="flex justify-between">
+                <span>Pagamento</span>
+                <span className="text-foreground font-semibold">
+                  {order.paymentMethodName || "Não informado"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Produtos</span>
+                <span className="text-foreground font-semibold">
                     {formatCurrency(order.productsSubtotal)}
                   </span>
                 </div>

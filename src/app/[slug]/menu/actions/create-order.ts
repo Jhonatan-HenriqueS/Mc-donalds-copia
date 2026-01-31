@@ -12,6 +12,7 @@ interface createOrderInput {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  paymentMethodId: string;
   products: Array<{
     id: string;
     price: number;
@@ -50,6 +51,17 @@ export const createOrder = async (input: createOrderInput) => {
 
   if (!restaurant) {
     throw new Error("Restaurant not Found!");
+  }
+
+  const paymentMethod = await db.paymentMethod.findFirst({
+    where: {
+      id: input.paymentMethodId,
+      restaurantId: restaurant.id,
+    },
+  });
+
+  if (!paymentMethod) {
+    throw new Error("Forma de pagamento inválida.");
   }
   const productsWithPrices = await db.product.findMany({
     where: {
@@ -212,6 +224,8 @@ export const createOrder = async (input: createOrderInput) => {
     customerCpf: "SEM_CPF",
     customerEmail: input.customerEmail.trim().toLowerCase(),
     customerPhone: input.customerPhone,
+    paymentMethodId: paymentMethod.id,
+    paymentMethodName: paymentMethod.name,
     orderProducts: {
       create: productsWithPricesQuantities.map((p) => ({
         productId: p.productId,

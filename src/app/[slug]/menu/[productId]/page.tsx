@@ -21,6 +21,7 @@ const ProductPage = async ({ params }: ProductPageProps) => {
           slug: true,
           isOpen: true,
           deliveryFee: true,
+          paymentMethods: true,
         },
       },
       sizes: true,

@@ -33,6 +33,7 @@ interface ProductDetailsProps {
           avatarImageUrl: true;
           isOpen: true;
           deliveryFee: true;
+          paymentMethods: true;
         };
       };
       sizes: true;
@@ -627,6 +628,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
               isRestaurantOpen={product.restaurant.isOpen ?? true}
               isTakeaway={isTakeaway}
               deliveryFee={product.restaurant.deliveryFee ?? 0}
+              paymentMethods={product.restaurant.paymentMethods || []}
             />
           </div>
         </div>

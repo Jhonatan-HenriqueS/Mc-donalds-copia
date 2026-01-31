@@ -19,6 +19,7 @@ interface RestaurantsCategoriesProps {
   restaurant: Prisma.RestaurantGetPayload<{
     //Pega o restaurant
     include: {
+      paymentMethods: true;
       menuCategorias: {
         //Pega o menuCategorias
         include: {
@@ -147,6 +148,7 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
               isRestaurantOpen={restaurant.isOpen ?? true}
               isTakeaway={isTakeaway}
               deliveryFee={restaurant.deliveryFee ?? 0}
+              paymentMethods={restaurant.paymentMethods || []}
             />
           </div>
           <Button onClick={taggleCart}>Ver Pedidos</Button>

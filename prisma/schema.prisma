@@ -55,6 +55,7 @@ model Restaurant {
   menuCategorias     MenuCategory[] //Não salva no bd, mas referencia
   products           Product[]
   orders             Order[]
+  paymentMethods     PaymentMethod[]
   pushSubscriptions  PushSubscription[]
   createdAt          DateTime            @default(now())
   updateAt           DateTime            @updatedAt
@@ -111,6 +112,9 @@ model Order {
   additionalsSubtotal  Float              @default(0)
   status               OrderStatus
   consumptionMethod    ConsumptionMethod
+  paymentMethodId      String?
+  paymentMethod        PaymentMethod?    @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  paymentMethodName    String            @default("Não informado")
   orderProducts        OrderProduct[]
   restaurant           Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   restaurantId         String
@@ -131,6 +135,18 @@ model Order {
   deliveryZipCode      String?
   createdAt            DateTime          @default(now())
   updateAt             DateTime          @updatedAt
+}
+
+model PaymentMethod {
+  id           String      @id @default(uuid())
+  name         String
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId String
+  orders       Order[]
+  createdAt    DateTime    @default(now())
+  updateAt     DateTime    @updatedAt
+
+  @@index([restaurantId])
 }
 
 model OrderProduct {
