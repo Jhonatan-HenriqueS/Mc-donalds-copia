@@ -78,8 +78,19 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
   >({});
 
   const hasSizes = (product.sizes?.length || 0) > 0;
-  const availableAdditionals = product.menuCategory?.additionals || [];
-  const hasAdditionals = availableAdditionals.length > 0;
+  const availableAdditionals = useMemo(
+    () => product.menuCategory?.additionals || [],
+    [product.menuCategory?.additionals],
+  );
+  const normalizedAdditionals = useMemo(
+    () =>
+      availableAdditionals.map((additional) => ({
+        ...additional,
+        imageUrl: additional.imageUrl ?? undefined,
+      })),
+    [availableAdditionals],
+  );
+  const hasAdditionals = normalizedAdditionals.length > 0;
   const requiredGroups = useMemo(
     () => product.menuCategory?.requiredAdditionalGroups || [],
     [product.menuCategory?.requiredAdditionalGroups],
@@ -162,7 +173,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
   };
 
   const handleAdditionalChange = (additionalId: string, delta: number) => {
-    const option = availableAdditionals.find(
+    const option = normalizedAdditionals.find(
       (item) => item.id === additionalId,
     );
     if (!option) return;
@@ -257,7 +268,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
         price: size.price,
       })),
       additionals: selectedAdditionalsList,
-      availableAdditionals: availableAdditionals,
+      availableAdditionals: normalizedAdditionals,
       requiredAdditionals: selectedRequiredList,
       availableRequiredAdditionals: requiredGroups.map((group) => ({
         id: group.id,
@@ -266,7 +277,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
         items: group.items.map((item) => ({
           id: item.id,
           name: item.name,
-          imageUrl: item.imageUrl,
+          imageUrl: item.imageUrl ?? undefined,
         })),
       })),
       quantity,
@@ -534,7 +545,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  {availableAdditionals.map((additional) => {
+                  {normalizedAdditionals.map((additional) => {
                     const quantity =
                       selectedAdditionals[additional.id]?.quantity || 0;
                     return (
