@@ -5,7 +5,6 @@ self.addEventListener("push", (event) => {
   } catch {
     data = {};
   }
-
   const title = data.title || "Notificação";
   const options = {
     body: data.body || "",
