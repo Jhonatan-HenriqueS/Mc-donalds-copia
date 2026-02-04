@@ -317,7 +317,7 @@ export const createOrder = async (input: createOrderInput) => {
         body: `Pedido #${order.id} • Cliente: ${input.customerName} • Total: ${formatCurrency(
           order.total
         )}`,
-        url: `/${input.slug}/menu`,
+        url: `/${input.slug}/menu?consumptionMethod=TAKEANAY`,
         tag: `order-${order.id}`,
       });
     }
