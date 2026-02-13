@@ -616,6 +616,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
               <Input
                 placeholder="Ex: Retirar a borda..."
                 value={observation}
+                className="border-none outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none"
                 onChange={(event) => setObservation(event.target.value)}
               />
             </div>
