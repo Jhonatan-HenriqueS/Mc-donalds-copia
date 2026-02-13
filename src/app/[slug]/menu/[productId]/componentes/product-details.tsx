@@ -13,6 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { useContext, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/helpers/format-currency";
 
 import CartSheet from "../../componentes/cart-sheet";
@@ -76,6 +77,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
   const [expandedRequiredGroups, setExpandedRequiredGroups] = useState<
     Record<string, boolean>
   >({});
+  const [observation, setObservation] = useState("");
 
   const hasSizes = (product.sizes?.length || 0) > 0;
   const availableAdditionals = useMemo(
@@ -257,6 +259,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
       id: product.id,
       name: product.name,
       imageUrl: product.imageUrl,
+      observation: observation.trim() || undefined,
       price: selectedSize ? selectedSize.price : product.price,
       basePrice: product.price,
       sizeId: selectedSize?.id,
@@ -608,6 +611,14 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
           </div>
 
           <div className="mt-4 space-y-4 mb-4">
+            <div className="space-y-2">
+              <h4 className="font-semibold">Observacoes</h4>
+              <Input
+                placeholder="Ex: Retirar a borda..."
+                value={observation}
+                onChange={(event) => setObservation(event.target.value)}
+              />
+            </div>
             <div className="space-y-3">
               <h4 className="font-semibold">Sobre</h4>
               <p className="text-sm text-muted-foreground">

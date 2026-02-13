@@ -4438,10 +4438,27 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     className="flex items-center gap-2 sm:gap-3 p-2 bg-muted rounded"
                                   >
                                     <div className="flex-1">
-                                      <p className="text-xs sm:text-sm font-medium">
-                                        {orderProduct.product.name} x
-                                        {orderProduct.quantity}
-                                      </p>
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-xs sm:text-sm font-medium">
+                                          {orderProduct.product.name} x
+                                          {orderProduct.quantity}
+                                        </p>
+                                        {orderProduct.observation && (
+                                          <button
+                                            type="button"
+                                            className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-destructive px-1 text-[10px] font-semibold text-destructive"
+                                            onClick={() =>
+                                              toast.info(
+                                                `Observacao: ${orderProduct.observation}`
+                                              )
+                                            }
+                                            title={orderProduct.observation}
+                                            aria-label="Ver observacao do item"
+                                          >
+                                            (!)
+                                          </button>
+                                        )}
+                                      </div>
                                       {orderProduct.sizeName && (
                                         <p className="text-[11px] text-muted-foreground">
                                           Tam: {orderProduct.sizeName}

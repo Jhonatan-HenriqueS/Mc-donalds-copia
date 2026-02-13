@@ -386,6 +386,7 @@ const FinishOrderDialog = ({
             id: p.id,
             price: p.price,
             quantity: p.quantity,
+            observation: p.observation,
             sizeId: p.sizeId || undefined,
             additionals:
               p.additionals?.map((additional) => ({
@@ -418,6 +419,7 @@ const FinishOrderDialog = ({
             id: p.id,
             price: p.price,
             quantity: p.quantity,
+            observation: p.observation,
             sizeId: p.sizeId || undefined,
             additionals:
               p.additionals?.map((additional) => ({

@@ -42,6 +42,7 @@ export interface CartProduct
   quantity: number;
   price: number; // preço atual considerando tamanho (sem adicionais)
   basePrice: number;
+  observation?: string;
   sizeId?: string | null;
   sizeName?: string | null;
   sizePrice?: number | null;
@@ -151,7 +152,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         quantity: Math.max(0, item.quantity ?? 0),
       }));
 
-  const getAdditionalsKey = (additionals?: CartAdditionalSelection[]) => {
+  const getAdditionalsKey = (
+    additionals?: CartAdditionalSelection[],
+    observation?: string
+  ) => {
     const normalized = normalizeAdditionals(additionals).sort((a, b) => {
       const aKey = (a.id || a.name).toLowerCase();
       const bKey = (b.id || b.name).toLowerCase();
@@ -166,13 +170,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return aKey.localeCompare(bKey);
     });
 
-    return JSON.stringify(
-      normalized.map((item) => ({
+    return JSON.stringify({
+      items: normalized.map((item) => ({
         key: item.id || item.name,
         quantity: item.quantity,
         price: item.price,
-      }))
-    );
+      })),
+      observation: (observation || "").trim(),
+    });
   };
 
   const getRequiredAdditionalsKey = (
@@ -230,6 +235,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
     return {
       ...product,
+      observation: product.observation?.trim() || undefined,
       basePrice,
       price: product.price ?? basePrice,
       sizePrice:
@@ -237,7 +243,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         (product.sizeId ? product.price : null) ??
         null,
       additionals: normalizedAdditionals,
-      additionalsKey: getAdditionalsKey(normalizedAdditionals),
+      additionalsKey: getAdditionalsKey(
+        normalizedAdditionals,
+        product.observation
+      ),
       requiredAdditionals: normalizedRequiredAdditionals,
       requiredAdditionalsKey: getRequiredAdditionalsKey(
         normalizedRequiredAdditionals
@@ -421,7 +430,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     requiredAdditionalsKey?: string | null
   ) => {
     const normalizedAdditionals = normalizeAdditionals(additionals);
-    const newAdditionalsKey = getAdditionalsKey(normalizedAdditionals);
     setProducts((prevProducts) =>
       prevProducts.map((prevProduct) => {
         if (
@@ -438,7 +446,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return {
           ...prevProduct,
           additionals: normalizedAdditionals,
-          additionalsKey: newAdditionalsKey,
+          additionalsKey: getAdditionalsKey(
+            normalizedAdditionals,
+            prevProduct.observation
+          ),
         };
       })
     );

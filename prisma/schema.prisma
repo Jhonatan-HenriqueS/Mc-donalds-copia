@@ -161,6 +161,7 @@ model OrderProduct {
   sizeName  String?
   sizePrice Float?
   sizeId    String?
+  observation String?
   additionals OrderProductAdditional[]
   requiredAdditionals OrderProductRequiredAdditional[]
   createdAt DateTime @default(now())

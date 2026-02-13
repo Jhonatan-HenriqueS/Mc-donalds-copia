@@ -17,6 +17,7 @@ interface createOrderInput {
     id: string;
     price: number;
     quantity: number;
+    observation?: string;
     sizeId?: string | null;
     additionals?: Array<{
       id?: string;
@@ -187,6 +188,7 @@ export const createOrder = async (input: createOrderInput) => {
     return {
       productId: product.id,
       quantity: product.quantity,
+      observation: product.observation?.trim() || null,
       price: unitPrice,
       basePrice,
       sizeExtra,
@@ -230,6 +232,7 @@ export const createOrder = async (input: createOrderInput) => {
       create: productsWithPricesQuantities.map((p) => ({
         productId: p.productId,
         quantity: p.quantity,
+        observation: p.observation,
         price: p.price,
         basePrice: p.basePrice,
         sizeId: p.sizeId || null,
