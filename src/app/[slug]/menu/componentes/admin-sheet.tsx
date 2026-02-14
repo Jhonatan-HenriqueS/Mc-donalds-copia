@@ -9,6 +9,7 @@ import {
   RequiredAdditionalItem,
 } from "@prisma/client";
 import {
+  BadgeAlert,
   Bell,
   ClockIcon,
   Edit,
@@ -178,7 +179,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [viewMode, setViewMode] = useState<"total" | "month">("total");
   const [categories, setCategories] = useState(restaurant.menuCategorias);
   const [paymentMethods, setPaymentMethods] = useState(
-    restaurant.paymentMethods || []
+    restaurant.paymentMethods || [],
   );
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const [hasNewOrders, setHasNewOrders] = useState(false);
@@ -190,16 +191,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const [allowDineIn, setAllowDineIn] = useState(
-    restaurant.allowDineIn ?? true
+    restaurant.allowDineIn ?? true,
   );
   const [allowTakeaway, setAllowTakeaway] = useState(
-    restaurant.allowTakeaway ?? true
+    restaurant.allowTakeaway ?? true,
   );
   const [lastSavedAllowDineIn, setLastSavedAllowDineIn] = useState(
-    restaurant.allowDineIn ?? true
+    restaurant.allowDineIn ?? true,
   );
   const [lastSavedAllowTakeaway, setLastSavedAllowTakeaway] = useState(
-    restaurant.allowTakeaway ?? true
+    restaurant.allowTakeaway ?? true,
   );
 
   const [paymentMethodName, setPaymentMethodName] = useState("");
@@ -207,8 +208,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     string | null
   >(null);
   const [isSavingPaymentMethod, setIsSavingPaymentMethod] = useState(false);
-  const [isDeletingPaymentMethodId, setIsDeletingPaymentMethodId] =
-    useState<string | null>(null);
+  const [isDeletingPaymentMethodId, setIsDeletingPaymentMethodId] = useState<
+    string | null
+  >(null);
 
   // Hook de notificações para o painel admin
   const {
@@ -233,28 +235,28 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   >([]);
   const [enableSizes, setEnableSizes] = useState(false);
   const [avatarImageUrl, setAvatarImageUrl] = useState(
-    restaurant.avatarImageUrl
+    restaurant.avatarImageUrl,
   );
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
-    restaurant.avatarImageUrl
+    restaurant.avatarImageUrl,
   );
   const [lastSavedAvatar, setLastSavedAvatar] = useState(
-    restaurant.avatarImageUrl
+    restaurant.avatarImageUrl,
   );
   const [deliveryFee, setDeliveryFee] = useState(restaurant.deliveryFee ?? 0);
   const [lastSavedDeliveryFee, setLastSavedDeliveryFee] = useState(
-    restaurant.deliveryFee ?? 0
+    restaurant.deliveryFee ?? 0,
   );
   const [isRestaurantOpen, setIsRestaurantOpen] = useState(
-    restaurant.isOpen ?? true
+    restaurant.isOpen ?? true,
   );
   const [, setLastSavedStatus] = useState(restaurant.isOpen ?? true);
   const [coverImageUrl, setCoverImageUrl] = useState(restaurant.coverImageUrl);
   const [coverPreview, setCoverPreview] = useState<string | null>(
-    restaurant.coverImageUrl
+    restaurant.coverImageUrl,
   );
   const [lastSavedCover, setLastSavedCover] = useState(
-    restaurant.coverImageUrl
+    restaurant.coverImageUrl,
   );
   const [categoryName, setCategoryName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -293,14 +295,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [isUploadingAdditional, setIsUploadingAdditional] = useState(false);
   const [isSavingAdditional, setIsSavingAdditional] = useState(false);
   const [editingAdditionalId, setEditingAdditionalId] = useState<string | null>(
-    null
+    null,
   );
   const [isDeletingAdditional, setIsDeletingAdditional] = useState<
     string | null
   >(null);
   const [additionalError, setAdditionalError] = useState<string | null>(null);
   const [requiredCategoryId, setRequiredCategoryId] = useState<string | null>(
-    null
+    null,
   );
   const [requiredGroupTitle, setRequiredGroupTitle] = useState("");
   const [requiredGroupQuantity, setRequiredGroupQuantity] = useState("");
@@ -308,14 +310,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     string | null
   >(null);
   const [requiredGroupError, setRequiredGroupError] = useState<string | null>(
-    null
+    null,
   );
   const [isSavingRequiredGroup, setIsSavingRequiredGroup] = useState(false);
   const [isDeletingRequiredGroup, setIsDeletingRequiredGroup] = useState<
     string | null
   >(null);
   const [requiredItemGroupId, setRequiredItemGroupId] = useState<string | null>(
-    null
+    null,
   );
   const [requiredItemName, setRequiredItemName] = useState("");
   const [requiredItemImageUrl, setRequiredItemImageUrl] = useState("");
@@ -326,7 +328,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     string | null
   >(null);
   const [requiredItemError, setRequiredItemError] = useState<string | null>(
-    null
+    null,
   );
   const [isUploadingRequiredItem, setIsUploadingRequiredItem] = useState(false);
   const [isSavingRequiredItem, setIsSavingRequiredItem] = useState(false);
@@ -380,7 +382,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       toast.success("Imagem carregada com sucesso!");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Erro ao fazer upload"
+        error instanceof Error ? error.message : "Erro ao fazer upload",
       );
     } finally {
       setIsUploading(false);
@@ -422,7 +424,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       toast.success("Logo carregado com sucesso!");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Erro ao fazer upload"
+        error instanceof Error ? error.message : "Erro ao fazer upload",
       );
     } finally {
       setIsUploadingAvatar(false);
@@ -464,7 +466,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       toast.success("Capa carregada com sucesso!");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Erro ao fazer upload"
+        error instanceof Error ? error.message : "Erro ao fazer upload",
       );
     } finally {
       setIsUploadingCover(false);
@@ -472,7 +474,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   };
 
   const handleAdditionalImageSelect = async (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -508,7 +510,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       toast.success("Imagem carregada com sucesso!");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Erro ao fazer upload"
+        error instanceof Error ? error.message : "Erro ao fazer upload",
       );
     } finally {
       setIsUploadingAdditional(false);
@@ -516,7 +518,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   };
 
   const handleRequiredItemImageSelect = async (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -552,7 +554,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       toast.success("Imagem carregada com sucesso!");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Erro ao fazer upload"
+        error instanceof Error ? error.message : "Erro ao fazer upload",
       );
     } finally {
       setIsUploadingRequiredItem(false);
@@ -653,7 +655,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         toast.success(
           editingProduct
             ? "Produto atualizado com sucesso!"
-            : "Produto criado com sucesso!"
+            : "Produto criado com sucesso!",
         );
         // Limpar formulário
         setName("");
@@ -737,7 +739,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           id: size.id,
           name: size.name,
           price: size.price.toString(),
-        }))
+        })),
       );
     } else {
       setEnableSizes(false);
@@ -872,7 +874,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     try {
       const result = await updateRestaurantDeliveryFee(
         restaurant.id,
-        Number(deliveryFee)
+        Number(deliveryFee),
       );
       if (result.success && result.restaurant) {
         setLastSavedDeliveryFee(result.restaurant.deliveryFee);
@@ -906,7 +908,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         toast.success(
           result.restaurant.isOpen
             ? "Restaurante aberto!"
-            : "Restaurante fechado!"
+            : "Restaurante fechado!",
         );
       } else {
         setStatusError(result.error || "Erro ao atualizar status.");
@@ -1032,7 +1034,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   const handleStartAdditional = (
     categoryId: string,
-    additional?: CategoryAdditional
+    additional?: CategoryAdditional,
   ) => {
     setAdditionalCategoryId(categoryId);
     setEditingAdditionalId(additional?.id ?? null);
@@ -1047,7 +1049,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   };
 
   const handleSubmitAdditional = async (
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
     setAdditionalError(null);
@@ -1089,11 +1091,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                     additionals: category.additionals.map((item) =>
                       item.id === editingAdditionalId
                         ? result.additional!
-                        : item
+                        : item,
                     ),
                   }
-                : category
-            )
+                : category,
+            ),
           );
           resetAdditionalForm();
         } else {
@@ -1119,8 +1121,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       result.additional!,
                     ],
                   }
-                : category
-            )
+                : category,
+            ),
           );
           resetAdditionalForm();
         } else {
@@ -1137,7 +1139,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   const handleDeleteAdditional = async (
     additionalId: string,
-    categoryId: string
+    categoryId: string,
   ) => {
     setIsDeletingAdditional(additionalId);
     try {
@@ -1150,11 +1152,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               ? {
                   ...category,
                   additionals: category.additionals.filter(
-                    (item) => item.id !== additionalId
+                    (item) => item.id !== additionalId,
                   ),
                 }
-              : category
-          )
+              : category,
+          ),
         );
         if (editingAdditionalId === additionalId) {
           resetAdditionalForm();
@@ -1172,19 +1174,19 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   const handleStartRequiredGroup = (
     categoryId: string,
-    group?: RequiredAdditionalGroup
+    group?: RequiredAdditionalGroup,
   ) => {
     setRequiredCategoryId(categoryId);
     setEditingRequiredGroupId(group?.id ?? null);
     setRequiredGroupTitle(group?.title ?? "");
     setRequiredGroupQuantity(
-      group?.requiredQuantity ? String(group.requiredQuantity) : ""
+      group?.requiredQuantity ? String(group.requiredQuantity) : "",
     );
     setRequiredGroupError(null);
   };
 
   const handleSubmitRequiredGroup = async (
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
     setRequiredGroupError(null);
@@ -1229,11 +1231,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               title: result.group!.title,
                               requiredQuantity: result.group!.requiredQuantity,
                             }
-                          : group
+                          : group,
                       ),
                   }
-                : category
-            )
+                : category,
+            ),
           );
           resetRequiredGroupForm();
         } else {
@@ -1258,8 +1260,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       { ...result.group!, items: [] },
                     ],
                   }
-                : category
-            )
+                : category,
+            ),
           );
           resetRequiredGroupForm();
         } else {
@@ -1276,13 +1278,13 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   const handleDeleteRequiredGroup = async (
     groupId: string,
-    categoryId: string
+    categoryId: string,
   ) => {
     setIsDeletingRequiredGroup(groupId);
     try {
       const result = await deleteRequiredAdditionalGroup(
         groupId,
-        restaurant.id
+        restaurant.id,
       );
       if (result.success) {
         toast.success("Grupo obrigatório removido!");
@@ -1293,11 +1295,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   ...category,
                   requiredAdditionalGroups:
                     category.requiredAdditionalGroups.filter(
-                      (group) => group.id !== groupId
+                      (group) => group.id !== groupId,
                     ),
                 }
-              : category
-          )
+              : category,
+          ),
         );
         if (editingRequiredGroupId === groupId) {
           resetRequiredGroupForm();
@@ -1319,7 +1321,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const handleStartRequiredItem = (
     categoryId: string,
     groupId: string,
-    item?: RequiredAdditionalItem
+    item?: RequiredAdditionalItem,
   ) => {
     setRequiredCategoryId(categoryId);
     setRequiredItemGroupId(groupId);
@@ -1334,7 +1336,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   };
 
   const handleSubmitRequiredItem = async (
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
     setRequiredItemError(null);
@@ -1379,14 +1381,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               items: group.items.map((item) =>
                                 item.id === editingRequiredItemId
                                   ? result.item!
-                                  : item
+                                  : item,
                               ),
                             }
-                          : group
+                          : group,
                       ),
                   }
-                : category
-            )
+                : category,
+            ),
           );
           resetRequiredItemForm();
         } else {
@@ -1413,11 +1415,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               ...group,
                               items: [...group.items, result.item!],
                             }
-                          : group
+                          : group,
                       ),
                   }
-                : category
-            )
+                : category,
+            ),
           );
           resetRequiredItemForm();
         } else {
@@ -1435,7 +1437,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const handleDeleteRequiredItem = async (
     itemId: string,
     categoryId: string,
-    groupId: string
+    groupId: string,
   ) => {
     setIsDeletingRequiredItem(itemId);
     try {
@@ -1453,14 +1455,14 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         ? {
                             ...group,
                             items: group.items.filter(
-                              (item) => item.id !== itemId
+                              (item) => item.id !== itemId,
                             ),
                           }
-                        : group
+                        : group,
                     ),
                 }
-              : category
-          )
+              : category,
+          ),
         );
         if (editingRequiredItemId === itemId) {
           resetRequiredItemForm();
@@ -1504,7 +1506,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   const handleUpdateOrderStatus = async (
     orderId: number,
-    newStatus: OrderStatus
+    newStatus: OrderStatus,
   ) => {
     setIsUpdatingStatus(orderId);
     try {
@@ -1514,8 +1516,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         // Atualizar o pedido na lista local
         setOrders((prev) =>
           prev.map((order) =>
-            order.id === orderId ? { ...order, status: newStatus } : order
-          )
+            order.id === orderId ? { ...order, status: newStatus } : order,
+          ),
         );
       } else {
         toast.error(result.error || "Erro ao atualizar status do pedido");
@@ -1534,7 +1536,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   };
 
   const handlePaymentMethodSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
     const trimmed = paymentMethodName.trim();
@@ -1548,15 +1550,17 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         const result = await updatePaymentMethod(
           editingPaymentMethodId,
           restaurant.id,
-          trimmed
+          trimmed,
         );
         if (!result.success || !result.paymentMethod) {
           throw new Error(result.error || "Erro ao atualizar");
         }
         setPaymentMethods((prev) =>
           prev.map((method) =>
-            method.id === editingPaymentMethodId ? result.paymentMethod : method
-          )
+            method.id === editingPaymentMethodId
+              ? result.paymentMethod
+              : method,
+          ),
         );
         toast.success("Forma de pagamento atualizada!");
       } else {
@@ -1571,7 +1575,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     } catch (error) {
       console.error("Erro ao salvar forma de pagamento:", error);
       toast.error(
-        error instanceof Error ? error.message : "Erro ao salvar forma de pagamento"
+        error instanceof Error
+          ? error.message
+          : "Erro ao salvar forma de pagamento",
       );
     } finally {
       setIsSavingPaymentMethod(false);
@@ -1586,7 +1592,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
         throw new Error(result.error || "Erro ao remover");
       }
       setPaymentMethods((prev) =>
-        prev.filter((method) => method.id !== paymentMethodId)
+        prev.filter((method) => method.id !== paymentMethodId),
       );
       if (editingPaymentMethodId === paymentMethodId) {
         resetPaymentMethodForm();
@@ -1595,7 +1601,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     } catch (error) {
       console.error("Erro ao remover forma de pagamento:", error);
       toast.error(
-        error instanceof Error ? error.message : "Erro ao remover forma de pagamento"
+        error instanceof Error
+          ? error.message
+          : "Erro ao remover forma de pagamento",
       );
     } finally {
       setIsDeletingPaymentMethodId(null);
@@ -1632,9 +1640,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     } catch (error) {
       console.error("Erro ao ativar push do admin:", error);
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Erro ao ativar notificações"
+        error instanceof Error ? error.message : "Erro ao ativar notificações",
       );
     } finally {
       setIsSubscribingPush(false);
@@ -1756,16 +1762,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     );
   };
   const selectedAdditionalCategory = categories.find(
-    (category) => category.id === additionalCategoryId
+    (category) => category.id === additionalCategoryId,
   );
   const selectedAdditionals = selectedAdditionalCategory?.additionals ?? [];
   const selectedRequiredCategory = categories.find(
-    (category) => category.id === requiredCategoryId
+    (category) => category.id === requiredCategoryId,
   );
   const selectedRequiredGroups =
     selectedRequiredCategory?.requiredAdditionalGroups ?? [];
   const selectedRequiredGroup = selectedRequiredGroups.find(
-    (group) => group.id === requiredItemGroupId
+    (group) => group.id === requiredItemGroupId,
   );
   const selectedRequiredItems = selectedRequiredGroup?.items ?? [];
 
@@ -2513,7 +2519,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 {formatCurrency(
                                   viewMode === "total"
                                     ? customer.totalSpent
-                                    : customer.totalSpentThisMonth
+                                    : customer.totalSpentThisMonth,
                                 )}
                               </p>
                               {viewMode === "month" &&
@@ -2763,8 +2769,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                   const value = e.target.value;
                                   setSizes((prev) =>
                                     prev.map((s, i) =>
-                                      i === index ? { ...s, name: value } : s
-                                    )
+                                      i === index ? { ...s, name: value } : s,
+                                    ),
                                   );
                                 }}
                                 className="col-span-2 text-sm sm:text-base"
@@ -2779,8 +2785,8 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                   const value = e.target.value;
                                   setSizes((prev) =>
                                     prev.map((s, i) =>
-                                      i === index ? { ...s, price: value } : s
-                                    )
+                                      i === index ? { ...s, price: value } : s,
+                                    ),
                                   );
                                 }}
                                 className="col-span-2 text-sm sm:text-base"
@@ -2792,7 +2798,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 size="sm"
                                 onClick={() =>
                                   setSizes((prev) =>
-                                    prev.filter((_, i) => i !== index)
+                                    prev.filter((_, i) => i !== index),
                                   )
                                 }
                                 disabled={isLoading}
@@ -3020,9 +3026,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               onClick={() =>
                                 handleDeletePaymentMethod(method.id)
                               }
-                              disabled={
-                                isDeletingPaymentMethodId === method.id
-                              }
+                              disabled={isDeletingPaymentMethodId === method.id}
                             >
                               {isDeletingPaymentMethodId === method.id
                                 ? "Removendo..."
@@ -3287,7 +3291,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                   if (!selectedAdditionalCategory) return;
                                   handleStartAdditional(
                                     selectedAdditionalCategory.id,
-                                    additional
+                                    additional,
                                   );
                                 }}
                               >
@@ -3305,7 +3309,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                   if (!selectedAdditionalCategory) return;
                                   handleDeleteAdditional(
                                     additional.id,
-                                    selectedAdditionalCategory.id
+                                    selectedAdditionalCategory.id,
                                   );
                                 }}
                               >
@@ -3491,7 +3495,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     if (!selectedRequiredCategory) return;
                                     handleStartRequiredGroup(
                                       selectedRequiredCategory.id,
-                                      group
+                                      group,
                                     );
                                   }}
                                 >
@@ -3509,7 +3513,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     if (!selectedRequiredCategory) return;
                                     handleDeleteRequiredGroup(
                                       group.id,
-                                      selectedRequiredCategory.id
+                                      selectedRequiredCategory.id,
                                     );
                                   }}
                                 >
@@ -3765,7 +3769,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                       handleStartRequiredItem(
                                         selectedRequiredCategory.id,
                                         selectedRequiredGroup.id,
-                                        item
+                                        item,
                                       )
                                     }
                                   >
@@ -3783,7 +3787,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                       handleDeleteRequiredItem(
                                         item.id,
                                         selectedRequiredCategory.id,
-                                        selectedRequiredGroup.id
+                                        selectedRequiredGroup.id,
                                       )
                                     }
                                   >
@@ -3868,12 +3872,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                               name: string;
                               products: ProductWithCategory[];
                             }
-                          >
+                          >,
                         );
 
                         // Converter para array e ordenar por nome da categoria
                         const categoriesArray = Object.values(
-                          productsByCategory
+                          productsByCategory,
                         ).sort((a, b) => a.name.localeCompare(b.name));
 
                         return categoriesArray.map((category) => (
@@ -4033,7 +4037,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                         onClick={() =>
                                           handleStartAdditional(
                                             category.id,
-                                            additional
+                                            additional,
                                           )
                                         }
                                       >
@@ -4050,7 +4054,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                         onClick={() =>
                                           handleDeleteAdditional(
                                             additional.id,
-                                            category.id
+                                            category.id,
                                           )
                                         }
                                       >
@@ -4309,7 +4313,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                           ? [...filteredOrders].sort(
                               (a, b) =>
                                 new Date(a.createdAt).getTime() -
-                                new Date(b.createdAt).getTime()
+                                new Date(b.createdAt).getTime(),
                             )
                           : filteredOrders;
 
@@ -4317,7 +4321,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                         ordersStatusFilter === "ALL"
                           ? orderedFilteredOrders
                           : orderedFilteredOrders.filter(
-                              (order) => order.status === ordersStatusFilter
+                              (order) => order.status === ordersStatusFilter,
                             );
 
                       if (statusFilteredOrders.length === 0) {
@@ -4331,7 +4335,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       }
 
                       const renderOrderCard = (
-                        order: (typeof orders)[number]
+                        order: (typeof orders)[number],
                       ) => (
                         <div
                           key={order.id}
@@ -4348,7 +4352,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                             </div>
                             <div
                               className={`px-2 py-1 rounded border text-xs sm:text-sm font-medium ${getStatusColor(
-                                order.status
+                                order.status,
                               )}`}
                             >
                               {getStatusLabel(order.status)}
@@ -4364,8 +4368,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 {order.customerName}
                               </p>
                               <p className="text-xs sm:text-sm text-muted-foreground">
-                                Email:{" "}
-                                {order.customerEmail ?? "Não informado"}
+                                Email: {order.customerEmail ?? "Não informado"}
                               </p>
                               <p className="text-xs sm:text-sm text-muted-foreground">
                                 Telefone:{" "}
@@ -4427,7 +4430,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                 ).reduce(
                                   (acc, item) =>
                                     acc + item.price * item.quantity,
-                                  0
+                                  0,
                                 );
                                 const productTotal =
                                   orderProduct.price * orderProduct.quantity +
@@ -4438,7 +4441,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     className="flex items-center gap-2 sm:gap-3 p-2 bg-muted rounded"
                                   >
                                     <div className="flex-1">
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-4">
                                         <p className="text-xs sm:text-sm font-medium">
                                           {orderProduct.product.name} x
                                           {orderProduct.quantity}
@@ -4446,16 +4449,16 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                         {orderProduct.observation && (
                                           <button
                                             type="button"
-                                            className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-destructive px-1 text-[10px] font-semibold text-destructive"
+                                            className="inline-flex h-5 min-w-5 items-center justify-center px-1 text-[10px] font-semibold "
                                             onClick={() =>
                                               toast.info(
-                                                `Observacao: ${orderProduct.observation}`
+                                                `Observação: ${orderProduct.observation}`,
                                               )
                                             }
                                             title={orderProduct.observation}
-                                            aria-label="Ver observacao do item"
+                                            aria-label="Ver observação do item"
                                           >
-                                            (!)
+                                            <BadgeAlert className="text-gray-500" />
                                           </button>
                                         )}
                                       </div>
@@ -4481,11 +4484,11 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                                     {additional.quantity}x{" "}
                                                     {additional.name} (
                                                     {formatCurrency(
-                                                      additional.price
+                                                      additional.price,
                                                     )}
                                                     )
                                                   </li>
-                                                )
+                                                ),
                                               )}
                                             </ul>
                                           </div>
@@ -4505,7 +4508,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                                     {required.name} (
                                                     {required.groupTitle})
                                                   </li>
-                                                )
+                                                ),
                                               )}
                                             </ul>
                                           </div>
@@ -4520,7 +4523,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                           +{" "}
                                           {formatCurrency(
                                             additionalsTotal *
-                                              orderProduct.quantity
+                                              orderProduct.quantity,
                                           )}{" "}
                                           adicionais
                                         </p>
@@ -4585,7 +4588,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     onClick={() =>
                                       handleUpdateOrderStatus(
                                         order.id,
-                                        "ACCEPTED"
+                                        "ACCEPTED",
                                       )
                                     }
                                     disabled={isUpdatingStatus === order.id}
@@ -4600,7 +4603,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     onClick={() =>
                                       handleUpdateOrderStatus(
                                         order.id,
-                                        "CANCELLED"
+                                        "CANCELLED",
                                       )
                                     }
                                     disabled={isUpdatingStatus === order.id}
@@ -4624,7 +4627,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                         onClick={() =>
                                           handleUpdateOrderStatus(
                                             order.id,
-                                            "IN_PREPARATION"
+                                            "IN_PREPARATION",
                                           )
                                         }
                                         disabled={
@@ -4648,7 +4651,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                           onClick={() =>
                                             handleUpdateOrderStatus(
                                               order.id,
-                                              "OUT_FOR_DELIVERY"
+                                              "OUT_FOR_DELIVERY",
                                             )
                                           }
                                           disabled={
@@ -4671,7 +4674,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                         onClick={() =>
                                           handleUpdateOrderStatus(
                                             order.id,
-                                            "FINISHED"
+                                            "FINISHED",
                                           )
                                         }
                                         disabled={
@@ -4695,7 +4698,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     onClick={() =>
                                       handleUpdateOrderStatus(
                                         order.id,
-                                        "CANCELLED"
+                                        "CANCELLED",
                                       )
                                     }
                                     disabled={
@@ -4715,7 +4718,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       return (
                         <div className="space-y-4">
                           {statusFilteredOrders.map((order) =>
-                            renderOrderCard(order)
+                            renderOrderCard(order),
                           )}
                         </div>
                       );
