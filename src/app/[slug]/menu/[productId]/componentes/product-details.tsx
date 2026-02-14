@@ -9,7 +9,7 @@ import {
   ChevronUpIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useContext, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ interface ProductDetailsProps {
 }
 
 const ProductDetails = ({ product }: ProductDetailsProps) => {
+  const { slug } = useParams<{ slug: string }>();
   const { taggleCart, addProducts } = useContext(CartContext);
   const searchParams = useSearchParams();
   const isTakeaway = useMemo(
@@ -259,6 +260,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
       id: product.id,
       name: product.name,
       imageUrl: product.imageUrl,
+      restaurantSlug: slug,
       observation: observation.trim() || undefined,
       price: selectedSize ? selectedSize.price : product.price,
       basePrice: product.price,

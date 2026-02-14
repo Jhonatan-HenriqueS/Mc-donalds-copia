@@ -64,12 +64,21 @@ export const createOrder = async (input: createOrderInput) => {
   if (!paymentMethod) {
     throw new Error("Forma de pagamento inválida.");
   }
+  const uniqueProductIds = Array.from(
+    new Set(input.products.map((product) => product.id))
+  );
+
+  if (uniqueProductIds.length === 0) {
+    throw new Error("Carrinho vazio. Adicione produtos para finalizar.");
+  }
+
   const productsWithPrices = await db.product.findMany({
     where: {
       id: {
-        in: input.products.map((products) => products.id),
+        in: uniqueProductIds,
         //Busca todos os produtos existentes pelo seu id
       },
+      restaurantId: restaurant.id,
     },
     include: {
       sizes: true,
@@ -86,11 +95,28 @@ export const createOrder = async (input: createOrderInput) => {
     },
   });
 
-  const productsWithPricesQuantities = input.products.map((product) => {
-    const dbProduct = productsWithPrices.find((p) => p.id === product.id);
-    const selectedSize = dbProduct?.sizes.find((s) => s.id === product.sizeId);
+  if (productsWithPrices.length !== uniqueProductIds.length) {
+    throw new Error(
+      "Um ou mais produtos não pertencem a este restaurante."
+    );
+  }
 
-    const basePrice = dbProduct?.price ?? product.price ?? 0;
+  const productsWithPricesQuantities = input.products.map((product) => {
+    if (!Number.isInteger(product.quantity) || product.quantity <= 0) {
+      throw new Error("Quantidade de produto inválida.");
+    }
+
+    const dbProduct = productsWithPrices.find((p) => p.id === product.id);
+    if (!dbProduct) {
+      throw new Error("Produto inválido para este restaurante.");
+    }
+
+    const selectedSize = dbProduct?.sizes.find((s) => s.id === product.sizeId);
+    if (product.sizeId && !selectedSize) {
+      throw new Error("Tamanho inválido para o produto selecionado.");
+    }
+
+    const basePrice = dbProduct.price;
     const sizePrice = selectedSize?.price ?? null;
     const unitPrice = sizePrice ?? basePrice;
     const sizeExtra = sizePrice ? sizePrice - basePrice : 0;
@@ -315,12 +341,18 @@ export const createOrder = async (input: createOrderInput) => {
     });
 
     if (adminSubscriptions.length > 0) {
+      const adminPushUrl = restaurant.allowTakeaway
+        ? `/${input.slug}/menu?consumptionMethod=TAKEANAY`
+        : restaurant.allowDineIn
+          ? `/${input.slug}/menu?consumptionMethod=DINE_IN`
+          : `/${input.slug}`;
+
       await sendPushToSubscriptions(adminSubscriptions, {
         title: "Novo pedido criado!",
         body: `Pedido #${order.id} • Cliente: ${input.customerName} • Total: ${formatCurrency(
           order.total
         )}`,
-        url: `/${input.slug}/menu?consumptionMethod=TAKEANAY`,
+        url: adminPushUrl,
         tag: `order-${order.id}`,
       });
     }

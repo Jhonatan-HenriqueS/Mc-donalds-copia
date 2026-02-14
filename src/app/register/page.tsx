@@ -17,7 +17,6 @@ const RegisterPage = () => {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +24,6 @@ const RegisterPage = () => {
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
-    cpf?: string;
     phone?: string;
     password?: string;
   }>({});
@@ -59,7 +57,6 @@ const RegisterPage = () => {
     const newErrors: {
       name?: string;
       email?: string;
-      cpf?: string;
       phone?: string;
       password?: string;
     } = {};
@@ -72,13 +69,6 @@ const RegisterPage = () => {
       newErrors.email = 'O email é obrigatório';
     } else if (!validateEmail(email)) {
       newErrors.email = 'Digite um email válido';
-    }
-
-    const cpfDigits = cpf.replace(/\D/g, '');
-    if (!cpfDigits) {
-      newErrors.cpf = 'O CPF é obrigatório';
-    } else if (cpfDigits.length !== 11) {
-      newErrors.cpf = 'Digite um CPF válido';
     }
 
     const phoneDigits = phone.replace(/\D/g, '');
@@ -104,7 +94,6 @@ const RegisterPage = () => {
       const result = await createUser({
         name: name.trim(),
         email: email.trim(),
-        cpf: cpfDigits,
         phone: phoneDigits,
         password,
       });
@@ -168,26 +157,6 @@ const RegisterPage = () => {
               />
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cpf">CPF</Label>
-              <Input
-                id="cpf"
-                type="text"
-                placeholder="Digite seu CPF"
-                className={`w-full ${focus} ${errors.cpf ? 'border-destructive' : ''}`}
-                value={cpf}
-                onChange={(e) => {
-                  setCpf(e.target.value);
-                  if (errors.cpf) {
-                    setErrors((prev) => ({ ...prev, cpf: undefined }));
-                  }
-                }}
-                disabled={isLoading}
-              />
-              {errors.cpf && (
-                <p className="text-sm text-destructive">{errors.cpf}</p>
               )}
             </div>
             <div className="space-y-2">

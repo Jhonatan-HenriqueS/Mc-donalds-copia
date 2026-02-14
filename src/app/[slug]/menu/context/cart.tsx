@@ -39,6 +39,7 @@ export interface CartRequiredAdditionalGroup {
 
 export interface CartProduct
   extends Pick<Product, 'id' | 'name' | 'imageUrl'> {
+  restaurantSlug?: string;
   quantity: number;
   price: number; // preço atual considerando tamanho (sem adicionais)
   basePrice: number;
@@ -233,8 +234,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const normalizedRequiredAdditionals = normalizeRequiredAdditionals(
       product.requiredAdditionals
     );
+    const normalizedRestaurantSlug = product.restaurantSlug
+      ?.trim()
+      .toLowerCase();
+
     return {
       ...product,
+      restaurantSlug: normalizedRestaurantSlug,
       observation: product.observation?.trim() || undefined,
       basePrice,
       price: product.price ?? basePrice,
@@ -285,20 +291,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addProducts = (product: CartProduct) => {
     const normalizedProduct = sanitizeProduct(product);
-    const productsIsAreadyOnTheCart = products.some(
-      (prevProducts) =>
-        prevProducts.id === normalizedProduct.id &&
-        (prevProducts.sizeId || null) === (normalizedProduct.sizeId || null) &&
-        (prevProducts.additionalsKey || "") ===
-          (normalizedProduct.additionalsKey || "") &&
-        (prevProducts.requiredAdditionalsKey || "") ===
-          (normalizedProduct.requiredAdditionalsKey || "")
-    );
-    if (!productsIsAreadyOnTheCart) {
-      return setProducts((prev) => [...prev, normalizedProduct]);
-    }
-
     setProducts((prevProducts) => {
+      const cartRestaurantSlug = prevProducts[0]?.restaurantSlug;
+      const incomingRestaurantSlug = normalizedProduct.restaurantSlug;
+
+      // Evita carrinho com produtos cruzados entre restaurantes.
+      if (
+        cartRestaurantSlug &&
+        incomingRestaurantSlug &&
+        cartRestaurantSlug !== incomingRestaurantSlug
+      ) {
+        return [normalizedProduct];
+      }
+
+      const productsIsAreadyOnTheCart = prevProducts.some(
+        (prevProduct) =>
+          prevProduct.id === normalizedProduct.id &&
+          (prevProduct.sizeId || null) === (normalizedProduct.sizeId || null) &&
+          (prevProduct.additionalsKey || "") ===
+            (normalizedProduct.additionalsKey || "") &&
+          (prevProduct.requiredAdditionalsKey || "") ===
+            (normalizedProduct.requiredAdditionalsKey || "")
+      );
+
+      if (!productsIsAreadyOnTheCart) {
+        return [...prevProducts, normalizedProduct];
+      }
+
       return prevProducts.map((prevProduct) => {
         if (
           prevProduct.id === normalizedProduct.id &&
