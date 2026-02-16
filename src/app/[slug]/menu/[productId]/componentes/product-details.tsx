@@ -35,6 +35,14 @@ interface ProductDetailsProps {
           isOpen: true;
           deliveryFee: true;
           paymentMethods: true;
+          contactPhone: true;
+          addressStreet: true;
+          addressNumber: true;
+          addressNeighborhood: true;
+          addressCity: true;
+          addressState: true;
+          addressZipCode: true;
+          addressReference: true;
         };
       };
       sizes: true;
@@ -658,6 +666,16 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
               isTakeaway={isTakeaway}
               deliveryFee={product.restaurant.deliveryFee ?? 0}
               paymentMethods={product.restaurant.paymentMethods || []}
+              restaurantInfo={{
+                contactPhone: product.restaurant.contactPhone,
+                addressStreet: product.restaurant.addressStreet,
+                addressNumber: product.restaurant.addressNumber,
+                addressNeighborhood: product.restaurant.addressNeighborhood,
+                addressCity: product.restaurant.addressCity,
+                addressState: product.restaurant.addressState,
+                addressZipCode: product.restaurant.addressZipCode,
+                addressReference: product.restaurant.addressReference,
+              }}
             />
           </div>
         </div>

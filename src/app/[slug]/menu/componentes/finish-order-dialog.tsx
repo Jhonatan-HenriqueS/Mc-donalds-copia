@@ -98,12 +98,23 @@ interface FinishOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   paymentMethods: Array<{ id: string; name: string }>;
+  restaurantInfo?: {
+    contactPhone?: string | null;
+    addressStreet?: string | null;
+    addressNumber?: string | null;
+    addressNeighborhood?: string | null;
+    addressCity?: string | null;
+    addressState?: string | null;
+    addressZipCode?: string | null;
+    addressReference?: string | null;
+  };
 }
 
 const FinishOrderDialog = ({
   open,
   onOpenChange,
   paymentMethods,
+  restaurantInfo,
 }: FinishOrderDialogProps) => {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -180,7 +191,23 @@ const FinishOrderDialog = ({
   const canSelectPayment = profileCompleted && addressCompleted;
   const selectedPaymentMethodId = form.watch("paymentMethodId");
   const isPaymentSelected = Boolean(selectedPaymentMethodId);
-  const canFinalize = !needsProfileSave && !needsAddressSave && isPaymentSelected;
+  const canFinalize =
+    !needsProfileSave && !needsAddressSave && isPaymentSelected;
+  const hasRestaurantAddress = Boolean(
+    restaurantInfo?.addressStreet ||
+    restaurantInfo?.addressNumber ||
+    restaurantInfo?.addressNeighborhood ||
+    restaurantInfo?.addressCity ||
+    restaurantInfo?.addressState ||
+    restaurantInfo?.addressZipCode ||
+    restaurantInfo?.addressReference,
+  );
+  const restaurantAddressHeader = [
+    restaurantInfo?.addressStreet,
+    restaurantInfo?.addressNumber,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   const profileFieldNames = ["name", "email", "phone"] as const;
   const addressFieldNames = [
@@ -266,9 +293,7 @@ const FinishOrderDialog = ({
     } catch (error) {
       console.error("Erro ao ativar push do pedido:", error);
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Erro ao ativar notificações"
+        error instanceof Error ? error.message : "Erro ao ativar notificações",
       );
     }
   };
@@ -666,7 +691,7 @@ const FinishOrderDialog = ({
                             <FormControl>
                               <PatternFormat
                                 placeholder="(69) 99999-9999"
-                                format="(##) #####-####"
+                                format="(##) ####-####"
                                 customInput={Input}
                                 {...field}
                               />
@@ -675,10 +700,8 @@ const FinishOrderDialog = ({
                           </FormItem>
                         )}
                       />
-
                     </>
                   )}
-
                   {isTakeaway && profileCompleted && (
                     <>
                       <div className="border-t pt-4">
@@ -902,11 +925,53 @@ const FinishOrderDialog = ({
                       )}
                     </>
                   )}
-                  {canSelectPayment && (
+                  {!isTakeaway && profileCompleted && (
                     <div className="border-t pt-4">
                       <h3 className="font-semibold mb-3">
-                        Forma de Pagamento
+                        Endereço de retirada
                       </h3>
+                      {restaurantInfo?.contactPhone || hasRestaurantAddress ? (
+                        <div className="space-y-1 rounded-md border p-3 text-xs text-muted-foreground">
+                          {restaurantAddressHeader && (
+                            <p className="text-sm font-semibold text-foreground">
+                              {restaurantAddressHeader}
+                            </p>
+                          )}
+                          {restaurantInfo?.addressNeighborhood && (
+                            <p>{restaurantInfo.addressNeighborhood}</p>
+                          )}
+                          {(restaurantInfo?.addressCity ||
+                            restaurantInfo?.addressState) && (
+                            <p>
+                              {restaurantInfo?.addressCity}
+                              {restaurantInfo?.addressCity &&
+                              restaurantInfo?.addressState
+                                ? "/"
+                                : ""}
+                              {restaurantInfo?.addressState}
+                            </p>
+                          )}
+                          {restaurantInfo?.addressZipCode && (
+                            <p>CEP: {restaurantInfo.addressZipCode}</p>
+                          )}
+                          {restaurantInfo?.addressReference && (
+                            <p>Referência: {restaurantInfo.addressReference}</p>
+                          )}
+                          {restaurantInfo?.contactPhone && (
+                            <p>Telefone: {restaurantInfo.contactPhone}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          O restaurante ainda não cadastrou telefone ou
+                          endereço.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {canSelectPayment && (
+                    <div className="border-t pt-4">
+                      <h3 className="font-semibold mb-3">Forma de Pagamento</h3>
                       {paymentMethods.length === 0 ? (
                         <p className="text-xs text-destructive">
                           Nenhuma forma de pagamento disponível. Contate o

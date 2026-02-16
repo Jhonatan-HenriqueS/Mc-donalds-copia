@@ -22,6 +22,14 @@ const ProductPage = async ({ params }: ProductPageProps) => {
           isOpen: true,
           deliveryFee: true,
           paymentMethods: true,
+          contactPhone: true,
+          addressStreet: true,
+          addressNumber: true,
+          addressNeighborhood: true,
+          addressCity: true,
+          addressState: true,
+          addressZipCode: true,
+          addressReference: true,
         },
       },
       sizes: true,
@@ -48,7 +56,7 @@ const ProductPage = async ({ params }: ProductPageProps) => {
     return notFound();
   }
   return (
-    <div className="flex h-full flex-col ">
+    <div className="flex h-full flex-col">
       <ProductHeader product={product} />
       <ProductDetails product={product} />
     </div>

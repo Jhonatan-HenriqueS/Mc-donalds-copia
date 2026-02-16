@@ -21,6 +21,16 @@ interface CartSheetProps {
   isTakeaway?: boolean;
   deliveryFee?: number;
   paymentMethods: Array<{ id: string; name: string }>;
+  restaurantInfo?: {
+    contactPhone?: string | null;
+    addressStreet?: string | null;
+    addressNumber?: string | null;
+    addressNeighborhood?: string | null;
+    addressCity?: string | null;
+    addressState?: string | null;
+    addressZipCode?: string | null;
+    addressReference?: string | null;
+  };
 }
 
 const CartSheet = ({
@@ -28,6 +38,7 @@ const CartSheet = ({
   isTakeaway = false,
   deliveryFee = 0,
   paymentMethods,
+  restaurantInfo,
 }: CartSheetProps) => {
   const [finishOnderDialogIsOPen, setFinishOnderDialogIsOPen] = useState(false);
   const {
@@ -120,6 +131,7 @@ const CartSheet = ({
                 open={finishOnderDialogIsOPen}
                 onOpenChange={setFinishOnderDialogIsOPen}
                 paymentMethods={paymentMethods}
+                restaurantInfo={restaurantInfo}
               />
             </>
           ) : (

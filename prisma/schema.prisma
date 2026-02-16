@@ -60,6 +60,14 @@ model Restaurant {
   description        String
   avatarImageUrl     String
   coverImageUrl      String
+  contactPhone       String?
+  addressStreet      String?
+  addressNumber      String?
+  addressNeighborhood String?
+  addressCity        String?
+  addressState       String?
+  addressZipCode     String?
+  addressReference   String?
   isOpen             Boolean             @default(true)
   deliveryFee        Float               @default(0)
   allowDineIn        Boolean             @default(true)

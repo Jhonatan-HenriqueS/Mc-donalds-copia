@@ -15,6 +15,7 @@ import {
   Edit,
   ImageIcon,
   LogOut,
+  MapPin,
   Package,
   Plus,
   Trash2,
@@ -53,6 +54,7 @@ import { updateRequiredAdditionalItem } from "@/app/[slug]/menu/actions/update-r
 import { updateRestaurantAvatar } from "@/app/[slug]/menu/actions/update-restaurant-avatar";
 import { updateRestaurantCover } from "@/app/[slug]/menu/actions/update-restaurant-cover";
 import { updateRestaurantDeliveryFee } from "@/app/[slug]/menu/actions/update-restaurant-delivery-fee";
+import { updateRestaurantInfo } from "@/app/[slug]/menu/actions/update-restaurant-info";
 import { updateRestaurantStatus } from "@/app/[slug]/menu/actions/update-restaurant-status";
 import { useOrderNotifications } from "@/app/[slug]/menu/hooks/use-order-notifications";
 import { logout } from "@/app/actions/logout";
@@ -128,8 +130,29 @@ type ProductWithCategory = Product & {
   }[];
 };
 
+type RestaurantInfoFormValues = {
+  contactPhone: string;
+  addressStreet: string;
+  addressNumber: string;
+  addressNeighborhood: string;
+  addressCity: string;
+  addressState: string;
+  addressZipCode: string;
+  addressReference: string;
+};
+
 const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const router = useRouter();
+  const initialRestaurantInfo: RestaurantInfoFormValues = {
+    contactPhone: restaurant.contactPhone ?? "",
+    addressStreet: restaurant.addressStreet ?? "",
+    addressNumber: restaurant.addressNumber ?? "",
+    addressNeighborhood: restaurant.addressNeighborhood ?? "",
+    addressCity: restaurant.addressCity ?? "",
+    addressState: restaurant.addressState ?? "",
+    addressZipCode: restaurant.addressZipCode ?? "",
+    addressReference: restaurant.addressReference ?? "",
+  };
 
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -140,6 +163,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [showOrders, setShowOrders] = useState(false);
   const [showConsumptionMethods, setShowConsumptionMethods] = useState(false);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+  const [showRestaurantInfo, setShowRestaurantInfo] = useState(false);
   const [showUpdateAvatar, setShowUpdateAvatar] = useState(false);
   const [showUpdateCover, setShowUpdateCover] = useState(false);
   const [showUpdateDeliveryFee, setShowUpdateDeliveryFee] = useState(false);
@@ -258,6 +282,23 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [lastSavedCover, setLastSavedCover] = useState(
     restaurant.coverImageUrl,
   );
+  const [restaurantInfoForm, setRestaurantInfoForm] =
+    useState<RestaurantInfoFormValues>(initialRestaurantInfo);
+  const [lastSavedRestaurantInfo, setLastSavedRestaurantInfo] =
+    useState<RestaurantInfoFormValues>(initialRestaurantInfo);
+  const [restaurantInfoMode, setRestaurantInfoMode] = useState<
+    "add" | "update"
+  >(
+    initialRestaurantInfo.addressStreet ||
+      initialRestaurantInfo.addressNumber ||
+      initialRestaurantInfo.addressNeighborhood ||
+      initialRestaurantInfo.addressCity ||
+      initialRestaurantInfo.addressState ||
+      initialRestaurantInfo.addressZipCode ||
+      initialRestaurantInfo.addressReference
+      ? "update"
+      : "add",
+  );
   const [categoryName, setCategoryName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
@@ -342,6 +383,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [coverError, setCoverError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [deliveryFeeError, setDeliveryFeeError] = useState<string | null>(null);
+  const [restaurantInfoError, setRestaurantInfoError] = useState<string | null>(
+    null,
+  );
+  const [isSavingRestaurantInfo, setIsSavingRestaurantInfo] = useState(false);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -889,6 +934,147 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
       setDeliveryFeeError("Erro ao atualizar taxa.");
     } finally {
       setIsSavingDeliveryFee(false);
+    }
+  };
+
+  const formatPhoneInput = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (!digits) return "";
+    if (digits.length <= 2) return `(${digits}`;
+
+    const ddd = digits.slice(0, 2);
+    const number = digits.slice(2);
+
+    if (number.length <= 4) return `(${ddd}) ${number}`;
+    if (number.length <= 8) {
+      return `(${ddd}) ${number.slice(0, 4)}-${number.slice(4)}`;
+    }
+    return `(${ddd}) ${number.slice(0, 5)}-${number.slice(5, 9)}`;
+  };
+
+  const formatZipCodeInput = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  };
+
+  const handleRestaurantInfoFieldChange = (
+    field: keyof RestaurantInfoFormValues,
+    value: string,
+  ) => {
+    let nextValue = value;
+    if (field === "contactPhone") {
+      nextValue = formatPhoneInput(value);
+    }
+    if (field === "addressZipCode") {
+      nextValue = formatZipCodeInput(value);
+    }
+    if (field === "addressState") {
+      nextValue = value.toUpperCase().slice(0, 2);
+    }
+    setRestaurantInfoForm((prev) => ({
+      ...prev,
+      [field]: nextValue,
+    }));
+    if (restaurantInfoError) {
+      setRestaurantInfoError(null);
+    }
+  };
+
+  const handleSaveRestaurantInfo = async () => {
+    setRestaurantInfoError(null);
+
+    const phoneDigits = restaurantInfoForm.contactPhone.replace(/\D/g, "");
+    if (
+      restaurantInfoForm.contactPhone.trim() &&
+      phoneDigits.length !== 10 &&
+      phoneDigits.length !== 11
+    ) {
+      setRestaurantInfoError(
+        "Telefone inválido. Use (##) ####-#### ou (##) #####-####.",
+      );
+      return;
+    }
+
+    const zipDigits = restaurantInfoForm.addressZipCode.replace(/\D/g, "");
+    if (restaurantInfoForm.addressZipCode.trim() && zipDigits.length !== 8) {
+      setRestaurantInfoError("CEP inválido. Use o formato 00000-000.");
+      return;
+    }
+
+    const payload = {
+      restaurantId: restaurant.id,
+      ...(restaurantInfoForm.contactPhone.trim()
+        ? { contactPhone: restaurantInfoForm.contactPhone.trim() }
+        : {}),
+      ...(allowDineIn && restaurantInfoForm.addressStreet.trim()
+        ? { addressStreet: restaurantInfoForm.addressStreet.trim() }
+        : {}),
+      ...(allowDineIn && restaurantInfoForm.addressNumber.trim()
+        ? { addressNumber: restaurantInfoForm.addressNumber.trim() }
+        : {}),
+      ...(allowDineIn && restaurantInfoForm.addressNeighborhood.trim()
+        ? { addressNeighborhood: restaurantInfoForm.addressNeighborhood.trim() }
+        : {}),
+      ...(allowDineIn && restaurantInfoForm.addressCity.trim()
+        ? { addressCity: restaurantInfoForm.addressCity.trim() }
+        : {}),
+      ...(allowDineIn && restaurantInfoForm.addressState.trim()
+        ? { addressState: restaurantInfoForm.addressState.trim().toUpperCase() }
+        : {}),
+      ...(allowDineIn && restaurantInfoForm.addressZipCode.trim()
+        ? { addressZipCode: restaurantInfoForm.addressZipCode.trim() }
+        : {}),
+      ...(allowDineIn && restaurantInfoForm.addressReference.trim()
+        ? { addressReference: restaurantInfoForm.addressReference.trim() }
+        : {}),
+    };
+
+    if (Object.keys(payload).length <= 1) {
+      setRestaurantInfoError("Preencha ao menos um campo para salvar.");
+      return;
+    }
+
+    setIsSavingRestaurantInfo(true);
+    try {
+      const result = await updateRestaurantInfo(payload);
+      if (result.success && result.restaurant) {
+        const nextSavedState: RestaurantInfoFormValues = {
+          contactPhone: result.restaurant.contactPhone ?? "",
+          addressStreet: result.restaurant.addressStreet ?? "",
+          addressNumber: result.restaurant.addressNumber ?? "",
+          addressNeighborhood: result.restaurant.addressNeighborhood ?? "",
+          addressCity: result.restaurant.addressCity ?? "",
+          addressState: result.restaurant.addressState ?? "",
+          addressZipCode: result.restaurant.addressZipCode ?? "",
+          addressReference: result.restaurant.addressReference ?? "",
+        };
+        setLastSavedRestaurantInfo(nextSavedState);
+        setRestaurantInfoForm(nextSavedState);
+        setRestaurantInfoMode(
+          nextSavedState.addressStreet ||
+            nextSavedState.addressNumber ||
+            nextSavedState.addressNeighborhood ||
+            nextSavedState.addressCity ||
+            nextSavedState.addressState ||
+            nextSavedState.addressZipCode ||
+            nextSavedState.addressReference
+            ? "update"
+            : "add",
+        );
+        setShowRestaurantInfo(false);
+        toast.success("Informações salvas com sucesso!");
+        router.refresh();
+      } else {
+        setRestaurantInfoError(
+          result.error || "Erro ao salvar informações do restaurante.",
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao salvar informações do restaurante:", error);
+      setRestaurantInfoError("Erro ao salvar informações do restaurante.");
+    } finally {
+      setIsSavingRestaurantInfo(false);
     }
   };
 
@@ -1774,6 +1960,68 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     (group) => group.id === requiredItemGroupId,
   );
   const selectedRequiredItems = selectedRequiredGroup?.items ?? [];
+  const hasSavedAddressInfo = Boolean(
+    lastSavedRestaurantInfo.addressStreet ||
+      lastSavedRestaurantInfo.addressNumber ||
+      lastSavedRestaurantInfo.addressNeighborhood ||
+      lastSavedRestaurantInfo.addressCity ||
+      lastSavedRestaurantInfo.addressState ||
+      lastSavedRestaurantInfo.addressZipCode ||
+      lastSavedRestaurantInfo.addressReference,
+  );
+  const addressFieldConfigs: Array<{
+    key: Exclude<keyof RestaurantInfoFormValues, "contactPhone">;
+    label: string;
+    placeholder: string;
+    maxLength?: number;
+  }> = [
+    {
+      key: "addressStreet",
+      label: "Nome da rua",
+      placeholder: "Ex: Av. Brasil",
+    },
+    {
+      key: "addressNumber",
+      label: "Número do estabelecimento",
+      placeholder: "Ex: 123",
+    },
+    {
+      key: "addressNeighborhood",
+      label: "Bairro",
+      placeholder: "Ex: Centro",
+    },
+    {
+      key: "addressCity",
+      label: "Cidade",
+      placeholder: "Ex: Porto Velho",
+    },
+    {
+      key: "addressState",
+      label: "Estado",
+      placeholder: "Ex: RO",
+      maxLength: 2,
+    },
+    {
+      key: "addressZipCode",
+      label: "CEP",
+      placeholder: "00000-000",
+      maxLength: 9,
+    },
+    {
+      key: "addressReference",
+      label: "Ponto de referência",
+      placeholder: "Ex: Próximo ao mercado",
+    },
+  ];
+  const visibleAddressFields = addressFieldConfigs.filter((field) => {
+    if (restaurantInfoMode === "add") {
+      return !lastSavedRestaurantInfo[field.key];
+    }
+    if (hasSavedAddressInfo) {
+      return Boolean(lastSavedRestaurantInfo[field.key]);
+    }
+    return true;
+  });
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -1794,6 +2042,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           !showOrders &&
           !showConsumptionMethods &&
           !showPaymentMethods &&
+          !showRestaurantInfo &&
           !showUpdateAvatar &&
           !showUpdateCover &&
           !showUpdateDeliveryFee ? (
@@ -1878,6 +2127,20 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
               >
                 <Package className="mr-2 h-4 w-4" />
                 Formas de Pagamento
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowRestaurantInfo(true);
+                  setRestaurantInfoError(null);
+                  setRestaurantInfoMode(hasSavedAddressInfo ? "update" : "add");
+                  setRestaurantInfoForm(lastSavedRestaurantInfo);
+                }}
+                className="w-full text-sm sm:text-base"
+                variant="outline"
+                size="lg"
+              >
+                <MapPin className="mr-2 h-4 w-4" />
+                Informações
               </Button>
               <Button
                 onClick={() => setShowUpdateAvatar(true)}
@@ -2332,6 +2595,155 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       disabled={isSavingDeliveryFee}
                     >
                       {isSavingDeliveryFee ? "Salvando..." : "Salvar taxa"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : showRestaurantInfo ? (
+            <div className="flex-auto overflow-y-auto pr-1">
+              <Card>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base sm:text-lg">
+                      Informações
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs sm:text-sm"
+                      onClick={() => {
+                        setShowRestaurantInfo(false);
+                        setRestaurantInfoError(null);
+                        setRestaurantInfoMode(hasSavedAddressInfo ? "update" : "add");
+                        setRestaurantInfoForm(lastSavedRestaurantInfo);
+                      }}
+                    >
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 sm:space-y-5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={restaurantInfoMode === "add" ? "default" : "outline"}
+                      className="text-sm sm:text-base"
+                      onClick={() => {
+                        setRestaurantInfoMode("add");
+                        setRestaurantInfoError(null);
+                      }}
+                    >
+                      Adicionar endereço
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={
+                        restaurantInfoMode === "update" ? "default" : "outline"
+                      }
+                      className="text-sm sm:text-base"
+                      onClick={() => {
+                        setRestaurantInfoMode("update");
+                        setRestaurantInfoError(null);
+                      }}
+                    >
+                      Atualizar endereço
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="restaurantPhone" className="text-sm sm:text-base">
+                      Telefone do restaurante
+                    </Label>
+                    <Input
+                      id="restaurantPhone"
+                      placeholder="(69) 99999-9999"
+                      value={restaurantInfoForm.contactPhone}
+                      onChange={(e) =>
+                        handleRestaurantInfoFieldChange(
+                          "contactPhone",
+                          e.target.value,
+                        )
+                      }
+                      disabled={isSavingRestaurantInfo}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Aceita (##) ####-#### ou (##) #####-####
+                    </p>
+                  </div>
+
+                  {allowDineIn ? (
+                    <>
+                      {visibleAddressFields.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          Não há campos de endereço para esta aba no momento.
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {visibleAddressFields.map((field) => (
+                            <div className="space-y-2" key={field.key}>
+                              <Label
+                                htmlFor={field.key}
+                                className="text-sm sm:text-base"
+                              >
+                                {field.label}
+                              </Label>
+                              <Input
+                                id={field.key}
+                                placeholder={field.placeholder}
+                                value={restaurantInfoForm[field.key]}
+                                onChange={(e) =>
+                                  handleRestaurantInfoFieldChange(
+                                    field.key,
+                                    e.target.value,
+                                  )
+                                }
+                                maxLength={field.maxLength}
+                                disabled={isSavingRestaurantInfo}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Endereço desabilitado porque o método Comer no local está
+                      desativado.
+                    </p>
+                  )}
+
+                  {restaurantInfoError && (
+                    <p className="text-xs sm:text-sm text-destructive">
+                      {restaurantInfoError}
+                    </p>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 text-sm sm:text-base"
+                      onClick={() => {
+                        setRestaurantInfoForm(lastSavedRestaurantInfo);
+                        setRestaurantInfoError(null);
+                      }}
+                      disabled={isSavingRestaurantInfo}
+                    >
+                      Desfazer alterações
+                    </Button>
+                    <Button
+                      type="button"
+                      className="flex-1 text-sm sm:text-base"
+                      onClick={handleSaveRestaurantInfo}
+                      disabled={isSavingRestaurantInfo}
+                    >
+                      {isSavingRestaurantInfo
+                        ? "Salvando..."
+                        : restaurantInfoMode === "update"
+                          ? "Atualizar endereço"
+                          : "Adicionar endereço"}
                     </Button>
                   </div>
                 </CardContent>

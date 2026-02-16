@@ -149,6 +149,16 @@ const RestaurantCategories = ({ restaurant }: RestaurantsCategoriesProps) => {
               isTakeaway={isTakeaway}
               deliveryFee={restaurant.deliveryFee ?? 0}
               paymentMethods={restaurant.paymentMethods || []}
+              restaurantInfo={{
+                contactPhone: restaurant.contactPhone,
+                addressStreet: restaurant.addressStreet,
+                addressNumber: restaurant.addressNumber,
+                addressNeighborhood: restaurant.addressNeighborhood,
+                addressCity: restaurant.addressCity,
+                addressState: restaurant.addressState,
+                addressZipCode: restaurant.addressZipCode,
+                addressReference: restaurant.addressReference,
+              }}
             />
           </div>
           <Button onClick={taggleCart}>Ver Pedidos</Button>
