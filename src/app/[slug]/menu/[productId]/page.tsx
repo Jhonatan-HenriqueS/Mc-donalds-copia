@@ -56,7 +56,7 @@ const ProductPage = async ({ params }: ProductPageProps) => {
     return notFound();
   }
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-[100dvh] flex-col overflow-y-auto no-scrollbar">
       <ProductHeader product={product} />
       <ProductDetails product={product} />
     </div>

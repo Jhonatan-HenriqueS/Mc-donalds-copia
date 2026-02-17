@@ -1,10 +1,19 @@
 'use client';
 
 import { Prisma } from '@prisma/client';
-import { Settings } from 'lucide-react';
+import { Info, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { getOrdersCount } from '@/app/[slug]/menu/actions/get-orders-count';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
 import { useOrderNotifications } from '../hooks/use-order-notifications';
@@ -28,6 +37,7 @@ interface AdminButtonProps {
 const AdminButton = ({ restaurant }: AdminButtonProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [orderCount, setOrderCount] = useState(0);
   const [orderIds, setOrderIds] = useState<number[]>([]);
@@ -93,32 +103,103 @@ const AdminButton = ({ restaurant }: AdminButtonProps) => {
     return null;
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  const hasAnyInfo = Boolean(
+    restaurant.contactPhone ||
+      restaurant.addressStreet ||
+      restaurant.addressNumber ||
+      restaurant.addressNeighborhood ||
+      restaurant.addressCity ||
+      restaurant.addressState ||
+      restaurant.addressZipCode ||
+      restaurant.addressReference,
+  );
+  const addressLine = [restaurant.addressStreet, restaurant.addressNumber]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <>
       <div className="absolute right-4">
-        <Button
-          variant="secondary"
-          size="icon"
-          className="rounded-full relative"
-          onClick={handleAdminClick}
-        >
-          <Settings className="h-4 w-4" />
-          {hasNewOrders && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-              {newOrderCount > 9 ? '9+' : newOrderCount}
-            </span>
-          )}
-        </Button>
+        {isAuthenticated ? (
+          <Button
+            variant="secondary"
+            size="icon"
+            className="rounded-full relative"
+            onClick={handleAdminClick}
+          >
+            <Settings className="h-4 w-4" />
+            {hasNewOrders && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                {newOrderCount > 9 ? '9+' : newOrderCount}
+              </span>
+            )}
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            size="icon"
+            className="rounded-full"
+            onClick={() => setIsInfoOpen(true)}
+          >
+            <Info className="h-4 w-4" />
+          </Button>
+        )}
       </div>
-      <AdminSheet
-        isOpen={isAdminOpen}
-        onOpenChange={setIsAdminOpen}
-        restaurant={restaurant}
-      />
+      {isAuthenticated ? (
+        <AdminSheet
+          isOpen={isAdminOpen}
+          onOpenChange={setIsAdminOpen}
+          restaurant={restaurant}
+        />
+      ) : (
+        <AlertDialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+          <AlertDialogContent className="w-[90%] max-w-md rounded-lg">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Informações do restaurante</AlertDialogTitle>
+              <AlertDialogDescription>
+                Veja os dados cadastrados para contato e localização.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            {hasAnyInfo ? (
+              <div className="space-y-1 text-sm text-muted-foreground">
+                {addressLine && (
+                  <p className="font-medium text-foreground">{addressLine}</p>
+                )}
+                {restaurant.addressNeighborhood && (
+                  <p>{restaurant.addressNeighborhood}</p>
+                )}
+                {(restaurant.addressCity || restaurant.addressState) && (
+                  <p>
+                    {restaurant.addressCity}
+                    {restaurant.addressCity && restaurant.addressState
+                      ? '/'
+                      : ''}
+                    {restaurant.addressState}
+                  </p>
+                )}
+                {restaurant.addressZipCode && (
+                  <p>CEP: {restaurant.addressZipCode}</p>
+                )}
+                {restaurant.addressReference && (
+                  <p>Referência: {restaurant.addressReference}</p>
+                )}
+                {restaurant.contactPhone && (
+                  <p>Telefone: {restaurant.contactPhone}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                O restaurante ainda não cadastrou informações.
+              </p>
+            )}
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>Fechar</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </>
   );
 };

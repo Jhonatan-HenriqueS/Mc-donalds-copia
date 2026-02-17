@@ -300,8 +300,8 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
   return (
     <>
-      <div className="relative z-50 rounded-t-3xl p-5 mt-[-2rem] flex flex-1 min-h-0 flex-col bg-white ">
-        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+      <div className="relative z-50 mt-[-2rem] rounded-t-3xl bg-white p-5">
+        <div>
           <div className="flex items-center gap-1.5">
             <Image
               src={product.restaurant.avatarImageUrl}
@@ -626,7 +626,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
               <Input
                 placeholder="Ex: Retirar a borda..."
                 value={observation}
-                className="border-none outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none"
+                className="border rounded-lg outline-none ring-0 focus:ring-0 focus-visible:ring-0 shadow-none"
                 onChange={(event) => setObservation(event.target.value)}
               />
             </div>
