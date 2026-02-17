@@ -1962,12 +1962,12 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const selectedRequiredItems = selectedRequiredGroup?.items ?? [];
   const hasSavedAddressInfo = Boolean(
     lastSavedRestaurantInfo.addressStreet ||
-      lastSavedRestaurantInfo.addressNumber ||
-      lastSavedRestaurantInfo.addressNeighborhood ||
-      lastSavedRestaurantInfo.addressCity ||
-      lastSavedRestaurantInfo.addressState ||
-      lastSavedRestaurantInfo.addressZipCode ||
-      lastSavedRestaurantInfo.addressReference,
+    lastSavedRestaurantInfo.addressNumber ||
+    lastSavedRestaurantInfo.addressNeighborhood ||
+    lastSavedRestaurantInfo.addressCity ||
+    lastSavedRestaurantInfo.addressState ||
+    lastSavedRestaurantInfo.addressZipCode ||
+    lastSavedRestaurantInfo.addressReference,
   );
   const addressFieldConfigs: Array<{
     key: Exclude<keyof RestaurantInfoFormValues, "contactPhone">;
@@ -2025,7 +2025,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[90%] lg:min-w-[40%]">
+      <SheetContent className="w-[94%] lg:min-w-[50%]">
         <SheetHeader>
           <SheetTitle className="text-start text-lg sm:text-xl">
             Painel Admin
@@ -2616,7 +2616,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       onClick={() => {
                         setShowRestaurantInfo(false);
                         setRestaurantInfoError(null);
-                        setRestaurantInfoMode(hasSavedAddressInfo ? "update" : "add");
+                        setRestaurantInfoMode(
+                          hasSavedAddressInfo ? "update" : "add",
+                        );
                         setRestaurantInfoForm(lastSavedRestaurantInfo);
                       }}
                     >
@@ -2625,11 +2627,13 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 sm:space-y-5">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       type="button"
-                      variant={restaurantInfoMode === "add" ? "default" : "outline"}
-                      className="text-sm sm:text-base"
+                      variant={
+                        restaurantInfoMode === "add" ? "default" : "outline"
+                      }
+                      className="text-sm sm:text-base w-full"
                       onClick={() => {
                         setRestaurantInfoMode("add");
                         setRestaurantInfoError(null);
@@ -2642,7 +2646,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                       variant={
                         restaurantInfoMode === "update" ? "default" : "outline"
                       }
-                      className="text-sm sm:text-base"
+                      className="text-sm sm:text-base w-full"
                       onClick={() => {
                         setRestaurantInfoMode("update");
                         setRestaurantInfoError(null);
@@ -2653,7 +2657,10 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="restaurantPhone" className="text-sm sm:text-base">
+                    <Label
+                      htmlFor="restaurantPhone"
+                      className="text-sm sm:text-base"
+                    >
                       Telefone do restaurante
                     </Label>
                     <Input

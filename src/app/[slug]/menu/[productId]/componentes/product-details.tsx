@@ -300,7 +300,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
   return (
     <>
-      <div className="relative z-50 mt-[-2rem] rounded-t-3xl bg-white p-5">
+      <div className="relative z-50 mt-[-2rem] rounded-t-3xl bg-white p-5 pb-24">
         <div>
           <div className="flex items-center gap-1.5">
             <Image
