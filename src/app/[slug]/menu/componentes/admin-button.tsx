@@ -1,7 +1,7 @@
 'use client';
 
 import { Prisma } from '@prisma/client';
-import { Info, Settings } from 'lucide-react';
+import { Info, Phone, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { getOrdersCount } from '@/app/[slug]/menu/actions/get-orders-count';
@@ -116,6 +116,17 @@ const AdminButton = ({ restaurant }: AdminButtonProps) => {
   const addressLine = [restaurant.addressStreet, restaurant.addressNumber]
     .filter(Boolean)
     .join(', ');
+  const whatsappDigits = (restaurant.contactPhone || '').replace(/\D/g, '');
+  const hasWhatsappNumber = whatsappDigits.length >= 10;
+  const whatsappNumber =
+    whatsappDigits.length === 10 || whatsappDigits.length === 11
+      ? `55${whatsappDigits}`
+      : whatsappDigits;
+  const whatsappLink = hasWhatsappNumber
+    ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+        'Olá, preciso de ajuda!',
+      )}`
+    : null;
 
   return (
     <>
@@ -192,6 +203,15 @@ const AdminButton = ({ restaurant }: AdminButtonProps) => {
               <p className="text-sm text-muted-foreground">
                 O restaurante ainda não cadastrou informações.
               </p>
+            )}
+
+            {whatsappLink && (
+              <Button asChild className="w-full">
+                <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                  <Phone className="mr-2 h-4 w-4" />
+                  Falar no WhatsApp
+                </a>
+              </Button>
             )}
 
             <AlertDialogFooter>
