@@ -1960,9 +1960,15 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     (group) => group.id === requiredItemGroupId,
   );
   const selectedRequiredItems = selectedRequiredGroup?.items ?? [];
+  const totalRevenue = customers.reduce(
+    (accumulator, customer) => accumulator + customer.totalSpent,
+    0,
+  );
+  const customersRevenueByMode =
+    viewMode === "total" ? totalRevenue : totalMonthRevenue;
   const hasSavedAddressInfo = Boolean(
     lastSavedRestaurantInfo.addressStreet ||
-    lastSavedRestaurantInfo.addressNumber ||
+      lastSavedRestaurantInfo.addressNumber ||
     lastSavedRestaurantInfo.addressNeighborhood ||
     lastSavedRestaurantInfo.addressCity ||
     lastSavedRestaurantInfo.addressState ||
@@ -2908,7 +2914,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                             {viewMode === "month" ? " no mês" : ""}:
                           </p>
                           <p className="font-semibold text-base sm:text-lg">
-                            {formatCurrency(totalMonthRevenue)}
+                            {formatCurrency(customersRevenueByMode)}
                           </p>
                         </div>
                       </div>
