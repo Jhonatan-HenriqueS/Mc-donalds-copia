@@ -1968,7 +1968,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     viewMode === "total" ? totalRevenue : totalMonthRevenue;
   const hasSavedAddressInfo = Boolean(
     lastSavedRestaurantInfo.addressStreet ||
-      lastSavedRestaurantInfo.addressNumber ||
+    lastSavedRestaurantInfo.addressNumber ||
     lastSavedRestaurantInfo.addressNeighborhood ||
     lastSavedRestaurantInfo.addressCity ||
     lastSavedRestaurantInfo.addressState ||
@@ -3656,7 +3656,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
                     <Button
                       type="submit"
-                      className="w-full rounded-full"
+                      className="w-full "
                       disabled={isSavingAdditional || isUploadingAdditional}
                     >
                       {isSavingAdditional
