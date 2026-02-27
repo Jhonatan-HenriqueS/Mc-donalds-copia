@@ -622,7 +622,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
 
           <div className="mt-4 space-y-4 mb-4">
             <div className="space-y-2">
-              <h4 className="font-semibold">Observacoes</h4>
+              <h4 className="font-semibold">Observações</h4>
               <Input
                 placeholder="Ex: Retirar a borda..."
                 value={observation}
