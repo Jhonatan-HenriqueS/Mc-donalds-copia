@@ -3,7 +3,7 @@
 "use client";
 
 import { Restaurant } from "@prisma/client";
-import { ChevronLeftIcon, ScrollTextIcon } from "lucide-react";
+import { ChevronLeftIcon, ClipboardList } from "lucide-react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -42,7 +42,7 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
   // Buscar email salvo do último pedido feito
   useEffect(() => {
     const savedEmail = localStorage.getItem(
-      `last_order_email_${restaurant.id}`
+      `last_order_email_${restaurant.id}`,
     );
     if (savedEmail) {
       setEmail(savedEmail);
@@ -60,8 +60,8 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
       try {
         const response = await fetch(
           `/api/customer-orders?restaurantId=${restaurant.id}&email=${encodeURIComponent(
-            email
-          )}`
+            email,
+          )}`,
         );
         if (response.ok) {
           const data = await response.json();
@@ -71,7 +71,7 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
                 id: order.id,
                 status: order.status,
                 updateAt: new Date(order.updateAt),
-              }))
+              })),
             );
           }
         }
@@ -118,7 +118,7 @@ const RestaurantHeader = ({ restaurant }: RestaurantHeaderProps) => {
         className="absolute top-4 right-4 rounded-full z-50 "
         onClick={handleOrdersClick}
       >
-        <ScrollTextIcon />
+        <ClipboardList />
         {hasStatusChanged && (
           <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white">
             !
