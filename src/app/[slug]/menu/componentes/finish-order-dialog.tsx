@@ -558,11 +558,11 @@ const FinishOrderDialog = ({
                 Finalizar pedido
               </DrawerTitle>
               <DrawerDescription className="flex justify-center">
-                Insira suas informações abaixo para finalizar seu pedido
+                Insira as informações para finalizar seu pedido
               </DrawerDescription>
             </DrawerHeader>
 
-            <div className="p-5 ">
+            <div className="px-5 py-2 ">
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit(onSubmit)}
@@ -705,9 +705,7 @@ const FinishOrderDialog = ({
                   {isTakeaway && profileCompleted && (
                     <>
                       <div className="border-t pt-4">
-                        <h3 className="font-semibold mb-4">
-                          Endereço de Entrega
-                        </h3>
+                        <h3 className="font-semibold">Endereço de Entrega</h3>
                       </div>
 
                       {isTakeaway && savedAddress && !editingAddress ? (
