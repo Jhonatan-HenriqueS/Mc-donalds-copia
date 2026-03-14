@@ -5163,7 +5163,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           if (!open) setDeleteProductId(null);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[calc(100%-1.5rem)] max-w-md rounded-lg p-4 sm:p-6">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
             <AlertDialogDescription>
@@ -5193,7 +5193,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
           if (!open) setDeleteCategoryId(null);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[calc(100%-1.5rem)] max-w-md rounded-lg p-4 sm:p-6">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Categoria</AlertDialogTitle>
             <AlertDialogDescription>
