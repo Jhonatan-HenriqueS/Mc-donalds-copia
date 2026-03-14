@@ -2,7 +2,7 @@
 
 import { OrderStatus, Prisma } from "@prisma/client";
 import { Separator } from "@radix-ui/react-separator";
-import { ChevronLeftIcon, ScrollTextIcon } from "lucide-react";
+import { ChevronLeftIcon, ClipboardList } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -59,7 +59,7 @@ const OrderList = ({ orders }: OrdersPageProps) => {
             <ChevronLeftIcon />
           </Button>
           <div className="flex items-center gap-3 mt-4">
-            <ScrollTextIcon />
+            <ClipboardList />
             <h2 className="text-lg font-semibold ">Meus Pedidos</h2>
           </div>
         </div>
@@ -93,7 +93,7 @@ const OrderList = ({ orders }: OrdersPageProps) => {
                       "bg-red-500 text-white"
                     }
                 `}
-            >
+              >
                 {getStatusLabel(order.status)}
               </div>
               <div className="flex items-center gap-2 ">
@@ -157,17 +157,17 @@ const OrderList = ({ orders }: OrdersPageProps) => {
                   </div>
                 ))}
               </div>
-            <Separator />
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <div className="flex justify-between">
-                <span>Pagamento</span>
-                <span className="text-foreground font-semibold">
-                  {order.paymentMethodName || "Não informado"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Produtos</span>
-                <span className="text-foreground font-semibold">
+              <Separator />
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Pagamento</span>
+                  <span className="text-foreground font-semibold">
+                    {order.paymentMethodName || "Não informado"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Produtos</span>
+                  <span className="text-foreground font-semibold">
                     {formatCurrency(order.productsSubtotal)}
                   </span>
                 </div>
