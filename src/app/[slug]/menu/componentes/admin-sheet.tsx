@@ -167,6 +167,9 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
   const [showUpdateAvatar, setShowUpdateAvatar] = useState(false);
   const [showUpdateCover, setShowUpdateCover] = useState(false);
   const [showUpdateDeliveryFee, setShowUpdateDeliveryFee] = useState(false);
+  const [additionalEditorTab, setAdditionalEditorTab] = useState<
+    "optional" | "required"
+  >("optional");
   const [ordersView, setOrdersView] = useState<"today" | "all">("today");
   const [ordersStatusFilter, setOrdersStatusFilter] = useState<
     OrderStatus | "ALL"
@@ -1222,6 +1225,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     categoryId: string,
     additional?: CategoryAdditional,
   ) => {
+    setAdditionalEditorTab("optional");
     setAdditionalCategoryId(categoryId);
     setEditingAdditionalId(additional?.id ?? null);
     setAdditionalName(additional?.name ?? "");
@@ -1362,6 +1366,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     categoryId: string,
     group?: RequiredAdditionalGroup,
   ) => {
+    setAdditionalEditorTab("required");
     setRequiredCategoryId(categoryId);
     setEditingRequiredGroupId(group?.id ?? null);
     setRequiredGroupTitle(group?.title ?? "");
@@ -1509,6 +1514,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
     groupId: string,
     item?: RequiredAdditionalItem,
   ) => {
+    setAdditionalEditorTab("required");
     setRequiredCategoryId(categoryId);
     setRequiredItemGroupId(groupId);
     setEditingRequiredItemId(item?.id ?? null);
@@ -2073,6 +2079,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                 onClick={() => {
                   resetAdditionalForm();
                   resetRequiredForms();
+                  setAdditionalEditorTab("optional");
                   setShowAddAdditional(true);
                 }}
                 className="w-full text-sm sm:text-base"
@@ -3504,522 +3511,64 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <form
-                    className="space-y-3 sm:space-y-4"
-                    onSubmit={handleSubmitAdditional}
-                  >
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="additional-category"
-                        className="text-sm sm:text-base"
-                      >
-                        Categoria
-                      </Label>
-                      <Select
-                        value={additionalCategoryId ?? ""}
-                        onValueChange={(value) => {
-                          setAdditionalCategoryId(value);
-                          if (additionalError) {
-                            setAdditionalError(null);
-                          }
-                        }}
-                        disabled={isSavingAdditional || !!editingAdditionalId}
-                      >
-                        <SelectTrigger className="text-sm sm:text-base">
-                          <SelectValue placeholder="Selecione a categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="additional-name"
-                        className="text-sm sm:text-base"
-                      >
-                        Nome
-                      </Label>
-                      <Input
-                        id="additional-name"
-                        placeholder="Nome do adicional"
-                        value={additionalName}
-                        onChange={(e) => {
-                          setAdditionalName(e.target.value);
-                          if (additionalError) {
-                            setAdditionalError(null);
-                          }
-                        }}
-                        className="text-sm sm:text-base"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="additional-price"
-                          className="text-sm sm:text-base"
-                        >
-                          Preço
-                        </Label>
-                        <Input
-                          id="additional-price"
-                          placeholder="0,00"
-                          type="number"
-                          step="0.01"
-                          value={additionalPrice}
-                          onChange={(e) => {
-                            setAdditionalPrice(e.target.value);
-                            if (additionalError) {
-                              setAdditionalError(null);
-                            }
-                          }}
-                          className="text-sm sm:text-base"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="additional-image-file"
-                          className="text-sm sm:text-base"
-                        >
-                          Imagem
-                        </Label>
-                        <input
-                          ref={additionalFileInputRef}
-                          id="additional-image-file"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAdditionalImageSelect}
-                          className="hidden"
-                          disabled={isSavingAdditional || isUploadingAdditional}
-                        />
-                        <div className="space-y-2">
-                          {additionalImagePreview ? (
-                            <div className="relative">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={additionalImagePreview}
-                                alt="Preview"
-                                className="h-24 w-full rounded-md object-cover"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="mt-2 w-full text-xs sm:text-sm"
-                                onClick={() => {
-                                  setAdditionalImageUrl("");
-                                  setAdditionalImagePreview(null);
-                                  if (additionalFileInputRef.current) {
-                                    additionalFileInputRef.current.value = "";
-                                  }
-                                }}
-                                disabled={
-                                  isSavingAdditional || isUploadingAdditional
-                                }
-                              >
-                                Remover Imagem
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="w-full text-xs sm:text-sm"
-                              onClick={() =>
-                                additionalFileInputRef.current?.click()
-                              }
-                              disabled={
-                                isSavingAdditional || isUploadingAdditional
-                              }
-                            >
-                              <ImageIcon className="mr-2 h-4 w-4" />
-                              {isUploadingAdditional
-                                ? "Carregando..."
-                                : "Selecionar"}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {additionalError && (
-                      <p className="text-xs sm:text-sm text-destructive">
-                        {additionalError}
-                      </p>
-                    )}
-
+                  <div className="mb-6 grid grid-cols-2 gap-2 rounded-lg bg-muted p-1">
                     <Button
-                      type="submit"
-                      className="w-full "
-                      disabled={isSavingAdditional || isUploadingAdditional}
+                      type="button"
+                      variant={
+                        additionalEditorTab === "optional" ? "default" : "ghost"
+                      }
+                      className="w-full text-xs sm:text-sm"
+                      onClick={() => setAdditionalEditorTab("optional")}
                     >
-                      {isSavingAdditional
-                        ? "Salvando..."
-                        : editingAdditionalId
-                          ? "Atualizar adicional"
-                          : "Adicionar adicional"}
+                      Opcional
                     </Button>
-                  </form>
-
-                  <div className="mt-6 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm sm:text-base font-semibold">
-                        Gerenciar adicionais
-                      </p>
-                    </div>
-
-                    {!additionalCategoryId ? (
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Selecione uma categoria para visualizar os adicionais.
-                      </p>
-                    ) : selectedAdditionals.length > 0 &&
-                      selectedAdditionalCategory ? (
-                      <div className="space-y-2">
-                        {selectedAdditionals.map((additional) => (
-                          <div
-                            key={additional.id}
-                            className="flex items-center justify-between gap-3 rounded-md border p-2"
-                          >
-                            <div className="flex items-center gap-3">
-                              {additional.imageUrl && (
-                                <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={additional.imageUrl}
-                                    alt={additional.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                </div>
-                              )}
-                              <div>
-                                <p className="text-xs sm:text-sm font-medium">
-                                  {additional.name}
-                                </p>
-                                <p className="text-[11px] text-muted-foreground">
-                                  {formatCurrency(additional.price)}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="text-[11px]"
-                                onClick={() => {
-                                  if (!selectedAdditionalCategory) return;
-                                  handleStartAdditional(
-                                    selectedAdditionalCategory.id,
-                                    additional,
-                                  );
-                                }}
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                className="text-[11px]"
-                                disabled={
-                                  isDeletingAdditional === additional.id
-                                }
-                                onClick={() => {
-                                  if (!selectedAdditionalCategory) return;
-                                  handleDeleteAdditional(
-                                    additional.id,
-                                    selectedAdditionalCategory.id,
-                                  );
-                                }}
-                              >
-                                {isDeletingAdditional === additional.id
-                                  ? "Removendo..."
-                                  : "Remover"}
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Nenhum adicional cadastrado nesta categoria.
-                      </p>
-                    )}
+                    <Button
+                      type="button"
+                      variant={
+                        additionalEditorTab === "required" ? "default" : "ghost"
+                      }
+                      className="w-full text-xs sm:text-sm"
+                      onClick={() => setAdditionalEditorTab("required")}
+                    >
+                      Obrigatório
+                    </Button>
                   </div>
 
-                  <div className="mt-8 border-t pt-6 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm sm:text-base font-semibold">
-                        Adicionais obrigatórios
-                      </p>
-                      {editingRequiredGroupId && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs sm:text-sm"
-                          onClick={resetRequiredGroupForm}
-                        >
-                          Novo grupo
-                        </Button>
-                      )}
-                    </div>
-
-                    <form
-                      className="space-y-3 sm:space-y-4"
-                      onSubmit={handleSubmitRequiredGroup}
-                    >
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="required-group-category"
-                          className="text-sm sm:text-base"
-                        >
-                          Categoria
-                        </Label>
-                        <Select
-                          value={requiredCategoryId ?? ""}
-                          onValueChange={(value) => {
-                            setRequiredCategoryId(value);
-                            resetRequiredItemForm();
-                            if (requiredGroupError) {
-                              setRequiredGroupError(null);
-                            }
-                          }}
-                          disabled={
-                            isSavingRequiredGroup || !!editingRequiredGroupId
-                          }
-                        >
-                          <SelectTrigger className="text-sm sm:text-base">
-                            <SelectValue placeholder="Selecione a categoria" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="required-group-title"
-                            className="text-sm sm:text-base"
-                          >
-                            Título do grupo
-                          </Label>
-                          <Input
-                            id="required-group-title"
-                            placeholder="Ex: Escolha o molho"
-                            value={requiredGroupTitle}
-                            onChange={(e) => {
-                              setRequiredGroupTitle(e.target.value);
-                              if (requiredGroupError) {
-                                setRequiredGroupError(null);
-                              }
-                            }}
-                            className="text-sm sm:text-base"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="required-group-quantity"
-                            className="text-sm sm:text-base"
-                          >
-                            Quantidade obrigatória
-                          </Label>
-                          <Input
-                            id="required-group-quantity"
-                            type="number"
-                            min="1"
-                            step="1"
-                            placeholder="1"
-                            value={requiredGroupQuantity}
-                            onChange={(e) => {
-                              setRequiredGroupQuantity(e.target.value);
-                              if (requiredGroupError) {
-                                setRequiredGroupError(null);
-                              }
-                            }}
-                            className="text-sm sm:text-base"
-                          />
-                        </div>
-                      </div>
-
-                      {requiredGroupError && (
-                        <p className="text-xs sm:text-sm text-destructive">
-                          {requiredGroupError}
-                        </p>
-                      )}
-
-                      <div className="flex gap-2">
-                        <Button
-                          type="submit"
-                          size="sm"
-                          className="text-xs sm:text-sm flex-1"
-                          disabled={isSavingRequiredGroup}
-                        >
-                          {isSavingRequiredGroup
-                            ? "Salvando..."
-                            : editingRequiredGroupId
-                              ? "Atualizar grupo"
-                              : "Adicionar grupo"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs sm:text-sm"
-                          onClick={resetRequiredGroupForm}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </form>
-
-                    <div className="space-y-2">
-                      <p className="text-sm sm:text-base font-semibold">
-                        Gerenciar grupos
-                      </p>
-                      {!requiredCategoryId ? (
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                          Selecione uma categoria para visualizar os grupos.
-                        </p>
-                      ) : selectedRequiredGroups.length > 0 &&
-                        selectedRequiredCategory ? (
-                        <div className="space-y-2">
-                          {selectedRequiredGroups.map((group) => (
-                            <div
-                              key={group.id}
-                              className="flex items-center justify-between gap-3 rounded-md border p-2"
-                            >
-                              <div>
-                                <p className="text-xs sm:text-sm font-medium">
-                                  {group.title}
-                                </p>
-                                <p className="text-[11px] text-muted-foreground">
-                                  {group.requiredQuantity} obrigatório(s) •{" "}
-                                  {group.items.length} item(ns)
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-[11px]"
-                                  onClick={() => {
-                                    if (!selectedRequiredCategory) return;
-                                    handleStartRequiredGroup(
-                                      selectedRequiredCategory.id,
-                                      group,
-                                    );
-                                  }}
-                                >
-                                  Editar
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  className="text-[11px]"
-                                  disabled={
-                                    isDeletingRequiredGroup === group.id
-                                  }
-                                  onClick={() => {
-                                    if (!selectedRequiredCategory) return;
-                                    handleDeleteRequiredGroup(
-                                      group.id,
-                                      selectedRequiredCategory.id,
-                                    );
-                                  }}
-                                >
-                                  {isDeletingRequiredGroup === group.id
-                                    ? "Removendo..."
-                                    : "Remover"}
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                          Nenhum grupo obrigatório cadastrado.
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm sm:text-base font-semibold">
-                          Itens obrigatórios
-                        </p>
-                        {editingRequiredItemId && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs sm:text-sm"
-                            onClick={resetRequiredItemForm}
-                          >
-                            Novo item
-                          </Button>
-                        )}
-                      </div>
-
+                  {additionalEditorTab === "optional" ? (
+                    <>
                       <form
                         className="space-y-3 sm:space-y-4"
-                        onSubmit={handleSubmitRequiredItem}
+                        onSubmit={handleSubmitAdditional}
                       >
                         <div className="space-y-2">
                           <Label
-                            htmlFor="required-item-group"
+                            htmlFor="additional-category"
                             className="text-sm sm:text-base"
                           >
-                            Grupo obrigatório
+                            Categoria
                           </Label>
                           <Select
-                            value={requiredItemGroupId ?? ""}
+                            value={additionalCategoryId ?? ""}
                             onValueChange={(value) => {
-                              setRequiredItemGroupId(value);
-                              setRequiredItemName("");
-                              setRequiredItemImageUrl("");
-                              setRequiredItemImagePreview(null);
-                              setEditingRequiredItemId(null);
-                              if (requiredItemFileInputRef.current) {
-                                requiredItemFileInputRef.current.value = "";
-                              }
-                              if (requiredItemError) {
-                                setRequiredItemError(null);
+                              setAdditionalCategoryId(value);
+                              if (additionalError) {
+                                setAdditionalError(null);
                               }
                             }}
                             disabled={
-                              isSavingRequiredItem ||
-                              !!editingRequiredItemId ||
-                              selectedRequiredGroups.length === 0
+                              isSavingAdditional || !!editingAdditionalId
                             }
                           >
                             <SelectTrigger className="text-sm sm:text-base">
-                              <SelectValue
-                                placeholder={
-                                  selectedRequiredGroups.length > 0
-                                    ? "Selecione o grupo"
-                                    : "Cadastre um grupo primeiro"
-                                }
-                              />
+                              <SelectValue placeholder="Selecione a categoria" />
                             </SelectTrigger>
                             <SelectContent>
-                              {selectedRequiredGroups.map((group) => (
-                                <SelectItem key={group.id} value={group.id}>
-                                  {group.title}
+                              {categories.map((category) => (
+                                <SelectItem
+                                  key={category.id}
+                                  value={category.id}
+                                >
+                                  {category.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -4028,159 +3577,174 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
 
                         <div className="space-y-2">
                           <Label
-                            htmlFor="required-item-name"
+                            htmlFor="additional-name"
                             className="text-sm sm:text-base"
                           >
-                            Nome do item
+                            Nome
                           </Label>
                           <Input
-                            id="required-item-name"
-                            placeholder="Ex: Maionese verde"
-                            value={requiredItemName}
+                            id="additional-name"
+                            placeholder="Nome do adicional"
+                            value={additionalName}
                             onChange={(e) => {
-                              setRequiredItemName(e.target.value);
-                              if (requiredItemError) {
-                                setRequiredItemError(null);
+                              setAdditionalName(e.target.value);
+                              if (additionalError) {
+                                setAdditionalError(null);
                               }
                             }}
                             className="text-sm sm:text-base"
                           />
                         </div>
 
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="required-item-image"
-                            className="text-sm sm:text-base"
-                          >
-                            Imagem
-                          </Label>
-                          <input
-                            ref={requiredItemFileInputRef}
-                            id="required-item-image"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleRequiredItemImageSelect}
-                            className="hidden"
-                            disabled={
-                              isSavingRequiredItem || isUploadingRequiredItem
-                            }
-                          />
+                        <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
-                            {requiredItemImagePreview ? (
-                              <div className="relative">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={requiredItemImagePreview}
-                                  alt="Preview"
-                                  className="h-24 w-full rounded-md object-cover"
-                                />
+                            <Label
+                              htmlFor="additional-price"
+                              className="text-sm sm:text-base"
+                            >
+                              Preço
+                            </Label>
+                            <Input
+                              id="additional-price"
+                              placeholder="0,00"
+                              type="number"
+                              step="0.01"
+                              value={additionalPrice}
+                              onChange={(e) => {
+                                setAdditionalPrice(e.target.value);
+                                if (additionalError) {
+                                  setAdditionalError(null);
+                                }
+                              }}
+                              className="text-sm sm:text-base"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="additional-image-file"
+                              className="text-sm sm:text-base"
+                            >
+                              Imagem
+                            </Label>
+                            <input
+                              ref={additionalFileInputRef}
+                              id="additional-image-file"
+                              type="file"
+                              accept="image/*"
+                              onChange={handleAdditionalImageSelect}
+                              className="hidden"
+                              disabled={
+                                isSavingAdditional || isUploadingAdditional
+                              }
+                            />
+                            <div className="space-y-2">
+                              {additionalImagePreview ? (
+                                <div className="relative">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={additionalImagePreview}
+                                    alt="Preview"
+                                    className="h-24 w-full rounded-md object-cover"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2 w-full text-xs sm:text-sm"
+                                    onClick={() => {
+                                      setAdditionalImageUrl("");
+                                      setAdditionalImagePreview(null);
+                                      if (additionalFileInputRef.current) {
+                                        additionalFileInputRef.current.value =
+                                          "";
+                                      }
+                                    }}
+                                    disabled={
+                                      isSavingAdditional ||
+                                      isUploadingAdditional
+                                    }
+                                  >
+                                    Remover Imagem
+                                  </Button>
+                                </div>
+                              ) : (
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  size="sm"
-                                  className="mt-2 w-full text-xs sm:text-sm"
-                                  onClick={() => {
-                                    setRequiredItemImageUrl("");
-                                    setRequiredItemImagePreview(null);
-                                    if (requiredItemFileInputRef.current) {
-                                      requiredItemFileInputRef.current.value =
-                                        "";
-                                    }
-                                  }}
+                                  className="w-full text-xs sm:text-sm"
+                                  onClick={() =>
+                                    additionalFileInputRef.current?.click()
+                                  }
                                   disabled={
-                                    isSavingRequiredItem ||
-                                    isUploadingRequiredItem
+                                    isSavingAdditional || isUploadingAdditional
                                   }
                                 >
-                                  Remover Imagem
+                                  <ImageIcon className="mr-2 h-4 w-4" />
+                                  {isUploadingAdditional
+                                    ? "Carregando..."
+                                    : "Selecionar"}
                                 </Button>
-                              </div>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full text-xs sm:text-sm"
-                                onClick={() =>
-                                  requiredItemFileInputRef.current?.click()
-                                }
-                                disabled={
-                                  isSavingRequiredItem ||
-                                  isUploadingRequiredItem
-                                }
-                              >
-                                <ImageIcon className="mr-2 h-4 w-4" />
-                                {isUploadingRequiredItem
-                                  ? "Carregando..."
-                                  : "Selecionar da Galeria"}
-                              </Button>
-                            )}
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        {requiredItemError && (
+                        {additionalError && (
                           <p className="text-xs sm:text-sm text-destructive">
-                            {requiredItemError}
+                            {additionalError}
                           </p>
                         )}
 
-                        <div className="flex gap-2">
-                          <Button
-                            type="submit"
-                            size="sm"
-                            className="text-xs sm:text-sm flex-1"
-                            disabled={
-                              isSavingRequiredItem || isUploadingRequiredItem
-                            }
-                          >
-                            {isSavingRequiredItem
-                              ? "Salvando..."
-                              : editingRequiredItemId
-                                ? "Atualizar item"
-                                : "Adicionar item"}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs sm:text-sm"
-                            onClick={resetRequiredItemForm}
-                          >
-                            Cancelar
-                          </Button>
-                        </div>
+                        <Button
+                          type="submit"
+                          className="w-full "
+                          disabled={isSavingAdditional || isUploadingAdditional}
+                        >
+                          {isSavingAdditional
+                            ? "Salvando..."
+                            : editingAdditionalId
+                              ? "Atualizar adicional"
+                              : "Adicionar adicional"}
+                        </Button>
                       </form>
 
-                      <div className="space-y-2">
-                        {!requiredItemGroupId ||
-                        !selectedRequiredGroup ||
-                        !selectedRequiredCategory ? (
-                          <p className="text-xs sm:text-sm text-muted-foreground">
-                            Selecione um grupo para visualizar os itens.
+                      <div className="mt-6 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm sm:text-base font-semibold">
+                            Gerenciar adicionais opcionais
                           </p>
-                        ) : selectedRequiredItems.length > 0 ? (
+                        </div>
+
+                        {!additionalCategoryId ? (
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            Selecione uma categoria para visualizar os
+                            adicionais.
+                          </p>
+                        ) : selectedAdditionals.length > 0 &&
+                          selectedAdditionalCategory ? (
                           <div className="space-y-2">
-                            {selectedRequiredItems.map((item) => (
+                            {selectedAdditionals.map((additional) => (
                               <div
-                                key={item.id}
+                                key={additional.id}
                                 className="flex items-center justify-between gap-3 rounded-md border p-2"
                               >
                                 <div className="flex items-center gap-3">
-                                  {item.imageUrl && (
+                                  {additional.imageUrl && (
                                     <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
-                                        src={item.imageUrl}
-                                        alt={item.name}
+                                        src={additional.imageUrl}
+                                        alt={additional.name}
                                         className="h-full w-full object-cover"
                                       />
                                     </div>
                                   )}
                                   <div>
                                     <p className="text-xs sm:text-sm font-medium">
-                                      {item.name}
+                                      {additional.name}
                                     </p>
                                     <p className="text-[11px] text-muted-foreground">
-                                      Gratuito
+                                      {formatCurrency(additional.price)}
                                     </p>
                                   </div>
                                 </div>
@@ -4190,13 +3754,13 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     variant="outline"
                                     size="sm"
                                     className="text-[11px]"
-                                    onClick={() =>
-                                      handleStartRequiredItem(
-                                        selectedRequiredCategory.id,
-                                        selectedRequiredGroup.id,
-                                        item,
-                                      )
-                                    }
+                                    onClick={() => {
+                                      if (!selectedAdditionalCategory) return;
+                                      handleStartAdditional(
+                                        selectedAdditionalCategory.id,
+                                        additional,
+                                      );
+                                    }}
                                   >
                                     Editar
                                   </Button>
@@ -4206,17 +3770,17 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                                     size="sm"
                                     className="text-[11px]"
                                     disabled={
-                                      isDeletingRequiredItem === item.id
+                                      isDeletingAdditional === additional.id
                                     }
-                                    onClick={() =>
-                                      handleDeleteRequiredItem(
-                                        item.id,
-                                        selectedRequiredCategory.id,
-                                        selectedRequiredGroup.id,
-                                      )
-                                    }
+                                    onClick={() => {
+                                      if (!selectedAdditionalCategory) return;
+                                      handleDeleteAdditional(
+                                        additional.id,
+                                        selectedAdditionalCategory.id,
+                                      );
+                                    }}
                                   >
-                                    {isDeletingRequiredItem === item.id
+                                    {isDeletingAdditional === additional.id
                                       ? "Removendo..."
                                       : "Remover"}
                                   </Button>
@@ -4226,12 +3790,505 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                           </div>
                         ) : (
                           <p className="text-xs sm:text-sm text-muted-foreground">
-                            Nenhum item obrigatório cadastrado neste grupo.
+                            Nenhum adicional cadastrado nesta categoria.
                           </p>
                         )}
                       </div>
+                    </>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="rounded-lg border bg-muted/30 p-3 text-xs sm:text-sm text-muted-foreground">
+                        Use esta aba para criar grupos obrigatórios e os itens
+                        gratuitos que o cliente deve selecionar.
+                      </div>
+
+                      <div className="border-t pt-6 space-y-6">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm sm:text-base font-semibold">
+                            Adicionais obrigatórios
+                          </p>
+                          {editingRequiredGroupId && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs sm:text-sm"
+                              onClick={resetRequiredGroupForm}
+                            >
+                              Novo grupo
+                            </Button>
+                          )}
+                        </div>
+
+                        <form
+                          className="space-y-3 sm:space-y-4"
+                          onSubmit={handleSubmitRequiredGroup}
+                        >
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="required-group-category"
+                              className="text-sm sm:text-base"
+                            >
+                              Categoria
+                            </Label>
+                            <Select
+                              value={requiredCategoryId ?? ""}
+                              onValueChange={(value) => {
+                                setRequiredCategoryId(value);
+                                resetRequiredItemForm();
+                                if (requiredGroupError) {
+                                  setRequiredGroupError(null);
+                                }
+                              }}
+                              disabled={
+                                isSavingRequiredGroup ||
+                                !!editingRequiredGroupId
+                              }
+                            >
+                              <SelectTrigger className="text-sm sm:text-base">
+                                <SelectValue placeholder="Selecione a categoria" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.map((category) => (
+                                  <SelectItem
+                                    key={category.id}
+                                    value={category.id}
+                                  >
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="required-group-title"
+                                className="text-sm sm:text-base"
+                              >
+                                Título do grupo
+                              </Label>
+                              <Input
+                                id="required-group-title"
+                                placeholder="Ex: Escolha o molho"
+                                value={requiredGroupTitle}
+                                onChange={(e) => {
+                                  setRequiredGroupTitle(e.target.value);
+                                  if (requiredGroupError) {
+                                    setRequiredGroupError(null);
+                                  }
+                                }}
+                                className="text-sm sm:text-base"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="required-group-quantity"
+                                className="text-sm sm:text-base"
+                              >
+                                Quantidade obrigatória
+                              </Label>
+                              <Input
+                                id="required-group-quantity"
+                                type="number"
+                                min="1"
+                                step="1"
+                                placeholder="1"
+                                value={requiredGroupQuantity}
+                                onChange={(e) => {
+                                  setRequiredGroupQuantity(e.target.value);
+                                  if (requiredGroupError) {
+                                    setRequiredGroupError(null);
+                                  }
+                                }}
+                                className="text-sm sm:text-base"
+                              />
+                            </div>
+                          </div>
+
+                          {requiredGroupError && (
+                            <p className="text-xs sm:text-sm text-destructive">
+                              {requiredGroupError}
+                            </p>
+                          )}
+
+                          <div className="flex gap-2">
+                            <Button
+                              type="submit"
+                              size="sm"
+                              className="text-xs sm:text-sm flex-1"
+                              disabled={isSavingRequiredGroup}
+                            >
+                              {isSavingRequiredGroup
+                                ? "Salvando..."
+                                : editingRequiredGroupId
+                                  ? "Atualizar grupo"
+                                  : "Adicionar grupo"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs sm:text-sm"
+                              onClick={resetRequiredGroupForm}
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        </form>
+
+                        <div className="space-y-2">
+                          <p className="text-sm sm:text-base font-semibold">
+                            Gerenciar grupos
+                          </p>
+                          {!requiredCategoryId ? (
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              Selecione uma categoria para visualizar os grupos.
+                            </p>
+                          ) : selectedRequiredGroups.length > 0 &&
+                            selectedRequiredCategory ? (
+                            <div className="space-y-2">
+                              {selectedRequiredGroups.map((group) => (
+                                <div
+                                  key={group.id}
+                                  className="flex items-center justify-between gap-3 rounded-md border p-2"
+                                >
+                                  <div>
+                                    <p className="text-xs sm:text-sm font-medium">
+                                      {group.title}
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                      {group.requiredQuantity} obrigatório(s) •{" "}
+                                      {group.items.length} item(ns)
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-[11px]"
+                                      onClick={() => {
+                                        if (!selectedRequiredCategory) return;
+                                        handleStartRequiredGroup(
+                                          selectedRequiredCategory.id,
+                                          group,
+                                        );
+                                      }}
+                                    >
+                                      Editar
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="sm"
+                                      className="text-[11px]"
+                                      disabled={
+                                        isDeletingRequiredGroup === group.id
+                                      }
+                                      onClick={() => {
+                                        if (!selectedRequiredCategory) return;
+                                        handleDeleteRequiredGroup(
+                                          group.id,
+                                          selectedRequiredCategory.id,
+                                        );
+                                      }}
+                                    >
+                                      {isDeletingRequiredGroup === group.id
+                                        ? "Removendo..."
+                                        : "Remover"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              Nenhum grupo obrigatório cadastrado.
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm sm:text-base font-semibold">
+                              Itens obrigatórios
+                            </p>
+                            {editingRequiredItemId && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs sm:text-sm"
+                                onClick={resetRequiredItemForm}
+                              >
+                                Novo item
+                              </Button>
+                            )}
+                          </div>
+
+                          <form
+                            className="space-y-3 sm:space-y-4"
+                            onSubmit={handleSubmitRequiredItem}
+                          >
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="required-item-group"
+                                className="text-sm sm:text-base"
+                              >
+                                Grupo obrigatório
+                              </Label>
+                              <Select
+                                value={requiredItemGroupId ?? ""}
+                                onValueChange={(value) => {
+                                  setRequiredItemGroupId(value);
+                                  setRequiredItemName("");
+                                  setRequiredItemImageUrl("");
+                                  setRequiredItemImagePreview(null);
+                                  setEditingRequiredItemId(null);
+                                  if (requiredItemFileInputRef.current) {
+                                    requiredItemFileInputRef.current.value = "";
+                                  }
+                                  if (requiredItemError) {
+                                    setRequiredItemError(null);
+                                  }
+                                }}
+                                disabled={
+                                  isSavingRequiredItem ||
+                                  !!editingRequiredItemId ||
+                                  selectedRequiredGroups.length === 0
+                                }
+                              >
+                                <SelectTrigger className="text-sm sm:text-base">
+                                  <SelectValue
+                                    placeholder={
+                                      selectedRequiredGroups.length > 0
+                                        ? "Selecione o grupo"
+                                        : "Cadastre um grupo primeiro"
+                                    }
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {selectedRequiredGroups.map((group) => (
+                                    <SelectItem key={group.id} value={group.id}>
+                                      {group.title}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="required-item-name"
+                                className="text-sm sm:text-base"
+                              >
+                                Nome do item
+                              </Label>
+                              <Input
+                                id="required-item-name"
+                                placeholder="Ex: Maionese verde"
+                                value={requiredItemName}
+                                onChange={(e) => {
+                                  setRequiredItemName(e.target.value);
+                                  if (requiredItemError) {
+                                    setRequiredItemError(null);
+                                  }
+                                }}
+                                className="text-sm sm:text-base"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="required-item-image"
+                                className="text-sm sm:text-base"
+                              >
+                                Imagem
+                              </Label>
+                              <input
+                                ref={requiredItemFileInputRef}
+                                id="required-item-image"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleRequiredItemImageSelect}
+                                className="hidden"
+                                disabled={
+                                  isSavingRequiredItem ||
+                                  isUploadingRequiredItem
+                                }
+                              />
+                              <div className="space-y-2">
+                                {requiredItemImagePreview ? (
+                                  <div className="relative">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={requiredItemImagePreview}
+                                      alt="Preview"
+                                      className="h-24 w-full rounded-md object-cover"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="mt-2 w-full text-xs sm:text-sm"
+                                      onClick={() => {
+                                        setRequiredItemImageUrl("");
+                                        setRequiredItemImagePreview(null);
+                                        if (requiredItemFileInputRef.current) {
+                                          requiredItemFileInputRef.current.value =
+                                            "";
+                                        }
+                                      }}
+                                      disabled={
+                                        isSavingRequiredItem ||
+                                        isUploadingRequiredItem
+                                      }
+                                    >
+                                      Remover Imagem
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full text-xs sm:text-sm"
+                                    onClick={() =>
+                                      requiredItemFileInputRef.current?.click()
+                                    }
+                                    disabled={
+                                      isSavingRequiredItem ||
+                                      isUploadingRequiredItem
+                                    }
+                                  >
+                                    <ImageIcon className="mr-2 h-4 w-4" />
+                                    {isUploadingRequiredItem
+                                      ? "Carregando..."
+                                      : "Selecionar da Galeria"}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+
+                            {requiredItemError && (
+                              <p className="text-xs sm:text-sm text-destructive">
+                                {requiredItemError}
+                              </p>
+                            )}
+
+                            <div className="flex gap-2">
+                              <Button
+                                type="submit"
+                                size="sm"
+                                className="text-xs sm:text-sm flex-1"
+                                disabled={
+                                  isSavingRequiredItem ||
+                                  isUploadingRequiredItem
+                                }
+                              >
+                                {isSavingRequiredItem
+                                  ? "Salvando..."
+                                  : editingRequiredItemId
+                                    ? "Atualizar item"
+                                    : "Adicionar item"}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs sm:text-sm"
+                                onClick={resetRequiredItemForm}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </form>
+
+                          <div className="space-y-2">
+                            {!requiredItemGroupId ||
+                            !selectedRequiredGroup ||
+                            !selectedRequiredCategory ? (
+                              <p className="text-xs sm:text-sm text-muted-foreground">
+                                Selecione um grupo para visualizar os itens.
+                              </p>
+                            ) : selectedRequiredItems.length > 0 ? (
+                              <div className="space-y-2">
+                                {selectedRequiredItems.map((item) => (
+                                  <div
+                                    key={item.id}
+                                    className="flex items-center justify-between gap-3 rounded-md border p-2"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      {item.imageUrl && (
+                                        <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                                          <img
+                                            src={item.imageUrl}
+                                            alt={item.name}
+                                            className="h-full w-full object-cover"
+                                          />
+                                        </div>
+                                      )}
+                                      <div>
+                                        <p className="text-xs sm:text-sm font-medium">
+                                          {item.name}
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground">
+                                          Gratuito
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-[11px]"
+                                        onClick={() =>
+                                          handleStartRequiredItem(
+                                            selectedRequiredCategory.id,
+                                            selectedRequiredGroup.id,
+                                            item,
+                                          )
+                                        }
+                                      >
+                                        Editar
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        className="text-[11px]"
+                                        disabled={
+                                          isDeletingRequiredItem === item.id
+                                        }
+                                        onClick={() =>
+                                          handleDeleteRequiredItem(
+                                            item.id,
+                                            selectedRequiredCategory.id,
+                                            selectedRequiredGroup.id,
+                                          )
+                                        }
+                                      >
+                                        {isDeletingRequiredItem === item.id
+                                          ? "Removendo..."
+                                          : "Remover"}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs sm:text-sm text-muted-foreground">
+                                Nenhum item obrigatório cadastrado neste grupo.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
