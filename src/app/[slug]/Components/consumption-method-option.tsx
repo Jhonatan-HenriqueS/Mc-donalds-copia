@@ -37,7 +37,7 @@ const ConsumptionMethodOPtion = ({
   return (
     <Card>
       <CardContent className="flex flex-col items-center gap-7 py-5 px-3">
-        <div className="relative h-[67px] w-[67px]">
+        <div className="relative h-[67px] w-[67px] md:h-[82px] md:w-[82px]">
           {/* [] serve para dizer que este elemento ocupara exatamente 80px */}
           <Image
             src={imageUrl}
