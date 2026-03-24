@@ -128,6 +128,7 @@ model ProductSize {
 model Order {
   id                   Int               @id @default(autoincrement())
   //Cada pedido vai ter uma ordem, caso o primeiro esteja com id 1, o segundo recebe 2, e assim por diante, vai se complementando  
+  sequenceNumber       Int
   total                Float
   productsSubtotal     Float              @default(0)
   sizesSubtotal        Float              @default(0)
@@ -157,6 +158,8 @@ model Order {
   deliveryZipCode      String?
   createdAt            DateTime          @default(now())
   updateAt             DateTime          @updatedAt
+
+  @@unique([restaurantId, sequenceNumber])
 }
 
 model PaymentMethod {

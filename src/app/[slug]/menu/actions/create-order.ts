@@ -1,7 +1,11 @@
 //Vai usar server e client (back e front)
 "use server";
 
-import { ConsumptionMethod, OrderStatus } from "@prisma/client";
+import {
+  ConsumptionMethod,
+  OrderStatus,
+  Prisma,
+} from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 import { formatCurrency } from "@/helpers/format-currency";
@@ -295,32 +299,73 @@ export const createOrder = async (input: createOrderInput) => {
     restaurantId: restaurant.id,
   };
 
-  // Criar dados da ordem com campos de endereço se for TAKEANAY
+  const createOrderWithSequence = async () =>
+    db.$transaction(
+      async (tx) => {
+        const lastRestaurantOrder = await tx.order.findFirst({
+          where: {
+            restaurantId: restaurant.id,
+          },
+          orderBy: {
+            sequenceNumber: "desc",
+          },
+          select: {
+            sequenceNumber: true,
+          },
+        });
+
+        const nextSequenceNumber =
+          (lastRestaurantOrder?.sequenceNumber ?? 0) + 1;
+
+        if (
+          input.consumptionMethod === "TAKEANAY" &&
+          input.deliveryStreet &&
+          input.deliveryNumber &&
+          input.deliveryNeighborhood &&
+          input.deliveryCity &&
+          input.deliveryState
+        ) {
+          return tx.order.create({
+            data: {
+              ...baseOrderData,
+              sequenceNumber: nextSequenceNumber,
+              deliveryStreet: input.deliveryStreet,
+              deliveryNumber: input.deliveryNumber,
+              deliveryComplement: input.deliveryComplement || null,
+              deliveryNeighborhood: input.deliveryNeighborhood,
+              deliveryCity: input.deliveryCity,
+              deliveryState: input.deliveryState,
+            },
+          });
+        }
+
+        return tx.order.create({
+          data: {
+            ...baseOrderData,
+            sequenceNumber: nextSequenceNumber,
+          },
+        });
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      },
+    );
+
   let order = null;
 
-  if (
-    input.consumptionMethod === "TAKEANAY" &&
-    input.deliveryStreet &&
-    input.deliveryNumber &&
-    input.deliveryNeighborhood &&
-    input.deliveryCity &&
-    input.deliveryState
-  ) {
-    order = await db.order.create({
-      data: {
-        ...baseOrderData,
-        deliveryStreet: input.deliveryStreet,
-        deliveryNumber: input.deliveryNumber,
-        deliveryComplement: input.deliveryComplement || null,
-        deliveryNeighborhood: input.deliveryNeighborhood,
-        deliveryCity: input.deliveryCity,
-        deliveryState: input.deliveryState,
-      },
-    });
-  } else {
-    order = await db.order.create({
-      data: baseOrderData,
-    });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      order = await createOrderWithSequence();
+      break;
+    } catch (error) {
+      const isSerializationConflict =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2034";
+
+      if (!isSerializationConflict || attempt === 2) {
+        throw error;
+      }
+    }
   }
 
   revalidatePath(`/${input.slug}/orders`); //Sempre esse pedido vai ser guardado no servidor
@@ -349,7 +394,7 @@ export const createOrder = async (input: createOrderInput) => {
 
       await sendPushToSubscriptions(adminSubscriptions, {
         title: "Novo pedido criado!",
-        body: `Pedido #${order.id} • Cliente: ${input.customerName} • Total: ${formatCurrency(
+        body: `Pedido #${order.sequenceNumber} • Cliente: ${input.customerName} • Total: ${formatCurrency(
           order.total
         )}`,
         url: adminPushUrl,

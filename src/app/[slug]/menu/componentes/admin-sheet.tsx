@@ -4826,7 +4826,7 @@ const AdminSheet = ({ isOpen, onOpenChange, restaurant }: AdminSheetProps) => {
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                             <div className="flex-1">
                               <p className="font-semibold text-sm sm:text-base">
-                                Pedido #{order.id}
+                                Pedido #{order.sequenceNumber}
                               </p>
                               <p className="text-xs sm:text-sm text-muted-foreground">
                                 {formatDateTime(order.createdAt)}

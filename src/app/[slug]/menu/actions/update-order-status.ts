@@ -89,23 +89,24 @@ export const updateOrderStatus = async (
       if (customerSubscriptions.length > 0) {
         const slug = restaurant.slug;
         const orderId = updatedOrder.id;
+        const orderCode = updatedOrder.sequenceNumber;
         let body = '';
 
         switch (newStatus) {
           case 'ACCEPTED':
-            body = `O ${slug} aceitou seu pedido #${orderId}. Acompanhe em “Meus pedidos”.`;
+            body = `O ${slug} aceitou seu pedido #${orderCode}. Acompanhe em “Meus pedidos”.`;
             break;
           case 'CANCELLED':
-            body = `O ${slug} não aceitou o pedido #${orderId}. Entre em contato com a loja para mais informações.`;
+            body = `O ${slug} não aceitou o pedido #${orderCode}. Entre em contato com a loja para mais informações.`;
             break;
           case 'IN_PREPARATION':
-            body = `Seu pedido #${orderId} está em preparo. Aguarde a finalização.`;
+            body = `Seu pedido #${orderCode} está em preparo. Aguarde a finalização.`;
             break;
           case 'OUT_FOR_DELIVERY':
-            body = `Seu pedido #${orderId} saiu para entrega. Prepare-se para receber.`;
+            body = `Seu pedido #${orderCode} saiu para entrega. Prepare-se para receber.`;
             break;
           case 'FINISHED':
-            body = `${updatedOrder.customerName}, seu pedido #${orderId} foi finalizado. Obrigado pela preferência!`;
+            body = `${updatedOrder.customerName}, seu pedido #${orderCode} foi finalizado. Obrigado pela preferência!`;
             break;
           default:
             body = '';
