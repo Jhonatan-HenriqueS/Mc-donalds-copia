@@ -193,6 +193,7 @@ const FinishOrderDialog = ({
   const isPaymentSelected = Boolean(selectedPaymentMethodId);
   const canFinalize =
     !needsProfileSave && !needsAddressSave && isPaymentSelected;
+  const showProfileStep = !needsAddressSave;
   const hasRestaurantAddress = Boolean(
     restaurantInfo?.addressStreet ||
     restaurantInfo?.addressNumber ||
@@ -568,149 +569,156 @@ const FinishOrderDialog = ({
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="flex flex-col gap-6"
                 >
-                  {savedProfile && !editingProfile ? (
-                    <div className="space-y-3 rounded-md border p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-semibold">
-                            {savedProfile.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {savedProfile.email}
-                          </p>
+                  {showProfileStep &&
+                    (savedProfile && !editingProfile ? (
+                      <div className="space-y-3 rounded-md border p-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold">
+                              {savedProfile.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {savedProfile.email}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingProfile(true)}
+                          >
+                            Editar dados
+                          </Button>
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingProfile(true)}
-                        >
-                          Editar dados
-                        </Button>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="px-0"
-                          onClick={() => setShowDetails((prev) => !prev)}
-                        >
-                          {showDetails ? (
-                            <>
-                              <ChevronUpIcon className="h-4 w-4" />
-                              <span className="text-xs">Ocultar detalhes</span>
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDownIcon className="h-4 w-4" />
-                              <span className="text-xs">Mostrar detalhes</span>
-                            </>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="px-0"
+                            onClick={() => setShowDetails((prev) => !prev)}
+                          >
+                            {showDetails ? (
+                              <>
+                                <ChevronUpIcon className="h-4 w-4" />
+                                <span className="text-xs">
+                                  Ocultar detalhes
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDownIcon className="h-4 w-4" />
+                                <span className="text-xs">
+                                  Mostrar detalhes
+                                </span>
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="px-0 text-red-500"
+                            onClick={() => {
+                              setSavedProfile(null);
+                              setEditingProfile(true);
+                              setShowDetails(false);
+                              setSavedAddress(null);
+                              setEditingAddress(true);
+                              setShowAddressDetails(false);
+                              form.reset(defaultValues as FormSchema);
+                              if (restaurantId) {
+                                localStorage.removeItem(
+                                  `last_order_profile_${restaurantId}`,
+                                );
+                                localStorage.removeItem(
+                                  `last_order_email_${restaurantId}`,
+                                );
+                                localStorage.removeItem(
+                                  `last_order_address_${restaurantId}`,
+                                );
+                              }
+                            }}
+                          >
+                            Pedir em outra conta
+                          </Button>
+                        </div>
+
+                        {showDetails && (
+                          <div className="space-y-1 text-xs text-muted-foreground">
+                            <p>Telefone: {savedProfile.phone}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Seu nome</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Digite seu nome..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage></FormMessage>
+                            </FormItem>
                           )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="px-0 text-red-500"
-                          onClick={() => {
-                            setSavedProfile(null);
-                            setEditingProfile(true);
-                            setShowDetails(false);
-                            setSavedAddress(null);
-                            setEditingAddress(true);
-                            setShowAddressDetails(false);
-                            form.reset(defaultValues as FormSchema);
-                            if (restaurantId) {
-                              localStorage.removeItem(
-                                `last_order_profile_${restaurantId}`,
-                              );
-                              localStorage.removeItem(
-                                `last_order_email_${restaurantId}`,
-                              );
-                              localStorage.removeItem(
-                                `last_order_address_${restaurantId}`,
-                              );
-                            }
-                          }}
-                        >
-                          Pedir em outra conta
-                        </Button>
-                      </div>
+                        />
 
-                      {showDetails && (
-                        <div className="space-y-1 text-xs text-muted-foreground">
-                          <p>Telefone: {savedProfile.phone}</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Seu nome</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Digite seu nome..."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage></FormMessage>
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Seu email</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="email"
+                                  placeholder="Digite seu email..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage></FormMessage>
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Seu email</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="email"
-                                placeholder="Digite seu email..."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage></FormMessage>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Telefone</FormLabel>
-                            <FormControl>
-                              <PatternFormat
-                                placeholder="(69) 99999-9999"
-                                format="(##) ####-####"
-                                customInput={Input}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage></FormMessage>
-                          </FormItem>
-                        )}
-                      />
-                    </>
-                  )}
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Telefone</FormLabel>
+                              <FormControl>
+                                <PatternFormat
+                                  placeholder="(69) 99999-9999"
+                                  format="(##) ####-####"
+                                  customInput={Input}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage></FormMessage>
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    ))}
                   {isTakeaway && profileCompleted && (
-                    <>
-                      <div className="border-t pt-4">
-                        <h3 className="font-semibold">Endereço de Entrega</h3>
+                    <div className="space-y-3 rounded-md border p-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold">
+                          Endereço de entrega
+                        </p>
                       </div>
 
-                      {isTakeaway && savedAddress && !editingAddress ? (
-                        <div className="space-y-3 rounded-md border p-3">
-                          <div className="flex items-center justify-between">
+                      {savedAddress && !editingAddress ? (
+                        <>
+                          <div className="flex items-center justify-between gap-3">
                             <div>
                               <p className="text-sm font-semibold">
                                 {savedAddress.deliveryStreet},{" "}
@@ -796,9 +804,9 @@ const FinishOrderDialog = ({
                               </p>
                             </div>
                           )}
-                        </div>
+                        </>
                       ) : (
-                        <>
+                        <div className="space-y-4">
                           <FormField
                             control={
                               form.control as unknown as Control<TakeawayFormSchema>
@@ -919,9 +927,9 @@ const FinishOrderDialog = ({
                               )}
                             />
                           </div>
-                        </>
+                        </div>
                       )}
-                    </>
+                    </div>
                   )}
                   {!isTakeaway && profileCompleted && (
                     <div className="border-t pt-4">
